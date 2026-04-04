@@ -784,16 +784,53 @@
             document.body.removeChild(a);
           })
           .catch(() => {
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = '';
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+             var a = document.createElement('a');
+             a.href = url;
+             a.download = '';
+             a.target = '_blank';
+             document.body.appendChild(a);
+             a.click();
+             document.body.removeChild(a);
           });
       });
     });
+
+    // Customer Dynamic Filter & Export
+    var $customerInput = $('#rm-customer-search-input');
+    var $customerSearchBtn = $('#rm-customer-search-btn');
+    var $customerTable = $('#rm-customers-tbody');
+    
+    if ($customerInput.length && $customerTable.length) {
+      function filterCustomers() {
+        var query = $customerInput.val().toLowerCase().trim();
+        var visibleCount = 0;
+        
+        $customerTable.find('tr:not(.rm-empty-state, .rm-search-empty)').each(function() {
+          var name = $(this).find('td:nth-child(2)').text().toLowerCase();
+          var phone = $(this).find('td:nth-child(3)').text().toLowerCase();
+          
+          if (name.indexOf(query) > -1 || phone.indexOf(query) > -1) {
+            $(this).show();
+            visibleCount++;
+          } else {
+            $(this).hide();
+          }
+        });
+        
+        if (visibleCount === 0 && $customerTable.find('tr:not(.rm-empty-state, .rm-search-empty)').length > 0) {
+          if ($customerTable.find('.rm-search-empty').length === 0) {
+            $customerTable.append('<tr class="rm-search-empty"><td colspan="5" style="text-align: center; padding: 30px;">No matching customers found.</td></tr>');
+          } else {
+            $customerTable.find('.rm-search-empty').show();
+          }
+        } else {
+          $customerTable.find('.rm-search-empty').hide();
+        }
+      }
+      
+      $customerInput.on('input keyup', filterCustomers);
+      $customerSearchBtn.on('click', filterCustomers);
+    }
 
   });
 })(jQuery);

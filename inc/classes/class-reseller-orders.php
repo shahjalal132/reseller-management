@@ -121,9 +121,11 @@ class Reseller_Orders {
             $key   = $email ? $email : 'order-' . $order->get_id();
 
             $customers[ $key ] = [
-                'name'  => trim( $order->get_formatted_billing_full_name() ),
-                'email' => $email,
-                'phone' => (string) $order->get_billing_phone(),
+                'name'    => trim( $order->get_formatted_billing_full_name() ),
+                'email'   => $email,
+                'phone'   => (string) $order->get_billing_phone(),
+                'city'    => (string) $order->get_billing_city(),
+                'address' => (string) $order->get_billing_address_1(),
             ];
         }
 
