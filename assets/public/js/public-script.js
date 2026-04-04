@@ -617,5 +617,183 @@
           filterOrders();
       }
     }
+
+    // Product Dynamic Filter
+    var $productGrid = $('.rm-product-grid');
+    if ($productGrid.length) {
+      var productCategories = window.rmProductCategories || [];
+
+      // Initialize category dropdowns
+      var $catSelect = $('.rm-filter-cat');
+      var $subCatSelect = $('.rm-filter-subcat');
+      var $subSubCatSelect = $('.rm-filter-subsubcat');
+
+      // Build root categories (parent = 0)
+      var rootCats = productCategories.filter(function(c) { return c.parent == 0; });
+      rootCats.forEach(function(c) {
+        $catSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
+      });
+
+      $catSelect.on('change', function() {
+        var parentId = $(this).val();
+        $subCatSelect.find('option:not(:first)').remove();
+        $subSubCatSelect.find('option:not(:first)').remove();
+
+        if (parentId) {
+          var subCats = productCategories.filter(function(c) { return c.parent == parentId; });
+          subCats.forEach(function(c) {
+            $subCatSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
+          });
+        }
+        filterProducts();
+      });
+
+      $subCatSelect.on('change', function() {
+        var parentId = $(this).val();
+        $subSubCatSelect.find('option:not(:first)').remove();
+
+        if (parentId) {
+          var subSubCats = productCategories.filter(function(c) { return c.parent == parentId; });
+          subSubCats.forEach(function(c) {
+            $subSubCatSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
+          });
+        }
+        filterProducts();
+      });
+
+      $subSubCatSelect.on('change', filterProducts);
+
+
+      function filterProducts() {
+        var limit = $('.rm-filter-limit').val();
+        var search = $('.rm-filter-search').val().toLowerCase().trim();
+        var cat = $catSelect.val();
+        var subCat = $subCatSelect.val();
+        var subSubCat = $subSubCatSelect.val();
+
+        var visibleCount = 0;
+
+        $('.rm-product-card').each(function() {
+          var $card = $(this);
+          var show = true;
+
+          // Search
+          if (show && search) {
+            var title = $card.find('.rm-product-title').text().toLowerCase();
+            var copyText = $card.find('.copy-btn').attr('data-copy') || '';
+            copyText = copyText.toLowerCase();
+            if (title.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
+              show = false;
+            }
+          }
+
+          // Category matching
+          if (show) {
+            var cardCats = ($card.attr('data-categories') || '').split(',');
+            var requiredCat = subSubCat || subCat || cat || '';
+            if (requiredCat && requiredCat !== '') {
+              // using strictly equal via standard indexOf
+              // wait, the id in JSON could be number, split creates array of strings. Both string match works.
+              if (cardCats.indexOf(requiredCat.toString()) === -1) {
+                show = false;
+              }
+            }
+          }
+
+          if (show) {
+            if (limit !== 'all' && limit) {
+              if (visibleCount >= parseInt(limit, 10)) {
+                show = false;
+              }
+            }
+          }
+
+          if (show) {
+            $card.show();
+            visibleCount++;
+          } else {
+            $card.hide();
+          }
+        });
+
+        // Toggle "No products" message
+        if (visibleCount === 0 && $('.rm-product-card').length > 0) {
+          if ($productGrid.find('.rm-no-products').length === 0) {
+            $productGrid.append('<p class="rm-no-products" style="grid-column: 1/-1; text-align:center;">No matching products found.</p>');
+          } else {
+            $productGrid.find('.rm-no-products').show();
+          }
+        } else {
+          $productGrid.find('.rm-no-products').hide();
+        }
+      }
+
+      $('.rm-filter-limit, .rm-filter-search').on('input change', filterProducts);
+
+      // Initial filter run
+      filterProducts();
+    }
+
+    // Copy Product Details
+    $(document).on('click', '.copy-btn', function (e) {
+      e.preventDefault();
+      var text = $(this).attr('data-copy');
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () {
+          alert('Product details copied to clipboard!');
+        });
+      } else {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          alert('Product details copied to clipboard!');
+        } catch (err) {
+          alert('Failed to copy text.');
+        }
+        document.body.removeChild(textArea);
+      }
+    });
+
+    // Download Product Images
+    $(document).on('click', '.download-btn', function (e) {
+      e.preventDefault();
+      var images = $(this).data('images'); 
+      if (!images || !images.length) return;
+
+      alert('Downloading ' + images.length + ' image(s)...');
+
+      images.forEach(function (url, index) {
+        fetch(url)
+          .then(resp => resp.blob())
+          .then(blob => {
+            var blobUrl = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            var filename = url.substring(url.lastIndexOf('/') + 1) || 'image-' + index + '.jpg';
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(a);
+          })
+          .catch(() => {
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+      });
+    });
+
   });
 })(jQuery);
