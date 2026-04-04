@@ -80,41 +80,70 @@ class Reseller_Dashboard {
         <div class="rm-dashboard-app">
             <aside class="rm-dashboard-sidebar">
                 <div class="rm-sidebar-brand">
-                    <h2><?php esc_html_e( 'Reseller Hub', 'reseller-management' ); ?></h2>
-                    <p><?php echo esc_html( $user ? $user->display_name : '' ); ?></p>
+                    <div class="rm-logo">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        <span><?php echo get_bloginfo( 'name' ); ?></span>
+                    </div>
+                    <div class="rm-reseller-badge">
+                        <span class="rm-badge-label"><?php echo $user->display_name; ?></span>
+                        <span class="rm-badge-tag"><?php esc_html_e( 'Reseller', 'reseller-management' ); ?></span>
+                    </div>
                 </div>
 
                 <nav class="rm-sidebar-nav">
-                    <?php foreach ( $tabs as $tab_key => $label ) : ?>
+                    <?php
+                    $icons = [
+                        'dashboard' => 'dashboard',
+                        'orders'    => 'cart',
+                        'products'  => 'grid',
+                        'account'   => 'user',
+                        'settings'  => 'chart',
+                        'customers' => 'users',
+                    ];
+                    foreach ( $tabs as $tab_key => $label ) :
+                        $icon = $icons[ $tab_key ] ?? 'database';
+                        ?>
                         <a class="rm-nav-link <?php echo $tab_key === $tab ? 'is-active' : ''; ?>" href="<?php echo esc_url( $this->get_dashboard_tab_url( $tab_key ) ); ?>">
-                            <?php echo esc_html( $label ); ?>
+                            <span class="rm-nav-icon rm-icon-<?php echo esc_attr( $icon ); ?>"></span>
+                            <span class="rm-nav-label"><?php echo esc_html( $label ); ?></span>
                         </a>
                     <?php endforeach; ?>
                 </nav>
+
+                <div class="rm-sidebar-footer">
+                    <a href="<?php echo esc_url( wp_logout_url( home_url( '/' ) ) ); ?>" class="rm-logout-link">
+                        <span class="rm-nav-icon rm-icon-logout"></span>
+                        <span><?php esc_html_e( 'Logout', 'reseller-management' ); ?></span>
+                    </a>
+                </div>
             </aside>
 
             <main class="rm-dashboard-content">
                 <header class="rm-dashboard-header">
-                    <div>
-                        <h1><?php echo esc_html( $tabs[ $tab ] ); ?></h1>
-                        <p><?php esc_html_e( 'Smoke-test ready reseller workspace.', 'reseller-management' ); ?></p>
+                    <div class="rm-header-left">
+                        <button class="rm-sidebar-toggle">
+                            <span class="dashicons dashicons-menu"></span>
+                        </button>
                     </div>
-                    <div class="rm-dashboard-header-actions">
-                        <span class="rm-balance-chip">
-                            <?php
-                            printf(
-                                /* translators: %s: formatted balance. */
-                                esc_html__( 'Balance: %s', 'reseller-management' ),
-                                wp_strip_all_tags( wc_price( Reseller_Helper::get_current_balance( $user_id ) ) )
-                            );
-                            ?>
-                        </span>
+                    <div class="rm-header-right">
+                        <div class="rm-user-profile-header">
+                            <?php echo get_avatar( $user_id, 32 ); ?>
+                            <span class="rm-user-name-header"><?php echo esc_html( $user->display_name ); ?></span>
+                        </div>
                     </div>
                 </header>
 
-                <section class="rm-dashboard-panel">
-                    <?php $this->render_tab_content( $tab ); ?>
-                </section>
+                <div class="rm-dashboard-body-inner">
+                    <div class="rm-balance-check-container">
+                        <button class="rm-button rm-button-balance-check">
+                            <?php esc_html_e( 'Balance Check', 'reseller-management' ); ?>
+                        </button>
+                    </div>
+
+                    <section class="rm-dashboard-panel">
+                        <?php $this->render_tab_content( $tab ); ?>
+                    </section>
+                </div>
             </main>
         </div>
         <?php
