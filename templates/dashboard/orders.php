@@ -18,7 +18,7 @@ $products = get_posts(
     ]
 );
 ?>
-<?php if ( 'add' === ( $_GET['subtab'] ?? '' ) ) : ?>
+<?php if ( in_array( $_GET['subtab'] ?? '', [ 'add', 'edit' ], true ) ) : ?>
     <?php include PLUGIN_BASE_PATH . '/templates/dashboard/add-new-order.php'; ?>
 <?php endif; ?>
 
@@ -28,7 +28,7 @@ $status_counts = \BOILERPLATE\Inc\Reseller_Orders::get_order_status_counts( $use
 $dashboard    = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
 
 $stats_config = [
-    'new'        => [ 'label' => __( 'New', 'reseller-management' ), 'icon' => 'status_new', 'color' => '#1e293b' ],
+    'new'        => [ 'label' => __( 'New', 'reseller-management' ), 'icon' => 'status_new', 'color' => '#000' ],
     'pending'    => [ 'label' => __( 'Pending', 'reseller-management' ), 'icon' => 'status_pending', 'color' => '#f59e0b' ],
     'confirmed'  => [ 'label' => __( 'Confirmed', 'reseller-management' ), 'icon' => 'status_confirmed', 'color' => '#10b981' ],
     'packaging'  => [ 'label' => __( 'Packaging', 'reseller-management' ), 'icon' => 'status_packaging', 'color' => '#3b82f6' ],
@@ -40,11 +40,39 @@ $stats_config = [
     'all'        => [ 'label' => __( 'All', 'reseller-management' ), 'icon' => 'status_all', 'color' => '#1e293b' ],
     'incomplete' => [ 'label' => __( 'Incomplete Order', 'reseller-management' ), 'icon' => 'status_incomplete', 'color' => '#64748b' ],
 ];
+$active_subtab = $_GET['subtab'] ?? 'all';
+$orders        = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id );
+
+// Filter orders by subtab if not 'all' or 'add' or 'edit'
+if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $stats_config[ $active_subtab ] ) ) {
+    $orders = array_filter(
+        $orders,
+        function( $order ) use ( $active_subtab ) {
+            $status = $order->get_status();
+            switch ( $active_subtab ) {
+                case 'new':        return 'processing' === $status;
+                case 'pending':    return 'pending' === $status;
+                case 'confirmed':  return 'on-hold' === $status;
+                case 'packaging':  return 'packaging' === $status; // Assuming custom status
+                case 'shipment':   return 'shipment' === $status; // Assuming custom status
+                case 'delivered':  return 'completed' === $status;
+                case 'wfr':        return 'wfr' === $status; // Assuming custom status
+                case 'returned':   return 'refunded' === $status;
+                case 'cancel':     return 'cancelled' === $status;
+                case 'incomplete': return 'failed' === $status;
+                default:           return true;
+            }
+        }
+    );
+}
 ?>
 <div class="rm-orders-stats-container">
     <div class="rm-orders-stats-grid">
-        <?php foreach ( $stats_config as $key => $config ) : ?>
-            <div class="rm-order-stat-card" style="border-top: 3px solid <?php echo esc_attr( $config['color'] ); ?>">
+        <?php foreach ( $stats_config as $key => $config ) : 
+            $card_url = $dashboard->get_dashboard_tab_url( 'orders', $key );
+            $is_card_active = ( $active_subtab === $key );
+            ?>
+            <a href="<?php echo esc_url( $card_url ); ?>" class="rm-order-stat-card <?php echo $is_card_active ? 'is-active' : ''; ?>" style="border-top: 3px solid <?php echo esc_attr( $config['color'] ); ?>; text-decoration: none; color: inherit;">
                 <div class="rm-stat-main">
                     <span class="rm-stat-count"><?php echo esc_html( (string) ($status_counts[ $key ] ?? 0) ); ?></span>
                     <span class="rm-stat-label"><?php echo esc_html( $config['label'] ); ?></span>
@@ -52,7 +80,7 @@ $stats_config = [
                 <div class="rm-stat-icon" style="color: <?php echo esc_attr( $config['color'] ); ?>">
                     <?php echo $dashboard->get_svg_icon( $config['icon'] ); ?>
                 </div>
-            </div>
+            </a>
         <?php endforeach; ?>
     </div>
 </div>
@@ -100,7 +128,7 @@ $stats_config = [
                 $product = $first_item ? $first_item->get_product() : null;
                 $commission = \BOILERPLATE\Inc\Reseller_Finance::get_order_commission_total( $order );
                 $status = $order->get_status();
-                $status_name = wc_get_order_status_name( $status );
+                $status_name = ( 'processing' === $status ) ? __( 'New', 'reseller-management' ) : wc_get_order_status_name( $status );
                 ?>
                 <tr>
                     <td><?php echo $i++; ?></td>
@@ -116,9 +144,18 @@ $stats_config = [
                             <strong>all:</strong> 8 | <span class="rm-text-success">delivered:</span> 8 | <span class="rm-text-danger">return:</span> 0
                         </div>
                         <div class="rm-customer-actions">
-                            <span class="rm-action-icon rm-icon-call"><?php echo $dashboard->get_svg_icon('dashboard'); ?></span>
-                            <span class="rm-action-icon rm-icon-id"><?php echo $dashboard->get_svg_icon('account'); ?></span>
-                            <span class="rm-action-icon rm-icon-whatsapp"><?php echo $dashboard->get_svg_icon('logout'); ?></span>
+                            <a href="tel:<?php echo esc_attr( $order->get_billing_phone() ); ?>" class="rm-action-icon rm-icon-id" title="<?php esc_attr_e( 'Call Customer', 'reseller-management' ); ?>">
+                                <?php echo $dashboard->get_svg_icon('account'); ?>
+                            </a>
+                            <?php 
+                            $clean_phone = preg_replace( '/\D/', '', $order->get_billing_phone() );
+                            if ( strpos( $clean_phone, '88' ) !== 0 ) {
+                                $clean_phone = '88' . $clean_phone; // Default to BD country code if missing
+                            }
+                            ?>
+                            <a href="https://wa.me/<?php echo esc_attr( $clean_phone ); ?>" target="_blank" class="rm-action-icon rm-icon-whatsapp" title="<?php esc_attr_e( 'WhatsApp Customer', 'reseller-management' ); ?>">
+                                <?php echo $dashboard->get_svg_icon('whatsapp'); ?>
+                            </a>
                         </div>
                     </td>
                     <td class="rm-col-product">
@@ -155,14 +192,30 @@ $stats_config = [
                         <a href="#" class="rm-note-link"><?php esc_html_e( 'Note', 'reseller-management' ); ?></a>
                     </td>
                     <td class="rm-col-status">
-                        <span class="rm-status-badge-new status-<?php echo esc_attr( $status ); ?>">
+                        <span class="rm-status-badge status-<?php echo esc_attr( $status ); ?>">
                             <?php echo esc_html( $status_name ); ?>
                         </span>
                     </td>
                     <td class="rm-col-action">
-                        <button class="rm-btn-action-teal" title="Action">
-                            <?php echo $dashboard->get_svg_icon('status_all'); ?>
-                        </button>
+                        <div class="rm-action-dropdown-container">
+                            <button class="rm-btn-action-trigger" title="Action">
+                                <?php echo $dashboard->get_svg_icon('status_all'); ?>
+                            </button>
+                            <div class="rm-action-dropdown-menu">
+                                <a href="<?php echo esc_url( $dashboard->get_dashboard_tab_url( 'orders', 'edit' ) . '&order_id=' . $order->get_id() ); ?>" class="rm-dropdown-item item-edit">
+                                    <span><?php esc_html_e( 'Edit', 'reseller-management' ); ?></span>
+                                </a>
+                                <button class="rm-dropdown-item item-pending" data-order-id="<?php echo $order->get_id(); ?>" data-status="pending">
+                                    <span><?php esc_html_e( 'Pending', 'reseller-management' ); ?></span>
+                                </button>
+                                <button class="rm-dropdown-item item-confirmed" data-order-id="<?php echo $order->get_id(); ?>" data-status="on-hold">
+                                    <span><?php esc_html_e( 'Confirmed', 'reseller-management' ); ?></span>
+                                </button>
+                                <button class="rm-dropdown-item item-cancel" data-order-id="<?php echo $order->get_id(); ?>" data-status="cancelled">
+                                    <span><?php esc_html_e( 'Cancel', 'reseller-management' ); ?></span>
+                                </button>
+                            </div>
+                        </div>
                     </td>
                     <td class="rm-col-view">
                         <button class="rm-btn-view-teal">

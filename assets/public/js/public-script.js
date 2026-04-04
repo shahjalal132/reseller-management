@@ -151,28 +151,50 @@
     // Advanced Order Page Logic
     var $newOrderForm = $('#rm-create-order-form-advanced');
     if ($newOrderForm.length) {
-      var orderItems = [];
+      var orderItems = window.rmOrderPrefilledItems || [];
       var districtData = rmPublic.locations.districts || [];
       var thanaData = rmPublic.locations.thanas || {};
 
       // Initialize Districts
       var $districtSelect = $('#rm-order-district');
+      var selectedDistrict = $districtSelect.val();
+
       districtData.forEach(function (district) {
-        $districtSelect.append('<option value="' + district + '">' + district + '</option>');
+        if ($districtSelect.find('option[value="' + district + '"]').length === 0) {
+          $districtSelect.append('<option value="' + district + '">' + district + '</option>');
+        }
       });
+
+      // If editing, trigger thana load and render items
+      if (selectedDistrict) {
+        loadThanas(selectedDistrict);
+      }
+
+      if (orderItems.length > 0) {
+        renderOrderItems();
+      }
 
       // Handle Thana updates
       $districtSelect.on('change', function () {
-        var district = $(this).val();
+        loadThanas($(this).val());
+      });
+
+      function loadThanas(district) {
         var $thanaSelect = $('#rm-order-thana');
+        var currentThana = $thanaSelect.val();
         $thanaSelect.empty().append('<option value="">Search Sub City...</option>');
 
         if (thanaData[district]) {
           thanaData[district].forEach(function (thana) {
-            $thanaSelect.append('<option value="' + thana + '">' + thana + '</option>');
+            var selected = (thana === currentThana) ? 'selected' : '';
+            $thanaSelect.append('<option value="' + thana + '" ' + selected + '>' + thana + '</option>');
           });
         }
-      });
+        // If currentThana exists but not in thanaData list for this district, add it back as selected
+        if (currentThana && $thanaSelect.find('option[value="' + currentThana + '"]').length === 0) {
+          $thanaSelect.append('<option value="' + currentThana + '" selected>' + currentThana + '</option>');
+        }
+      }
 
       // Product Search
       var $searchInput = $('#rm-product-search-input');
@@ -346,12 +368,13 @@
           return;
         }
 
-        var $btn = $(this);
-        $btn.prop('disabled', true).text('Submitting...');
+        var isEdit = $('input[name="is_edit"]').val() === '1';
+        var orderId = $('input[name="order_id"]').val();
 
         var data = {
-          action: 'reseller_create_order',
+          action: isEdit ? 'reseller_update_order' : 'reseller_create_order',
           nonce: rmPublic.nonce,
+          order_id: orderId,
           customer_name: $('input[name="customer_name"]').val(),
           customer_phone: $('input[name="customer_phone"]').val(),
           customer_address: $('textarea[name="customer_address"]').val(),
@@ -368,6 +391,9 @@
           }))
         };
 
+        var $btn = $('#rm-submit-order-advanced');
+        $btn.prop('disabled', true).text('Submitting...');
+
         $.ajax({
           url: rmPublic.ajaxUrl,
           type: 'POST',
@@ -378,15 +404,15 @@
               response = (typeof rawResponse === 'object') ? rawResponse : JSON.parse(rawResponse);
             } catch (e) {
               var $response = $('.rm-order-actions .rm-form-response').first();
-              renderResponse($response, 'Technical Error: Invalid server response. ' + rawResponse.substring(0, 50), false);
-              $btn.prop('disabled', false).text('Submit');
+              renderResponse($response, 'Technical Error: Invalid server response.', false);
+              $btn.prop('disabled', false).text(isEdit ? 'Update Order' : 'Submit');
               return;
             }
 
             if (response.success) {
               var $response = $('.rm-order-actions .rm-form-response').first();
               renderResponse($response, response.data, true);
-              $btn.text('Order Created! Refreshing...');
+              $btn.text(isEdit ? 'Order Updated!' : 'Order Created!');
 
               setTimeout(function () {
                 var url = new URL(window.location.href);
@@ -394,10 +420,10 @@
                 window.location.href = url.toString();
               }, 1500);
             } else {
-              var errorMsg = (typeof response.data === 'string') ? response.data : (response.data.message || 'Failed to create order.');
+              var errorMsg = (typeof response.data === 'string') ? response.data : (response.data.message || 'Failed to process order.');
               var $response = $('.rm-order-actions .rm-form-response').first();
               renderResponse($response, errorMsg, false);
-              $btn.prop('disabled', false).text('Submit');
+              $btn.prop('disabled', false).text(isEdit ? 'Update Order' : 'Submit');
             }
           },
           error: function (xhr) {
@@ -409,5 +435,117 @@
         });
       });
     }
+
+    // Action Dropdown Toggle
+    $(document).on('click', '.rm-btn-action-trigger', function (e) {
+      e.stopPropagation();
+      $('.rm-action-dropdown-menu').not($(this).next()).removeClass('is-active');
+      $(this).next('.rm-action-dropdown-menu').toggleClass('is-active');
+    });
+
+    $(document).on('click', function () {
+      $('.rm-action-dropdown-menu').removeClass('is-active');
+    });
+
+    // Handle Order Status Update
+    $(document).on('click', '.rm-action-dropdown-menu .rm-dropdown-item[data-status]', function (e) {
+      e.preventDefault();
+      var $item = $(this);
+      var orderId = $item.data('order-id');
+      var newStatus = $item.data('status');
+      var $container = $item.closest('.rm-action-dropdown-container');
+      var $trigger = $container.find('.rm-btn-action-trigger');
+
+      var statusNames = {
+        'pending': 'Pending',
+        'processing': 'New',
+        'on-hold': 'Confirmed',
+        'completed': 'Completed',
+        'cancelled': 'Cancel',
+        'refunded': 'Returned',
+        'failed': 'Failed'
+      };
+
+      var newStatusLabel = statusNames[newStatus] || newStatus;
+
+      if (!confirm('Are you sure you want to change the order status to ' + newStatusLabel + '?')) {
+        return;
+      }
+
+      var $row = $item.closest('tr');
+      var $statusBadge = $row.find('.rm-status-badge');
+      var currentStatusClass = $statusBadge.attr('class').match(/status-\S+/);
+      var currentStatus = currentStatusClass ? currentStatusClass[0].replace('status-', '') : '';
+
+      $trigger.prop('disabled', true).css('opacity', '0.5');
+
+      $.ajax({
+        url: rmPublic.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'reseller_update_order_status',
+          nonce: rmPublic.nonce,
+          order_id: orderId,
+          status: newStatus
+        },
+        success: function (response) {
+          if (response.success) {
+            // Update the badge
+            $statusBadge.removeClass(function (index, className) {
+              return (className.match(/(^|\s)status-\S+/g) || []).join(' ');
+            });
+            $statusBadge.addClass('status-' + newStatus);
+            $statusBadge.text(newStatusLabel);
+
+            // Close the dropdown
+            $('.rm-action-dropdown-menu').removeClass('is-active');
+
+            // Enable the trigger button
+            $trigger.prop('disabled', false).css('opacity', '1');
+
+            // Optionally show a non-intrusive toast instead of an alert
+            // But we can stick to alert if the user likes it, or just use a toast if available.
+            // Let's just use alert as before.
+            alert(response.data || 'Status updated successfully.');
+
+            // Update stat counters
+            var oldStatCard = $('.rm-order-stat-card[href*="' + currentStatus + '"] .rm-stat-count');
+            var newStatCard = $('.rm-order-stat-card[href*="' + newStatus + '"] .rm-stat-count');
+
+            // Mapping complex statuses back to their specific keys for counters
+            var oldStatusKey = currentStatus;
+            var newStatusKey = newStatus;
+
+            if (currentStatus === 'processing') oldStatusKey = 'new';
+            if (currentStatus === 'on-hold') oldStatusKey = 'confirmed';
+            if (currentStatus === 'completed') oldStatusKey = 'delivered';
+            if (currentStatus === 'refunded') oldStatusKey = 'returned';
+            if (currentStatus === 'cancelled') oldStatusKey = 'cancel';
+            if (currentStatus === 'failed') oldStatusKey = 'incomplete';
+
+            if (newStatus === 'processing') newStatusKey = 'new';
+            if (newStatus === 'on-hold') newStatusKey = 'confirmed';
+            if (newStatus === 'completed') newStatusKey = 'delivered';
+            if (newStatus === 'refunded') newStatusKey = 'returned';
+            if (newStatus === 'cancelled') newStatusKey = 'cancel';
+            if (newStatus === 'failed') newStatusKey = 'incomplete';
+
+            var $oldStatEl = $('.rm-order-stat-card[href$="subtab=' + oldStatusKey + '"] .rm-stat-count, .rm-order-stat-card[href$="subtab=new"] .rm-stat-count').filter(function () { return $(this).closest('a').attr('href').indexOf('subtab=' + oldStatusKey) > -1; });
+            var $newStatEl = $('.rm-order-stat-card[href$="subtab=' + newStatusKey + '"] .rm-stat-count, .rm-order-stat-card[href$="subtab=new"] .rm-stat-count').filter(function () { return $(this).closest('a').attr('href').indexOf('subtab=' + newStatusKey) > -1; });
+
+            if ($oldStatEl.length) $oldStatEl.text(Math.max(0, parseInt($oldStatEl.text() || 0) - 1));
+            if ($newStatEl.length) $newStatEl.text(parseInt($newStatEl.text() || 0) + 1);
+
+          } else {
+            alert(response.data || 'Failed to update status.');
+            $trigger.prop('disabled', false).css('opacity', '1');
+          }
+        },
+        error: function () {
+          alert('An error occurred. Please try again.');
+          $trigger.prop('disabled', false).css('opacity', '1');
+        }
+      });
+    });
   });
 })(jQuery);

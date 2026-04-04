@@ -544,6 +544,20 @@ body.rm-dashboard-body {
   background: var(--rm-bg);
 }
 
+.rm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rm-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--rm-text);
+  letter-spacing: -0.01em;
+}
+
 .rm-dashboard-header {
   padding: 20px 32px;
   background: #fff;
@@ -716,7 +730,11 @@ body.rm-dashboard-body {
   font-weight: 600;
 }
 
-.status-processing,
+.rm-status-badge.status-processing {
+  background: #000 !important;
+  color: #fff !important;
+}
+
 .status-pending {
   background: #eff6ff;
   color: #2563eb;
@@ -1448,6 +1466,7 @@ body.rm-dashboard-body {
   color: #94a3b8;
   font-size: 16px;
 }
+
 /* Order Confirmation Screen */
 .rm-order-confirmation {
   padding: 40px 0;
@@ -1459,8 +1478,15 @@ body.rm-dashboard-body {
 }
 
 @keyframes rm-fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .rm-confirmation-card {
@@ -1545,4 +1571,89 @@ body.rm-dashboard-body {
 .rm-button-outline:hover {
   background: var(--rm-primary);
   color: #fff;
+}
+
+/* Action Dropdown */
+.rm-action-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.rm-btn-action-trigger {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.rm-btn-action-trigger:hover {
+  background: #059669;
+}
+
+.rm-action-dropdown-menu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+  border: 1px solid var(--rm-border);
+}
+
+.rm-action-dropdown-menu.is-active {
+  display: flex;
+}
+
+.rm-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0px;
+  border-radius: 6px;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.rm-dropdown-item.item-edit {
+  background: #1e1b4b;
+}
+
+.rm-dropdown-item.item-pending {
+  background: #0ea5e9;
+}
+
+.rm-dropdown-item.item-confirmed {
+  background: #10b981;
+}
+
+.rm-dropdown-item.item-cancel {
+  background: #ef4444;
+}
+
+.rm-dropdown-item:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.rm-dropdown-icon {
+  font-size: 14px;
 }

@@ -15,6 +15,8 @@ class Reseller_Orders {
      */
     protected function __construct() {
         add_action( 'wp_ajax_reseller_create_order', [ $this, 'handle_create_order' ] );
+        add_action( 'wp_ajax_reseller_update_order', [ $this, 'handle_update_order' ] );
+        add_action( 'wp_ajax_reseller_update_order_status', [ $this, 'handle_update_order_status' ] );
         add_action( 'wp_ajax_reseller_search_products', [ $this, 'handle_search_products' ] );
     }
 
@@ -258,6 +260,155 @@ class Reseller_Orders {
                 $order->get_id()
             )
         );
+    }
+    
+    /**
+     * Handle updating an existing order.
+     */
+    public function handle_update_order() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        if ( ! is_user_logged_in() ) {
+            wp_send_json_error( __( 'Unauthorized.', 'reseller-management' ), 403 );
+        }
+
+        $user_id = get_current_user_id();
+        $order_id = isset( $_POST['order_id'] ) ? absint( $_POST['order_id'] ) : 0;
+        $order    = wc_get_order( $order_id );
+
+        if ( ! $order || (int) $order->get_meta( '_assigned_reseller_id' ) !== (int) $user_id ) {
+            wp_send_json_error( __( 'Order not found or access denied.', 'reseller-management' ), 404 );
+        }
+
+        // Extract and sanitize data
+        $customer_name    = sanitize_text_field( wp_unslash( $_POST['customer_name'] ?? '' ) );
+        $customer_phone   = sanitize_text_field( wp_unslash( $_POST['customer_phone'] ?? '' ) );
+        $customer_address = sanitize_textarea_field( wp_unslash( $_POST['customer_address'] ?? '' ) );
+        $district         = sanitize_text_field( wp_unslash( $_POST['district'] ?? '' ) );
+        $thana            = sanitize_text_field( wp_unslash( $_POST['thana'] ?? '' ) );
+        $order_notes      = sanitize_textarea_field( wp_unslash( $_POST['order_notes'] ?? '' ) );
+        $shipping_charge  = floatval( wp_unslash( $_POST['shipping_charge'] ?? 0 ) );
+        $discount         = floatval( wp_unslash( $_POST['discount'] ?? 0 ) );
+        $paid_amount      = floatval( wp_unslash( $_POST['paid_amount'] ?? 0 ) );
+        $items            = isset( $_POST['items'] ) && is_array( $_POST['items'] ) ? $_POST['items'] : [];
+
+        if ( empty( $customer_name ) || empty( $customer_phone ) || empty( $customer_address ) || empty( $items ) ) {
+            wp_send_json_error( __( 'Please complete all order fields.', 'reseller-management' ), 422 );
+        }
+
+        $name_parts = preg_split( '/\s+/', $customer_name );
+        $first_name = $name_parts[0] ?? $customer_name;
+        $last_name  = isset( $name_parts[1] ) ? implode( ' ', array_slice( $name_parts, 1 ) ) : '';
+
+        // Clear existing items and shipping
+        $order->remove_order_items();
+
+        // Add new items
+        foreach ( $items as $item ) {
+            $product_id   = absint( $item['product_id'] ?? 0 );
+            $quantity     = absint( $item['quantity'] ?? 1 );
+            $resale_price = floatval( $item['resale_price'] ?? 0 );
+            
+            $product = wc_get_product( $product_id );
+            if ( ! $product ) {
+                continue;
+            }
+
+            $order->add_product( $product, $quantity, [
+                'subtotal' => $resale_price * $quantity,
+                'total'    => $resale_price * $quantity,
+            ] );
+            
+            foreach ( $order->get_items() as $added_item ) {
+                if ( (int) $added_item->get_product_id() === $product_id ) {
+                    $added_item->add_meta_data('_resale_price', $resale_price, true);
+                    $added_item->add_meta_data('_base_price', $product->get_price(), true);
+                    $added_item->save();
+                    break;
+                }
+            }
+        }
+
+        $order->set_address( [
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'phone'      => $customer_phone,
+            'address_1'  => $customer_address,
+            'address_2'  => $thana,
+            'city'       => $district,
+        ], 'billing' );
+
+        $order->set_address( [
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'phone'      => $customer_phone,
+            'address_1'  => $customer_address,
+            'address_2'  => $thana,
+            'city'       => $district,
+        ], 'shipping' );
+
+        if ( $order_notes ) {
+            $order->set_customer_note( $order_notes );
+        }
+
+        if ( $shipping_charge > 0 ) {
+            $shipping_item = new \WC_Order_Item_Shipping();
+            $shipping_item->set_method_title( __( 'Shipping', 'reseller-management' ) );
+            $shipping_item->set_total( $shipping_charge );
+            $order->add_item( $shipping_item );
+        }
+
+        $order->set_discount_total( $discount );
+        $order->update_meta_data( '_order_district', $district );
+        $order->update_meta_data( '_order_thana', $thana );
+        $order->update_meta_data( '_paid_amount', $paid_amount );
+        
+        $order->calculate_totals();
+        $order->save();
+
+        wp_send_json_success( __( 'Order updated successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Update order status.
+ updates from the dashboard.
+     *
+     * @return void
+     */
+    public function handle_update_order_status() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        $user_id = get_current_user_id();
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller_approved( $user_id ) ) {
+            wp_send_json_error( __( 'You are not allowed to update orders.', 'reseller-management' ), 403 );
+        }
+
+        $order_id = absint( $_POST['order_id'] ?? 0 );
+        $new_status = sanitize_key( $_POST['status'] ?? '' );
+        
+        if ( ! $order_id || ! $new_status ) {
+            wp_send_json_error( __( 'Invalid request parameters.', 'reseller-management' ), 422 );
+        }
+
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            wp_send_json_error( __( 'Order not found.', 'reseller-management' ), 404 );
+        }
+
+        // Verify order ownership
+        if ( (int) $order->get_meta( '_assigned_reseller_id' ) !== $user_id ) {
+            wp_send_json_error( __( 'You do not have permission to update this order.', 'reseller-management' ), 403 );
+        }
+
+        // Validate status
+        $valid_statuses = [ 'pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed' ];
+        if ( ! in_array( $new_status, $valid_statuses, true ) ) {
+            wp_send_json_error( __( 'Invalid status value.', 'reseller-management' ), 422 );
+        }
+
+        $order->update_status( $new_status );
+        
+        wp_send_json_success( __( 'Order status updated successfully.', 'reseller-management' ) );
     }
 
     /**
