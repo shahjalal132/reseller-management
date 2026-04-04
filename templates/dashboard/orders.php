@@ -87,12 +87,13 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
 
 <div class="rm-orders-controls">
     <div class="rm-filter-group">
-        <input type="date" class="rm-input-date" placeholder="mm/dd/yyyy">
-        <input type="date" class="rm-input-date" placeholder="mm/dd/yyyy">
+        <input type="date" id="rm-filter-date-from" class="rm-input-date" placeholder="mm/dd/yyyy">
+        <input type="date" id="rm-filter-date-to" class="rm-input-date" placeholder="mm/dd/yyyy">
         <div class="rm-search-wrapper">
-            <input type="text" class="rm-input-search" placeholder="<?php esc_attr_e( 'Enter Invoice, customer phone', 'reseller-management' ); ?>">
+            <input type="text" id="rm-filter-search" class="rm-input-search" placeholder="<?php esc_attr_e( 'Enter Invoice, customer phone, or name', 'reseller-management' ); ?>">
         </div>
-        <select class="rm-input-select">
+        <select id="rm-filter-limit" class="rm-input-select">
+            <option value="all"><?php esc_html_e( 'All', 'reseller-management' ); ?></option>
             <option value="30">30</option>
             <option value="50">50</option>
             <option value="100">100</option>

@@ -543,5 +543,79 @@
         }
       });
     });
+
+    // Dynamic Filter
+    var $ordersTable = $('.rm-enriched-table tbody');
+    if ($ordersTable.length) {
+      function filterOrders() {
+        var dateFrom = $('#rm-filter-date-from').val();
+        var dateTo = $('#rm-filter-date-to').val();
+        var searchQuery = $('#rm-filter-search').val().toLowerCase().trim();
+        var limit = $('#rm-filter-limit').val();
+
+        var visibleCount = 0;
+
+        $ordersTable.find('tr:not(.rm-empty-state, .rm-filter-empty)').each(function () {
+          var $row = $(this);
+          var show = true;
+
+          // Date Filter
+          var orderDateText = $row.find('.rm-order-date').text().trim();
+          if (dateFrom || dateTo) {
+             // Replace dashes with slashes to ensure consistent parsing across browsers
+             var orderDate = new Date(orderDateText.replace(/-/g, '/'));
+             if (dateFrom) {
+               var fromDate = new Date(dateFrom.replace(/-/g, '/'));
+               fromDate.setHours(0, 0, 0, 0);
+               if (orderDate < fromDate) show = false;
+             }
+             if (show && dateTo) {
+               var toDate = new Date(dateTo.replace(/-/g, '/'));
+               toDate.setHours(23, 59, 59, 999);
+               if (orderDate > toDate) show = false;
+             }
+          }
+
+          // Search Filter
+          if (show && searchQuery) {
+            var invoice = $row.find('.rm-invoice-id').text().toLowerCase();
+            var phone = $row.find('.rm-customer-phone-badge span:nth-child(2)').text().toLowerCase();
+            var name = $row.find('.rm-customer-name').text().toLowerCase();
+            
+            if (invoice.indexOf(searchQuery) === -1 && phone.indexOf(searchQuery) === -1 && name.indexOf(searchQuery) === -1) {
+              show = false;
+            }
+          }
+
+          if (show) {
+            if (limit !== 'all' && visibleCount >= parseInt(limit, 10)) {
+               show = false;
+            } else {
+               $row.show();
+               visibleCount++;
+            }
+          } else {
+            $row.hide();
+          }
+        });
+
+        // Handle empty state
+        if (visibleCount === 0 && $ordersTable.find('tr:not(.rm-empty-state, .rm-filter-empty)').length > 0) {
+           if ($ordersTable.find('.rm-filter-empty').length === 0) {
+             $ordersTable.append('<tr class="rm-filter-empty"><td colspan="11" class="rm-empty-state" style="text-align:center; padding: 20px;">No matching orders found.</td></tr>');
+           } else {
+             $ordersTable.find('.rm-filter-empty').show();
+           }
+        } else {
+           $ordersTable.find('.rm-filter-empty').hide();
+        }
+      }
+
+      $('#rm-filter-date-from, #rm-filter-date-to, #rm-filter-search, #rm-filter-limit').on('input change', filterOrders);
+      
+      if ($('#rm-filter-limit').val() !== 'all') {
+          filterOrders();
+      }
+    }
   });
 })(jQuery);
