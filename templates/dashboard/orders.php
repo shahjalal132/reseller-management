@@ -201,10 +201,10 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                         </div>
                     </td>
                     <td class="rm-col-view">
-                        <button class="rm-btn-view-teal">
+                        <a href="<?php echo esc_url( home_url( '/?rm_action=print_invoice&order_id=' . $order->get_id() . '&nonce=' . wp_create_nonce( 'rm_public_nonce' ) ) ); ?>" target="_blank" class="rm-btn-view-teal" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
                             <span class="rm-view-icon">👁</span>
                             <?php esc_html_e( 'view', 'reseller-management' ); ?>
-                        </button>
+                        </a>
                     </td>
                 </tr>
             <?php endforeach; endif; ?>
