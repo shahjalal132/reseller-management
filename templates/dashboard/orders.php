@@ -140,23 +140,6 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                             <span class="rm-info-trigger" title="View Info">ⓘ</span>
                         </div>
                         <div class="rm-customer-address"><?php echo esc_html( $order->get_billing_address_1() ); ?></div>
-                        <div class="rm-customer-summary-stats">
-                            <strong>all:</strong> 8 | <span class="rm-text-success">delivered:</span> 8 | <span class="rm-text-danger">return:</span> 0
-                        </div>
-                        <div class="rm-customer-actions">
-                            <a href="tel:<?php echo esc_attr( $order->get_billing_phone() ); ?>" class="rm-action-icon rm-icon-id" title="<?php esc_attr_e( 'Call Customer', 'reseller-management' ); ?>">
-                                <?php echo $dashboard->get_svg_icon('account'); ?>
-                            </a>
-                            <?php 
-                            $clean_phone = preg_replace( '/\D/', '', $order->get_billing_phone() );
-                            if ( strpos( $clean_phone, '88' ) !== 0 ) {
-                                $clean_phone = '88' . $clean_phone; // Default to BD country code if missing
-                            }
-                            ?>
-                            <a href="https://wa.me/<?php echo esc_attr( $clean_phone ); ?>" target="_blank" class="rm-action-icon rm-icon-whatsapp" title="<?php esc_attr_e( 'WhatsApp Customer', 'reseller-management' ); ?>">
-                                <?php echo $dashboard->get_svg_icon('whatsapp'); ?>
-                            </a>
-                        </div>
                     </td>
                     <td class="rm-col-product">
                         <?php if ( $product ) : ?>

@@ -468,10 +468,6 @@
 
       var newStatusLabel = statusNames[newStatus] || newStatus;
 
-      if (!confirm('Are you sure you want to change the order status to ' + newStatusLabel + '?')) {
-        return;
-      }
-
       var $row = $item.closest('tr');
       var $statusBadge = $row.find('.rm-status-badge');
       var currentStatusClass = $statusBadge.attr('class').match(/status-\S+/);
