@@ -560,7 +560,7 @@ body.rm-dashboard-body {
 }
 
 .rm-dashboard-header {
-  padding: 20px 32px;
+  padding: 0px 32px;
   background: #fff;
   border-bottom: 1px solid var(--rm-border);
   display: flex;
