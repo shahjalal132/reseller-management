@@ -23,6 +23,6 @@ class Autoloader {
         Reseller_Orders::get_instance();
         Reseller_Finance::get_instance();
         Reseller_Product_Meta::get_instance();
-        Reseller_Shortcodes::get_instance();
+        Reseller_User_Profile_Admin::get_instance();
     }
 }

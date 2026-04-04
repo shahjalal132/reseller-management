@@ -7,6 +7,8 @@
 
 namespace BOILERPLATE\Inc;
 
+use BOILERPLATE\Inc\Traits\Singleton;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
@@ -15,7 +17,7 @@ if ( ! class_exists( 'Reseller_Page_Manager' ) ) {
 
 	class Reseller_Page_Manager {
 
-		use BOILERPLATE\Inc\Traits\Singleton;
+		use Singleton;
 
 		/**
 		 * Pages to create.

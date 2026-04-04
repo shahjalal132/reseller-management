@@ -15,6 +15,7 @@ class Reseller_Registration {
      */
     protected function __construct() {
         add_shortcode( 'reseller_registration', [ $this, 'render_registration_shortcode' ] );
+        add_action( 'wp_ajax_reseller_register_user', [ $this, 'handle_registration' ] );
         add_action( 'wp_ajax_nopriv_reseller_register_user', [ $this, 'handle_registration' ] );
     }
 
