@@ -2,13 +2,13 @@
 
 /**
  *  
- * Plugin Name: WP Plugin Boilerplate
- * Plugin URI:  https://github.com/shahjalal132/wp-plugin-dev-boilerplate
+ * Plugin Name: Reseller Management
+ * Plugin URI:  https://github.com/shahjalal132/reseller-management
  * Author:      Shah jalal
  * Author URI:  https://github.com/shahjalal132
- * Description: WordPress Plugin Boilerplate.
+ * Description: Reseller Management.
  * Version:     1.0.0
- * text-domain: wp-plugin-boilerplate
+ * text-domain: reseller-management
  * Domain Path: /languages
  * 
  */
