@@ -73,7 +73,7 @@
       var profitValues = [];
 
       if (rmPublic.profit_data && rmPublic.profit_data.length > 0) {
-        rmPublic.profit_data.reverse().forEach(function(item) {
+        rmPublic.profit_data.reverse().forEach(function (item) {
           profitLabels.push(item.month_key);
           profitValues.push(parseFloat(item.total));
         });
@@ -133,15 +133,15 @@
     }
 
     // Sidebar Toggle
-    $('.rm-sidebar-toggle').on('click', function() {
+    $('.rm-sidebar-toggle').on('click', function () {
       $('.rm-dashboard-app').toggleClass('sidebar-collapsed');
     });
 
     // Sidebar Accordion Toggle
-    $('.rm-nav-item-wrapper.has-children .rm-nav-link').on('click', function(e) {
+    $('.rm-nav-item-wrapper.has-children .rm-nav-link').on('click', function (e) {
       var $wrapper = $(this).closest('.rm-nav-item-wrapper');
       var $chevron = $(e.target).closest('.rm-nav-chevron');
-      
+
       if ($chevron.length) {
         e.preventDefault();
         $wrapper.toggleClass('is-expanded');
@@ -157,18 +157,18 @@
 
       // Initialize Districts
       var $districtSelect = $('#rm-order-district');
-      districtData.forEach(function(district) {
+      districtData.forEach(function (district) {
         $districtSelect.append('<option value="' + district + '">' + district + '</option>');
       });
 
       // Handle Thana updates
-      $districtSelect.on('change', function() {
+      $districtSelect.on('change', function () {
         var district = $(this).val();
         var $thanaSelect = $('#rm-order-thana');
         $thanaSelect.empty().append('<option value="">Search Sub City...</option>');
-        
+
         if (thanaData[district]) {
-          thanaData[district].forEach(function(thana) {
+          thanaData[district].forEach(function (thana) {
             $thanaSelect.append('<option value="' + thana + '">' + thana + '</option>');
           });
         }
@@ -179,7 +179,7 @@
       var $searchResults = $('#rm-product-search-results');
       var searchTimeout;
 
-      $searchInput.on('input', function() {
+      $searchInput.on('input', function () {
         var query = $(this).val();
         clearTimeout(searchTimeout);
 
@@ -188,7 +188,7 @@
           return;
         }
 
-        searchTimeout = setTimeout(function() {
+        searchTimeout = setTimeout(function () {
           $.ajax({
             url: rmPublic.ajaxUrl,
             type: 'GET',
@@ -197,10 +197,10 @@
               nonce: rmPublic.nonce,
               q: query
             },
-            success: function(response) {
+            success: function (response) {
               if (response.success && response.data.length > 0) {
                 var html = '';
-                response.data.forEach(function(product) {
+                response.data.forEach(function (product) {
                   html += '<div class="rm-search-result-item" data-product=\'' + JSON.stringify(product) + '\'>';
                   html += '<img src="' + product.image + '" alt="" width="30">';
                   html += '<span>' + product.text + (product.sku ? ' (' + product.sku + ')' : '') + '</span>';
@@ -217,7 +217,7 @@
       });
 
       // Add product from search
-      $(document).on('click', '.rm-search-result-item', function() {
+      $(document).on('click', '.rm-search-result-item', function () {
         var product = $(this).data('product');
         addProductToTable(product);
         $searchResults.hide();
@@ -253,7 +253,7 @@
             html += '<tr data-index="' + index + '">';
             html += '<td>' + (index + 1) + '</td>';
             html += '<td><div class="rm-item-product"><img src="' + item.image + '" alt=""><span>' + item.name + '</span></div></td>';
-            
+
             // Variant select
             html += '<td>';
             if (item.variants.length > 0) {
@@ -282,34 +282,34 @@
       }
 
       // Handle variant change
-      $(document).on('change', '.rm-item-variant', function() {
+      $(document).on('change', '.rm-item-variant', function () {
         var $row = $(this).closest('tr');
         var index = $row.data('index');
         var variantId = $(this).val();
         var $opt = $(this).find('option:selected');
-        
+
         orderItems[index].selected_variant = variantId;
         orderItems[index].price = parseFloat($opt.data('price'));
         orderItems[index].resale_price = parseFloat($opt.data('recommended'));
-        
+
         renderOrderItems();
       });
 
       // Handle item updates
-      $(document).on('input', '.rm-item-qty', function() {
+      $(document).on('input', '.rm-item-qty', function () {
         var index = $(this).closest('tr').data('index');
         orderItems[index].quantity = parseInt($(this).val()) || 1;
         renderOrderItems();
       });
 
-      $(document).on('input', '.rm-item-resale', function() {
+      $(document).on('input', '.rm-item-resale', function () {
         var index = $(this).closest('tr').data('index');
         orderItems[index].resale_price = parseFloat($(this).val()) || 0;
         calculateTotals(); // Just update totals, don't re-render unless needed for subtotal column
         $(this).closest('tr').find('td:nth-child(7)').text((orderItems[index].resale_price * orderItems[index].quantity).toFixed(2));
       });
 
-      $(document).on('click', '.rm-item-remove', function() {
+      $(document).on('click', '.rm-item-remove', function () {
         var index = $(this).closest('tr').data('index');
         orderItems.splice(index, 1);
         renderOrderItems();
@@ -340,7 +340,7 @@
       $('#rm-shipping-charge, #rm-discount, #rm-paid-amount').on('input', calculateTotals);
 
       // Submit Order
-      $('#rm-submit-order-advanced').on('click', function() {
+      $('#rm-submit-order-advanced').on('click', function () {
         if (orderItems.length === 0) {
           alert('Please add at least one product.');
           return;
@@ -372,36 +372,38 @@
           url: rmPublic.ajaxUrl,
           type: 'POST',
           data: data,
-          dataType: 'json',
-          timeout: 30000,
-          success: function(response) {
-            var $response = $btn.closest('.rm-order-actions').find('.rm-form-response');
-            if (!$response.length) {
-              $response = $('.rm-order-actions .rm-form-response').first();
+          success: function (rawResponse) {
+            var response;
+            try {
+              response = (typeof rawResponse === 'object') ? rawResponse : JSON.parse(rawResponse);
+            } catch (e) {
+              var $response = $('.rm-order-actions .rm-form-response').first();
+              renderResponse($response, 'Technical Error: Invalid server response. ' + rawResponse.substring(0, 50), false);
+              $btn.prop('disabled', false).text('Submit');
+              return;
             }
 
             if (response.success) {
+              var $response = $('.rm-order-actions .rm-form-response').first();
               renderResponse($response, response.data, true);
-              $btn.text('Order Created! Redirecting...');
-              
-              setTimeout(function() {
-                var redirectUrl = rmPublic.ordersUrl;
-                if (!redirectUrl) {
-                  redirectUrl = window.location.href.replace('subtab=add', 'subtab=all');
-                  if (redirectUrl === window.location.href && window.location.href.indexOf('subtab=all') === -1) {
-                    redirectUrl += (window.location.href.indexOf('?') === -1 ? '?' : '&') + 'tab=orders&subtab=all';
-                  }
-                }
-                window.location.href = redirectUrl;
-              }, 2000);
+              $btn.text('Order Created! Refreshing...');
+
+              setTimeout(function () {
+                var url = new URL(window.location.href);
+                url.searchParams.set('success', '1');
+                window.location.href = url.toString();
+              }, 1500);
             } else {
-              renderResponse($response, response.data || 'Failed to create order.', false);
+              var errorMsg = (typeof response.data === 'string') ? response.data : (response.data.message || 'Failed to create order.');
+              var $response = $('.rm-order-actions .rm-form-response').first();
+              renderResponse($response, errorMsg, false);
               $btn.prop('disabled', false).text('Submit');
             }
           },
-          error: function() {
-            var $response = $btn.closest('.rm-order-actions').find('.rm-form-response');
-            renderResponse($response, 'Something went wrong.', false);
+          error: function (xhr) {
+            var $response = $('.rm-order-actions .rm-form-response').first();
+            var errorText = xhr.responseText ? xhr.responseText.substring(0, 100) : 'Service unavailable';
+            renderResponse($response, 'Error: ' + errorText, false);
             $btn.prop('disabled', false).text('Submit');
           }
         });
