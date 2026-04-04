@@ -96,16 +96,6 @@ class Admin_Top_Menu {
             [ $this, 'render_orders_page' ]
         );
 
-        // Products.
-        add_submenu_page(
-            'reseller-hub',
-            __( 'Products', 'reseller-management' ),
-            __( 'Products', 'reseller-management' ),
-            'manage_options',
-            'reseller-hub-products',
-            [ $this, 'render_products_page' ]
-        );
-
         // Withdrawals.
         add_submenu_page(
             'reseller-hub',
@@ -262,15 +252,6 @@ class Admin_Top_Menu {
     }
 
     /**
-     * Render the products page.
-     *
-     * @return void
-     */
-    public function render_products_page() {
-        $this->render_page( 'products', PLUGIN_BASE_PATH . '/templates/admin/rm-products.php' );
-    }
-
-    /**
      * Render the settings page.
      *
      * @return void
@@ -346,9 +327,9 @@ class Admin_Top_Menu {
         }
 
         update_user_meta( $reseller_id, '_reseller_status', $status );
-        if ( 'approved' === $status ) {
-            delete_user_meta( $reseller_id, '_reseller_banned_until' );
-        }
+        // Clear ban window so get_reseller_status() reflects the new approval state (it returns "banned" while ban_until is future).
+        delete_user_meta( $reseller_id, '_reseller_banned_until' );
+        clean_user_cache( $reseller_id );
 
         $this->redirect_with_notice(
             admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $reseller_id ),
@@ -371,6 +352,7 @@ class Admin_Top_Menu {
 
         if ( ! empty( $_POST['clear_ban'] ) ) {
             delete_user_meta( $reseller_id, '_reseller_banned_until' );
+            clean_user_cache( $reseller_id );
             $this->redirect_with_notice(
                 admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $reseller_id ),
                 'reseller-ban-cleared'
@@ -385,6 +367,7 @@ class Admin_Top_Menu {
             update_user_meta( $reseller_id, '_reseller_status', 'banned' );
             update_user_meta( $reseller_id, '_reseller_banned_until', strtotime( $banned_until . ' 23:59:59' ) );
         }
+        clean_user_cache( $reseller_id );
 
         $this->redirect_with_notice(
             admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $reseller_id ),

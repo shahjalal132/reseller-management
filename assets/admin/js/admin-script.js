@@ -1,5 +1,15 @@
 (function ($) {
   $(document).ready(function () {
+    // Reseller Hub inline notices — fade out and remove after 5 seconds.
+    $(".rm-notice[data-rm-auto-dismiss]").each(function () {
+      var $notice = $(this);
+      setTimeout(function () {
+        $notice.fadeOut(400, function () {
+          $notice.remove();
+        });
+      }, 5000);
+    });
+
     // show toast start
     function showToast(config) {
       const { type, timeout, title } = config;

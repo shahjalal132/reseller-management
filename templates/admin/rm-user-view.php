@@ -34,6 +34,10 @@ if ( ! $rm_user ) {
     wp_die( esc_html__( 'Invalid reseller.', 'reseller-management' ) );
 }
 
+// Always read status and ban from the database (avoids stale values if cache or scope is off).
+$rm_status       = \BOILERPLATE\Inc\Reseller_Helper::get_reseller_status( $rm_reseller_id );
+$rm_banned_until = (int) get_user_meta( $rm_reseller_id, '_reseller_banned_until', true );
+
 $avatar_letter = strtoupper( mb_substr( $rm_user->display_name, 0, 1 ) );
 $joined_date   = date_i18n( get_option( 'date_format' ), strtotime( $rm_user->user_registered ) );
 
