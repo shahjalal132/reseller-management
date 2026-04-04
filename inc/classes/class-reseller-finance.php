@@ -96,10 +96,14 @@ class Reseller_Finance {
         $total = 0;
 
         foreach ( $order->get_items() as $item ) {
-            $product_id  = $item->get_product_id();
-            $quantity    = (int) $item->get_quantity();
-            $commission  = (float) get_post_meta( $product_id, '_reseller_commission_amount', true );
-            $total      += $commission * max( $quantity, 1 );
+            $resale_price = (float) $item->get_meta( '_resale_price', true );
+            $base_price   = (float) $item->get_meta( '_base_price', true );
+            $quantity     = (int) $item->get_quantity();
+
+            if ( $resale_price > 0 && $base_price > 0 ) {
+                $commission = $resale_price - $base_price;
+                $total     += $commission * max( $quantity, 1 );
+            }
         }
 
         return round( $total, 2 );

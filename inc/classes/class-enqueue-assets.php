@@ -63,9 +63,28 @@ class Enqueue_Assets {
             'rmPublic',
             [
                 'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+                'ordersUrl'   => Reseller_Dashboard::get_instance()->get_dashboard_tab_url( 'orders', 'all' ),
                 'nonce'       => wp_create_nonce( 'rm_public_nonce' ),
                 'profit_data' => Reseller_Helper::get_monthly_profit_summary( get_current_user_id() ),
                 'order_stats' => $this->get_order_stats_for_chart( get_current_user_id() ),
+                'locations'   => [
+                    'districts' => [
+                        'Dhaka', 'Chittagong', 'Rajshahi', 'Khulna', 'Barisal', 'Sylhet', 'Rangpur', 'Mymensingh',
+                        'Bagerhat', 'Bandarban', 'Barguna', 'Bhola', 'Bogra', 'Brahmanbaria', 'Chandpur', 'Chapainawabganj',
+                        'Chuadanga', 'Comilla', 'Cox\'s Bazar', 'Dinajpur', 'Faridpur', 'Feni', 'Gaibandha', 'Gazipur',
+                        'Gopalganj', 'Habiganj', 'Jamalpur', 'Jessore', 'Jhalokati', 'Jhenaidah', 'Joypurhat', 'Khagrachhari',
+                        'Kishoreganj', 'Kurigram', 'Kushtia', 'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj',
+                        'Meherpur', 'Moulvibazar', 'Munshiganj', 'Naogaon', 'Narail', 'Narayanganj', 'Narsingdi', 'Natore',
+                        'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna', 'Panchagarh', 'Patuakhali', 'Pirojpur', 'Rajbari', 'Shariatpur',
+                        'Sherpur', 'Sirajganj', 'Sunamganj', 'Tangail', 'Thakurgaon'
+                    ],
+                    'thanas' => [
+                        'Dhaka' => ['Abdullahpur', 'Uttara', 'Mirpur', 'Gulshan', 'Banani', 'Dhanmondi', 'Motijheel', 'Badda', 'Khilgaon', 'Basundhara'],
+                        'Chittagong' => ['Pahartali', 'Kotwali', 'Double Mooring', 'Bandar', 'Panchlaish', 'Bakalia', 'Chandgaon'],
+                        'Comilla' => ['Laksam', 'Comilla Sadar', 'Barura', 'Chandina', 'Daudkandi', 'Homna', 'Muradnagar'],
+                        // Simplified for now, can be expanded or fetched via AJAX if needed
+                    ]
+                ]
             ]
         );
     }

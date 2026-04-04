@@ -100,19 +100,39 @@ class Reseller_Dashboard {
                         'settings'  => 'chart',
                         'customers' => 'users',
                     ];
-                    foreach ( $tabs as $tab_key => $label ) :
-                        $icon = $icons[ $tab_key ] ?? 'database';
+                    foreach ( $tabs as $tab_key => $tab_data ) : 
+                        $label        = $tab_data['label'] ?? '';
+                        $is_active    = ( $tab_key === $tab );
+                        $has_children = ! empty( $tab_data['children'] );
                         ?>
-                        <a class="rm-nav-link <?php echo $tab_key === $tab ? 'is-active' : ''; ?>" href="<?php echo esc_url( $this->get_dashboard_tab_url( $tab_key ) ); ?>">
-                            <span class="rm-nav-icon rm-icon-<?php echo esc_attr( $icon ); ?>"></span>
-                            <span class="rm-nav-label"><?php echo esc_html( $label ); ?></span>
-                        </a>
+                        <div class="rm-nav-item-wrapper <?php echo $is_active ? 'is-active' : ''; ?> <?php echo $has_children ? 'has-children' : ''; ?> <?php echo $is_active ? 'is-expanded' : ''; ?>">
+                            <a class="rm-nav-link <?php echo $is_active ? 'is-active' : ''; ?>" href="<?php echo esc_url( $this->get_dashboard_tab_url( $tab_key ) ); ?>">
+                                <span class="rm-nav-main-info">
+                                    <span class="rm-nav-icon"><?php echo $this->get_svg_icon( $tab_key ); ?></span>
+                                    <span class="rm-nav-label"><?php echo esc_html( $label ); ?></span>
+                                </span>
+                                <?php if ( $has_children ) : ?>
+                                    <span class="rm-nav-chevron"><?php echo $this->get_svg_icon( 'chevron' ); ?></span>
+                                <?php endif; ?>
+                            </a>
+                            <?php if ( $has_children ) : ?>
+                                <div class="rm-nav-submenu">
+                                    <?php foreach ( $tab_data['children'] as $subtab_key => $subtab_label ) : 
+                                        $is_subtab_active = ( isset( $_GET['subtab'] ) && $_GET['subtab'] === $subtab_key ) || ( ! isset( $_GET['subtab'] ) && 'all' === $subtab_key );
+                                        ?>
+                                        <a class="rm-subnav-link <?php echo $is_subtab_active ? 'is-active' : ''; ?>" href="<?php echo esc_url( $this->get_dashboard_tab_url( $tab_key, $subtab_key ) ); ?>">
+                                            <span class="rm-subnav-label"><?php echo esc_html( $subtab_label ); ?></span>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     <?php endforeach; ?>
                 </nav>
 
                 <div class="rm-sidebar-footer">
                     <a href="<?php echo esc_url( wp_logout_url( home_url( '/' ) ) ); ?>" class="rm-logout-link">
-                        <span class="rm-nav-icon rm-icon-logout"></span>
+                        <span class="rm-nav-icon"><?php echo $this->get_svg_icon( 'logout' ); ?></span>
                         <span><?php esc_html_e( 'Logout', 'reseller-management' ); ?></span>
                     </a>
                 </div>
@@ -134,11 +154,13 @@ class Reseller_Dashboard {
                 </header>
 
                 <div class="rm-dashboard-body-inner">
+                    <?php if ( 'dashboard' === $tab ) : ?>
                     <div class="rm-balance-check-container">
                         <button class="rm-button rm-button-balance-check">
                             <?php esc_html_e( 'Balance Check', 'reseller-management' ); ?>
                         </button>
                     </div>
+                    <?php endif; ?>
 
                     <section class="rm-dashboard-panel">
                         <?php $this->render_tab_content( $tab ); ?>
@@ -174,17 +196,25 @@ class Reseller_Dashboard {
      *
      * @return string
      */
-    public function get_dashboard_tab_url( $tab ) {
+    /**
+     * Get the URL for a specific dashboard tab.
+     *
+     * @param string $tab    Tab slug.
+     * @param string $subtab Subtab slug.
+     *
+     * @return string
+     */
+    public function get_dashboard_tab_url( $tab, $subtab = '' ) {
         global $post;
 
         $url = $post instanceof \WP_Post ? get_permalink( $post ) : home_url( '/' );
 
-        return add_query_arg(
-            [
-                'tab' => $tab,
-            ],
-            $url
-        );
+        $args = [ 'tab' => $tab ];
+        if ( $subtab ) {
+            $args['subtab'] = $subtab;
+        }
+
+        return add_query_arg( $args, $url );
     }
 
     /**
@@ -251,5 +281,43 @@ class Reseller_Dashboard {
 
         wp_set_password( $password, get_current_user_id() );
         wp_send_json_success( __( 'Password updated successfully. Please log in again.', 'reseller-management' ) );
+    }
+
+    /**
+     * Get SVG icon markup by name.
+     *
+     * @param string $name Icon name.
+     *
+     * @return string
+     */
+    public function get_svg_icon( $name ) {
+        $icons = [
+            'dashboard' => '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
+            'orders'    => '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>',
+            'products'  => '<path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/>',
+            'account'   => '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>',
+            'settings'  => '<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>',
+            'customers' => '<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',
+            'logout'    => '<path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>',
+            'chevron'   => '<path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>',
+            'status_new'        => '<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>',
+            'status_pending'    => '<path d="M17 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-5 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12-6h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>',
+            'status_confirmed'  => '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>',
+            'status_packaging'  => '<path d="M20 8l-3-4H7L4 8l-1 5h1l1 7h14l1-7h1l-1-5zM6.24 8l1.5-2h8.52l1.5 2H6.24zM18 18H6v-5h12v5zm-5-3h-2v-2h2v2z"/>',
+            'status_shipment'   => '<path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13.5-8.5l1.96 2.5H17V9.5h2.5zm-1.5 8c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>',
+            'status_delivered'  => '<path d="M19 13c.01 0 .01 0 0 0-1.07 0-2.03.44-2.73 1.15l-6.23-3.62c.43-.88.42-1.93-.03-2.82l6.21-3.61C16.92 4.81 17.88 5.25 19 5.25c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .16.02.32.04.47l-6.22 3.61C9.11 5.48 8.12 5 7 5 5.34 5 4 6.34 4 8s1.34 3 3 3c1.12 0 2.11-.48 2.78-1.24l6.23 3.62c-.02.15-.04.31-.04.47 0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3z"/>',
+            'status_wfr'        => '<path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.41 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.59 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/>',
+            'status_returned'   => '<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>',
+            'status_cancel'     => '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>',
+            'status_all'        => '<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>',
+            'status_incomplete' => '<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>',
+        ];
+
+        $path = $icons[ $name ] ?? '';
+
+        return sprintf(
+            '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">%s</svg>',
+            $path
+        );
     }
 }

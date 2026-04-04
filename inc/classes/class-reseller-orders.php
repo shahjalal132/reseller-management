@@ -15,6 +15,7 @@ class Reseller_Orders {
      */
     protected function __construct() {
         add_action( 'wp_ajax_reseller_create_order', [ $this, 'handle_create_order' ] );
+        add_action( 'wp_ajax_reseller_search_products', [ $this, 'handle_search_products' ] );
     }
 
     /**
@@ -43,6 +44,63 @@ class Reseller_Orders {
                 ],
             ]
         );
+    }
+
+    /**
+     * Get order counts by status for a reseller.
+     *
+     * @param int $user_id Reseller ID.
+     *
+     * @return array<string, int>
+     */
+    public static function get_order_status_counts( $user_id ) {
+        $orders = self::get_reseller_orders( $user_id );
+        $counts = [
+            'new'        => 0,
+            'pending'    => 0,
+            'confirmed'  => 0,
+            'packaging'  => 0,
+            'shipment'   => 0,
+            'delivered'  => 0,
+            'wfr'        => 0,
+            'returned'   => 0,
+            'cancel'     => 0,
+            'all'        => count( $orders ),
+            'incomplete' => 0,
+        ];
+
+        foreach ( $orders as $order ) {
+            $status = $order->get_status();
+            
+            // Map WC statuses to our display categories
+            // Note: These mappings might need adjustment based on custom statuses in use.
+            switch ( $status ) {
+                case 'pending':
+                    $counts['pending']++;
+                    break;
+                case 'processing':
+                    $counts['new']++;
+                    break;
+                case 'on-hold':
+                    $counts['confirmed']++;
+                    break;
+                case 'completed':
+                    $counts['delivered']++;
+                    break;
+                case 'cancelled':
+                    $counts['cancel']++;
+                    break;
+                case 'refunded':
+                    $counts['returned']++;
+                    break;
+                case 'failed':
+                    $counts['incomplete']++;
+                    break;
+                // Add more cases for custom statuses if available
+            }
+        }
+
+        return $counts;
     }
 
     /**
@@ -88,9 +146,16 @@ class Reseller_Orders {
         $customer_name    = sanitize_text_field( wp_unslash( $_POST['customer_name'] ?? '' ) );
         $customer_phone   = sanitize_text_field( wp_unslash( $_POST['customer_phone'] ?? '' ) );
         $customer_address = sanitize_textarea_field( wp_unslash( $_POST['customer_address'] ?? '' ) );
-        $product_ids      = array_filter( array_map( 'absint', (array) ( $_POST['product_ids'] ?? [] ) ) );
+        $district         = sanitize_text_field( wp_unslash( $_POST['district'] ?? '' ) );
+        $thana            = sanitize_text_field( wp_unslash( $_POST['thana'] ?? '' ) );
+        $order_notes      = sanitize_textarea_field( wp_unslash( $_POST['order_notes'] ?? '' ) );
+        $shipping_charge  = floatval( wp_unslash( $_POST['shipping_charge'] ?? 0 ) );
+        $discount         = floatval( wp_unslash( $_POST['discount'] ?? 0 ) );
+        $paid_amount      = floatval( wp_unslash( $_POST['paid_amount'] ?? 0 ) );
+        
+        $items = isset( $_POST['items'] ) && is_array( $_POST['items'] ) ? $_POST['items'] : [];
 
-        if ( empty( $customer_name ) || empty( $customer_phone ) || empty( $customer_address ) || empty( $product_ids ) ) {
+        if ( empty( $customer_name ) || empty( $customer_phone ) || empty( $customer_address ) || empty( $items ) ) {
             wp_send_json_error( __( 'Please complete all order fields.', 'reseller-management' ), 422 );
         }
 
@@ -103,13 +168,29 @@ class Reseller_Orders {
             wp_send_json_error( $order->get_error_message(), 500 );
         }
 
-        foreach ( $product_ids as $product_id ) {
+        foreach ( $items as $item ) {
+            $product_id = absint( $item['product_id'] ?? 0 );
+            $quantity   = absint( $item['quantity'] ?? 1 );
+            $resale_price = floatval( $item['resale_price'] ?? 0 );
+            
             $product = wc_get_product( $product_id );
             if ( ! $product ) {
                 continue;
             }
 
-            $order->add_product( $product, 1 );
+            $order->add_product( $product, $quantity, [
+                'subtotal' => $resale_price * $quantity,
+                'total'    => $resale_price * $quantity,
+            ] );
+            
+            // Store original regular price for commission calculation
+            $order_items = $order->get_items();
+            $last_item = end($order_items);
+            if ($last_item) {
+                $last_item->add_meta_data('_resale_price', $resale_price);
+                $last_item->add_meta_data('_base_price', $product->get_price());
+                $last_item->save();
+            }
         }
 
         if ( ! count( $order->get_items() ) ) {
@@ -123,6 +204,8 @@ class Reseller_Orders {
                 'last_name'  => $last_name,
                 'phone'      => $customer_phone,
                 'address_1'  => $customer_address,
+                'address_2'  => $thana,
+                'city'       => $district,
             ],
             'billing'
         );
@@ -133,15 +216,41 @@ class Reseller_Orders {
                 'last_name'  => $last_name,
                 'phone'      => $customer_phone,
                 'address_1'  => $customer_address,
+                'address_2'  => $thana,
+                'city'       => $district,
             ],
             'shipping'
         );
 
+        if ( $order_notes ) {
+            $order->set_customer_note( $order_notes );
+        }
+
+        // Apply shipping charge
+        if ( $shipping_charge > 0 ) {
+            $shipping_item = new \WC_Order_Item_Shipping();
+            $shipping_item->set_method_title( __( 'Shipping', 'reseller-management' ) );
+            $shipping_item->set_total( $shipping_charge );
+            $order->add_item( $shipping_item );
+        }
+
+        // Apply discount
+        if ( $discount > 0 ) {
+            $order->set_discount_total( $discount );
+        }
+
         $order->update_meta_data( '_assigned_reseller_id', get_current_user_id() );
+        $order->update_meta_data( '_order_district', $district );
+        $order->update_meta_data( '_order_thana', $thana );
+        $order->update_meta_data( '_paid_amount', $paid_amount );
+        
         $order->calculate_totals();
         $order->set_status( 'processing' );
         $order->save();
 
+        if ( ob_get_length() ) {
+            ob_clean();
+        }
         wp_send_json_success(
             sprintf(
                 /* translators: %d: order ID. */
@@ -149,5 +258,85 @@ class Reseller_Orders {
                 $order->get_id()
             )
         );
+    }
+
+    /**
+     * Handle product search for order creation.
+     */
+    public function handle_search_products() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        $query = sanitize_text_field( wp_unslash( $_GET['q'] ?? '' ) );
+        if ( strlen( $query ) < 2 ) {
+            wp_send_json_success( [] );
+        }
+
+        $args = [
+            'limit'   => 10,
+            'status'  => 'publish',
+            's'       => $query,
+        ];
+
+        // Check if query is also a SKU or Barcode (metakey might vary, assuming _sku)
+        $products = wc_get_products( $args );
+
+        // If no products found by name, try SKU
+        if ( empty( $products ) ) {
+            $args = [
+                'limit'  => 10,
+                'status' => 'publish',
+                'sku'    => $query,
+            ];
+            $products = wc_get_products( $args );
+        }
+
+        $results = [];
+        foreach ( $products as $product ) {
+            $recommended_price = $product->get_meta( '_reseller_recommended_price' );
+            if ( empty( $recommended_price ) ) {
+                $recommended_price = $product->get_price();
+            }
+
+            $results[] = [
+                'id'                => $product->get_id(),
+                'text'              => $product->get_name(),
+                'price'             => $product->get_price(),
+                'recommended_price' => $recommended_price,
+                'image'             => wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ),
+                'sku'               => $product->get_sku(),
+                'variants'          => $this->get_product_variants( $product ),
+            ];
+        }
+
+        wp_send_json_success( $results );
+    }
+
+    /**
+     * Get variants for a product.
+     */
+    private function get_product_variants( $product ) {
+        if ( ! $product->is_type( 'variable' ) ) {
+            return [];
+        }
+
+        $variants = [];
+        foreach ( $product->get_available_variations() as $variation_data ) {
+            $variation_id = $variation_data['variation_id'];
+            $variation    = wc_get_product( $variation_id );
+            
+            $recommended_price = $variation->get_meta( '_reseller_recommended_price' );
+            if ( empty( $recommended_price ) ) {
+                $recommended_price = $variation->get_price();
+            }
+
+            $variants[] = [
+                'id'                => $variation_id,
+                'attributes'        => $variation_data['attributes'],
+                'price'             => $variation_data['display_price'],
+                'recommended_price' => $recommended_price,
+            ];
+        }
+
+        return $variants;
     }
 }
