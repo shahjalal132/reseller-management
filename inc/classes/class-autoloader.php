@@ -11,12 +11,18 @@ class Autoloader {
     use Singleton;
 
     protected function __construct() {
-
-        // load class.
+        // Load plugin services.
         I18n::get_instance();
+        Reseller_Setup::get_instance();
         Enqueue_Assets::get_instance();
-        // Admin_Top_Menu::get_instance();
-        Admin_Sub_Menu::get_instance();
+        Admin_Top_Menu::get_instance();
         APIS::get_instance();
+        Reseller_Auth::get_instance();
+        Reseller_Registration::get_instance();
+        Reseller_Dashboard::get_instance();
+        Reseller_Orders::get_instance();
+        Reseller_Finance::get_instance();
+        Reseller_Product_Meta::get_instance();
+        Reseller_Shortcodes::get_instance();
     }
 }

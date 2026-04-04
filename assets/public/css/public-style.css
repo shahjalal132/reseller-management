@@ -1,1 +1,272 @@
-/* Public Styles CSS Codes */
+:root {
+  --rm-bg: #f5f7fb;
+  --rm-surface: #ffffff;
+  --rm-border: #d7dce8;
+  --rm-text: #1b2430;
+  --rm-muted: #667085;
+  --rm-primary: #2563eb;
+  --rm-primary-dark: #1d4ed8;
+  --rm-success: #166534;
+  --rm-success-bg: #dcfce7;
+  --rm-danger: #b91c1c;
+  --rm-danger-bg: #fee2e2;
+}
+
+body.rm-dashboard-body {
+  margin: 0;
+  background: var(--rm-bg);
+  color: var(--rm-text);
+  font-family: Arial, sans-serif;
+}
+
+.rm-auth-card,
+.rm-card,
+.rm-dashboard-panel {
+  background: var(--rm-surface);
+  border: 1px solid var(--rm-border);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.rm-auth-card {
+  max-width: 960px;
+  margin: 32px auto;
+  padding: 32px;
+}
+
+.rm-auth-header {
+  margin-bottom: 24px;
+}
+
+.rm-auth-header h2,
+.rm-dashboard-header h1,
+.rm-card h3 {
+  margin: 0 0 8px;
+}
+
+.rm-auth-header p,
+.rm-dashboard-header p,
+.rm-dashboard-message {
+  color: var(--rm-muted);
+}
+
+.rm-form {
+  display: block;
+}
+
+.rm-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.rm-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.rm-field-full {
+  grid-column: 1 / -1;
+}
+
+.rm-field input,
+.rm-field textarea,
+.rm-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--rm-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.rm-form-actions {
+  margin-top: 20px;
+}
+
+.rm-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--rm-primary);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rm-button:hover {
+  background: var(--rm-primary-dark);
+}
+
+.rm-button-secondary {
+  background: #0f172a;
+}
+
+.rm-form-response {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  display: none;
+}
+
+.rm-form-response.is-success,
+.rm-form-response.is-error {
+  display: block;
+}
+
+.rm-form-response.is-success {
+  background: var(--rm-success-bg);
+  color: var(--rm-success);
+}
+
+.rm-form-response.is-error {
+  background: var(--rm-danger-bg);
+  color: var(--rm-danger);
+}
+
+.rm-dashboard-app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+}
+
+.rm-dashboard-sidebar {
+  background: #0f172a;
+  color: #fff;
+  padding: 28px 20px;
+}
+
+.rm-sidebar-brand p {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rm-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.rm-nav-link {
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.rm-nav-link.is-active,
+.rm-nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.rm-dashboard-content {
+  padding: 28px;
+}
+
+.rm-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rm-balance-chip {
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.rm-dashboard-panel {
+  padding: 24px;
+}
+
+.rm-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rm-stat-card,
+.rm-card {
+  padding: 20px;
+}
+
+.rm-stat-card span {
+  display: block;
+  color: var(--rm-muted);
+  margin-bottom: 8px;
+}
+
+.rm-stat-card strong {
+  font-size: 24px;
+}
+
+.rm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rm-table th,
+.rm-table td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--rm-border);
+}
+
+.rm-table th {
+  color: var(--rm-muted);
+  font-weight: 600;
+}
+
+.rm-card + .rm-card {
+  margin-top: 24px;
+}
+
+.rm-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.rm-product-card {
+  padding: 20px;
+  border: 1px solid var(--rm-border);
+  border-radius: 14px;
+}
+
+.rm-product-card h4 {
+  margin: 14px 0 8px;
+}
+
+.rm-product-image img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+@media (max-width: 960px) {
+  .rm-dashboard-app {
+    grid-template-columns: 1fr;
+  }
+
+  .rm-grid-2,
+  .rm-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
