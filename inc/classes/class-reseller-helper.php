@@ -210,12 +210,34 @@ class Reseller_Helper {
      */
     public static function get_dashboard_tabs() {
         return [
-            'dashboard' => __( 'Dashboard', 'reseller-management' ),
-            'orders'    => __( 'Orders', 'reseller-management' ),
-            'products'  => __( 'Products', 'reseller-management' ),
-            'account'   => __( 'Account', 'reseller-management' ),
-            'settings'  => __( 'Settings', 'reseller-management' ),
-            'customers' => __( 'Customers', 'reseller-management' ),
+            'dashboard' => [
+                'label' => __( 'Dashboard', 'reseller-management' ),
+                'icon'  => 'dashboard',
+            ],
+            'orders'    => [
+                'label'    => __( 'Orders', 'reseller-management' ),
+                'icon'     => 'orders',
+                'children' => [
+                    'all' => __( 'All Orders', 'reseller-management' ),
+                    'add' => __( 'Add New Order', 'reseller-management' ),
+                ],
+            ],
+            'products'  => [
+                'label' => __( 'Products', 'reseller-management' ),
+                'icon'  => 'products',
+            ],
+            'account'   => [
+                'label' => __( 'Account', 'reseller-management' ),
+                'icon'  => 'account',
+            ],
+            'settings'  => [
+                'label' => __( 'Settings', 'reseller-management' ),
+                'icon'  => 'settings',
+            ],
+            'customers' => [
+                'label' => __( 'Customers', 'reseller-management' ),
+                'icon'  => 'customers',
+            ],
         ];
     }
 

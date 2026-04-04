@@ -18,66 +18,161 @@ $products = get_posts(
     ]
 );
 ?>
-<div class="rm-card">
-    <h3><?php esc_html_e( 'Add New Order', 'reseller-management' ); ?></h3>
-    <form id="rm-create-order-form" class="rm-form">
-        <div class="rm-grid rm-grid-2">
-            <label class="rm-field">
-                <span><?php esc_html_e( 'Customer Name', 'reseller-management' ); ?></span>
-                <input type="text" name="customer_name" required>
-            </label>
-            <label class="rm-field">
-                <span><?php esc_html_e( 'Customer Phone', 'reseller-management' ); ?></span>
-                <input type="text" name="customer_phone" required>
-            </label>
-            <label class="rm-field rm-field-full">
-                <span><?php esc_html_e( 'Customer Address', 'reseller-management' ); ?></span>
-                <textarea name="customer_address" rows="3" required></textarea>
-            </label>
-            <label class="rm-field rm-field-full">
-                <span><?php esc_html_e( 'Products', 'reseller-management' ); ?></span>
-                <select name="product_ids[]" multiple required style="min-height: 160px;">
-                    <?php foreach ( $products as $product_post ) : ?>
-                        <option value="<?php echo esc_attr( (string) $product_post->ID ); ?>"><?php echo esc_html( $product_post->post_title ); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-        </div>
-        <div class="rm-form-actions">
-            <button type="submit" class="rm-button"><?php esc_html_e( 'Create Order', 'reseller-management' ); ?></button>
-        </div>
-        <div class="rm-form-response" aria-live="polite"></div>
-    </form>
+<?php if ( 'add' === ( $_GET['subtab'] ?? '' ) ) : ?>
+    <?php include PLUGIN_BASE_PATH . '/templates/dashboard/add-new-order.php'; ?>
+<?php endif; ?>
+
+<?php if ( 'all' === ( $_GET['subtab'] ?? 'all' ) ) : 
+$user_id      = get_current_user_id();
+$status_counts = \BOILERPLATE\Inc\Reseller_Orders::get_order_status_counts( $user_id );
+$dashboard    = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
+
+$stats_config = [
+    'new'        => [ 'label' => __( 'New', 'reseller-management' ), 'icon' => 'status_new', 'color' => '#1e293b' ],
+    'pending'    => [ 'label' => __( 'Pending', 'reseller-management' ), 'icon' => 'status_pending', 'color' => '#f59e0b' ],
+    'confirmed'  => [ 'label' => __( 'Confirmed', 'reseller-management' ), 'icon' => 'status_confirmed', 'color' => '#10b981' ],
+    'packaging'  => [ 'label' => __( 'Packaging', 'reseller-management' ), 'icon' => 'status_packaging', 'color' => '#3b82f6' ],
+    'shipment'   => [ 'label' => __( 'Shipment', 'reseller-management' ), 'icon' => 'status_shipment', 'color' => '#6366f1' ],
+    'delivered'  => [ 'label' => __( 'Delivered', 'reseller-management' ), 'icon' => 'status_delivered', 'color' => '#059669' ],
+    'wfr'        => [ 'label' => __( 'WFR', 'reseller-management' ), 'icon' => 'status_wfr', 'color' => '#d97706' ],
+    'returned'   => [ 'label' => __( 'Returned', 'reseller-management' ), 'icon' => 'status_returned', 'color' => '#9333ea' ],
+    'cancel'     => [ 'label' => __( 'Cancel', 'reseller-management' ), 'icon' => 'status_cancel', 'color' => '#ef4444' ],
+    'all'        => [ 'label' => __( 'All', 'reseller-management' ), 'icon' => 'status_all', 'color' => '#1e293b' ],
+    'incomplete' => [ 'label' => __( 'Incomplete Order', 'reseller-management' ), 'icon' => 'status_incomplete', 'color' => '#64748b' ],
+];
+?>
+<div class="rm-orders-stats-container">
+    <div class="rm-orders-stats-grid">
+        <?php foreach ( $stats_config as $key => $config ) : ?>
+            <div class="rm-order-stat-card" style="border-top: 3px solid <?php echo esc_attr( $config['color'] ); ?>">
+                <div class="rm-stat-main">
+                    <span class="rm-stat-count"><?php echo esc_html( (string) ($status_counts[ $key ] ?? 0) ); ?></span>
+                    <span class="rm-stat-label"><?php echo esc_html( $config['label'] ); ?></span>
+                </div>
+                <div class="rm-stat-icon" style="color: <?php echo esc_attr( $config['color'] ); ?>">
+                    <?php echo $dashboard->get_svg_icon( $config['icon'] ); ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
 </div>
 
-<div class="rm-card">
-    <h3><?php esc_html_e( 'All Orders', 'reseller-management' ); ?></h3>
-    <table class="rm-table">
+<div class="rm-orders-controls">
+    <div class="rm-filter-group">
+        <input type="date" class="rm-input-date" placeholder="mm/dd/yyyy">
+        <input type="date" class="rm-input-date" placeholder="mm/dd/yyyy">
+        <div class="rm-search-wrapper">
+            <input type="text" class="rm-input-search" placeholder="<?php esc_attr_e( 'Enter Invoice, customer phone', 'reseller-management' ); ?>">
+        </div>
+        <select class="rm-input-select">
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+</div>
+
+<div class="rm-enriched-table-container">
+    <table class="rm-enriched-table">
         <thead>
             <tr>
-                <th><?php esc_html_e( 'Order ID', 'reseller-management' ); ?></th>
+                <th width="40">#</th>
                 <th><?php esc_html_e( 'Customer', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Product', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Invoice', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Details', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Date', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Courier', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Comment', 'reseller-management' ); ?></th>
                 <th><?php esc_html_e( 'Status', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Total', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Commission', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'Action', 'reseller-management' ); ?></th>
+                <th><?php esc_html_e( 'View', 'reseller-management' ); ?></th>
             </tr>
         </thead>
         <tbody>
             <?php if ( empty( $orders ) ) : ?>
                 <tr>
-                    <td colspan="5"><?php esc_html_e( 'No reseller orders found yet.', 'reseller-management' ); ?></td>
+                    <td colspan="11" class="rm-empty-state"><?php esc_html_e( 'No orders found.', 'reseller-management' ); ?></td>
                 </tr>
-            <?php else : ?>
-                <?php foreach ( $orders as $order ) : ?>
-                    <tr>
-                        <td>#<?php echo esc_html( (string) $order->get_id() ); ?></td>
-                        <td><?php echo esc_html( $order->get_formatted_billing_full_name() ); ?></td>
-                        <td><?php echo esc_html( wc_get_order_status_name( $order->get_status() ) ); ?></td>
-                        <td><?php echo wp_kses_post( $order->get_formatted_order_total() ); ?></td>
-                        <td><?php echo wp_kses_post( wc_price( \BOILERPLATE\Inc\Reseller_Finance::get_order_commission_total( $order ) ) ); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
+            <?php else : $i = 1; foreach ( $orders as $order ) : 
+                $items = $order->get_items();
+                $first_item = reset( $items );
+                $product = $first_item ? $first_item->get_product() : null;
+                $commission = \BOILERPLATE\Inc\Reseller_Finance::get_order_commission_total( $order );
+                $status = $order->get_status();
+                $status_name = wc_get_order_status_name( $status );
+                ?>
+                <tr>
+                    <td><?php echo $i++; ?></td>
+                    <td class="rm-col-customer">
+                        <div class="rm-customer-name"><?php echo esc_html( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() ); ?></div>
+                        <div class="rm-customer-phone-badge">
+                            <span class="rm-phone-icon"><?php echo $dashboard->get_svg_icon('account'); ?></span>
+                            <span><?php echo esc_html( $order->get_billing_phone() ); ?></span>
+                            <span class="rm-info-trigger" title="View Info">ⓘ</span>
+                        </div>
+                        <div class="rm-customer-address"><?php echo esc_html( $order->get_billing_address_1() ); ?></div>
+                        <div class="rm-customer-summary-stats">
+                            <strong>all:</strong> 8 | <span class="rm-text-success">delivered:</span> 8 | <span class="rm-text-danger">return:</span> 0
+                        </div>
+                        <div class="rm-customer-actions">
+                            <span class="rm-action-icon rm-icon-call"><?php echo $dashboard->get_svg_icon('dashboard'); ?></span>
+                            <span class="rm-action-icon rm-icon-id"><?php echo $dashboard->get_svg_icon('account'); ?></span>
+                            <span class="rm-action-icon rm-icon-whatsapp"><?php echo $dashboard->get_svg_icon('logout'); ?></span>
+                        </div>
+                    </td>
+                    <td class="rm-col-product">
+                        <?php if ( $product ) : ?>
+                            <div class="rm-product-preview">
+                                <img src="<?php echo esc_url( wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ) ); ?>" alt="">
+                                <span class="rm-product-name"><?php echo esc_html( $product->get_name() ); ?></span>
+                            </div>
+                        <?php endif; ?>
+                    </td>
+                    <td class="rm-col-invoice">
+                        <span class="rm-invoice-id">M<?php echo esc_html( (string) $order->get_id() ); ?></span>
+                    </td>
+                    <td class="rm-col-details">
+                        <div class="rm-details-grid">
+                            <div class="rm-detail-row"><span>Total:</span> <strong><?php echo $order->get_total(); ?></strong></div>
+                            <div class="rm-detail-row"><span>Discount:</span> <strong><?php echo $order->get_total_discount(); ?></strong></div>
+                            <div class="rm-detail-row"><span>Paid:</span> <strong>0</strong></div>
+                            <div class="rm-detail-row"><span>Shipping:</span> <strong><?php echo $order->get_shipping_total(); ?></strong></div>
+                            <div class="rm-detail-row"><span>Due:</span> <strong><?php echo $order->get_total(); ?></strong></div>
+                            <div class="rm-detail-row rm-detail-profit"><span>Profit:</span> <strong><?php echo $commission; ?></strong></div>
+                        </div>
+                    </td>
+                    <td class="rm-col-date">
+                        <div class="rm-order-date"><?php echo esc_html( $order->get_date_created()->date( 'Y-m-d H:i:s' ) ); ?></div>
+                    </td>
+                    <td class="rm-col-courier">
+                        <div class="rm-courier-info">
+                            <span class="rm-courier-name">Steadfast 2</span>
+                            <a href="#" class="rm-courier-link">https://steadfast.co</a>
+                        </div>
+                    </td>
+                    <td class="rm-col-comment">
+                        <a href="#" class="rm-note-link"><?php esc_html_e( 'Note', 'reseller-management' ); ?></a>
+                    </td>
+                    <td class="rm-col-status">
+                        <span class="rm-status-badge-new status-<?php echo esc_attr( $status ); ?>">
+                            <?php echo esc_html( $status_name ); ?>
+                        </span>
+                    </td>
+                    <td class="rm-col-action">
+                        <button class="rm-btn-action-teal" title="Action">
+                            <?php echo $dashboard->get_svg_icon('status_all'); ?>
+                        </button>
+                    </td>
+                    <td class="rm-col-view">
+                        <button class="rm-btn-view-teal">
+                            <span class="rm-view-icon">👁</span>
+                            <?php esc_html_e( 'view', 'reseller-management' ); ?>
+                        </button>
+                    </td>
+                </tr>
+            <?php endforeach; endif; ?>
         </tbody>
     </table>
 </div>
+<?php endif; ?>
