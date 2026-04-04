@@ -86,16 +86,6 @@ class Admin_Top_Menu {
             [ $this, 'render_users_page' ]
         );
 
-        // Orders.
-        add_submenu_page(
-            'reseller-hub',
-            __( 'Orders', 'reseller-management' ),
-            __( 'Orders', 'reseller-management' ),
-            'manage_options',
-            'reseller-hub-orders',
-            [ $this, 'render_orders_page' ]
-        );
-
         // Withdrawals.
         add_submenu_page(
             'reseller-hub',
@@ -116,7 +106,7 @@ class Admin_Top_Menu {
             [ $this, 'render_settings_page' ]
         );
 
-        // Hidden: single user view (no parent = not shown in WP sidebar).
+        // Hidden: single user view.
         add_submenu_page(
             null,
             __( 'View Reseller', 'reseller-management' ),
@@ -124,6 +114,26 @@ class Admin_Top_Menu {
             'manage_options',
             'reseller-hub-user-view',
             [ $this, 'render_user_view_page' ]
+        );
+
+        // Hidden: reseller orders page.
+        add_submenu_page(
+            null,
+            __( 'Reseller Orders', 'reseller-management' ),
+            __( 'Reseller Orders', 'reseller-management' ),
+            'manage_options',
+            'reseller-hub-user-orders',
+            [ $this, 'render_user_orders_page' ]
+        );
+
+        // Hidden: reseller statements page.
+        add_submenu_page(
+            null,
+            __( 'Reseller Statements', 'reseller-management' ),
+            __( 'Reseller Statements', 'reseller-management' ),
+            'manage_options',
+            'reseller-hub-user-statements',
+            [ $this, 'render_user_statements_page' ]
         );
     }
 
@@ -243,15 +253,6 @@ class Admin_Top_Menu {
     }
 
     /**
-     * Render the orders page.
-     *
-     * @return void
-     */
-    public function render_orders_page() {
-        $this->render_page( 'orders', PLUGIN_BASE_PATH . '/templates/admin/rm-orders.php' );
-    }
-
-    /**
      * Render the settings page.
      *
      * @return void
@@ -288,21 +289,74 @@ class Admin_Top_Menu {
             wp_die( esc_html__( 'Invalid reseller profile.', 'reseller-management' ) );
         }
 
+        $reseller_orders = Reseller_Orders::get_reseller_orders( $reseller_id );
+
         $this->render_page(
             'users',
             PLUGIN_BASE_PATH . '/templates/admin/rm-user-view.php',
             [
-                'rm_reseller_id'   => $reseller_id,
-                'rm_user'          => $user,
-                'rm_status'        => Reseller_Helper::get_reseller_status( $reseller_id ),
-                'rm_balance'       => Reseller_Helper::get_current_balance( $reseller_id ),
-                'rm_phone'         => (string) get_user_meta( $reseller_id, '_reseller_phone', true ),
-                'rm_business_name' => (string) get_user_meta( $reseller_id, '_reseller_business_name', true ),
-                'rm_fb_url'        => (string) get_user_meta( $reseller_id, '_reseller_fb_url', true ),
-                'rm_web_url'       => (string) get_user_meta( $reseller_id, '_reseller_web_url', true ),
-                'rm_front_id'      => (int) get_user_meta( $reseller_id, '_reseller_nid_front_id', true ),
-                'rm_back_id'       => (int) get_user_meta( $reseller_id, '_reseller_nid_back_id', true ),
-                'rm_banned_until'  => (int) get_user_meta( $reseller_id, '_reseller_banned_until', true ),
+                'rm_reseller_id'    => $reseller_id,
+                'rm_user'           => $user,
+                'rm_status'         => Reseller_Helper::get_reseller_status( $reseller_id ),
+                'rm_balance'        => Reseller_Helper::get_current_balance( $reseller_id ),
+                'rm_phone'          => (string) get_user_meta( $reseller_id, '_reseller_phone', true ),
+                'rm_business_name'  => (string) get_user_meta( $reseller_id, '_reseller_business_name', true ),
+                'rm_fb_url'         => (string) get_user_meta( $reseller_id, '_reseller_fb_url', true ),
+                'rm_web_url'        => (string) get_user_meta( $reseller_id, '_reseller_web_url', true ),
+                'rm_front_id'       => (int) get_user_meta( $reseller_id, '_reseller_nid_front_id', true ),
+                'rm_back_id'        => (int) get_user_meta( $reseller_id, '_reseller_nid_back_id', true ),
+                'rm_banned_until'   => (int) get_user_meta( $reseller_id, '_reseller_banned_until', true ),
+                'rm_reseller_orders'=> $reseller_orders,
+            ]
+        );
+    }
+
+    /**
+     * Render the reseller orders page (full-page with filters & pagination).
+     *
+     * @return void
+     */
+    public function render_user_orders_page() {
+        $reseller_id = absint( $_GET['reseller_id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $user        = $reseller_id ? get_user_by( 'id', $reseller_id ) : false;
+
+        if ( ! $user || ! Reseller_Helper::is_reseller( $user ) ) {
+            wp_die( esc_html__( 'Invalid reseller profile.', 'reseller-management' ) );
+        }
+
+        $all_orders = Reseller_Orders::get_reseller_orders( $reseller_id );
+
+        $this->render_page(
+            'users',
+            PLUGIN_BASE_PATH . '/templates/admin/rm-user-orders.php',
+            [
+                'rm_reseller_id'  => $reseller_id,
+                'rm_user'         => $user,
+                'rm_all_orders'   => $all_orders,
+            ]
+        );
+    }
+
+    /**
+     * Render the reseller statements page (ledger / dummy data).
+     *
+     * @return void
+     */
+    public function render_user_statements_page() {
+        $reseller_id = absint( $_GET['reseller_id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $user        = $reseller_id ? get_user_by( 'id', $reseller_id ) : false;
+
+        if ( ! $user || ! Reseller_Helper::is_reseller( $user ) ) {
+            wp_die( esc_html__( 'Invalid reseller profile.', 'reseller-management' ) );
+        }
+
+        $this->render_page(
+            'users',
+            PLUGIN_BASE_PATH . '/templates/admin/rm-user-statements.php',
+            [
+                'rm_reseller_id' => $reseller_id,
+                'rm_user'        => $user,
+                'rm_balance'     => Reseller_Helper::get_current_balance( $reseller_id ),
             ]
         );
     }
