@@ -11,6 +11,12 @@ $dashboard = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
 ?>
 
 <div class="rm-new-order-container">
+    <?php if ( isset( $_GET['success'] ) && '1' === $_GET['success'] ) : ?>
+        <div class="rm-alert rm-alert-success" style="margin-bottom: 24px; padding: 16px; background: var(--rm-success-bg); color: var(--rm-success); border-radius: 12px; border: 1px solid var(--rm-success); display: flex; align-items: center; gap: 12px;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span><?php esc_html_e( 'Order created successfully!', 'reseller-management' ); ?></span>
+        </div>
+    <?php endif; ?>
     <div class="rm-order-grid">
         <!-- Left Column: Customer Information -->
         <div class="rm-order-col-left">
