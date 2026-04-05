@@ -39,6 +39,64 @@ class Reseller_Helper {
     }
 
     /**
+     * Get reseller payment methods table name.
+     *
+     * @return string
+     */
+    public static function get_payment_methods_table_name() {
+        global $wpdb;
+
+        return $wpdb->prefix . 'reseller_payment_methods';
+    }
+
+    /**
+     * Ensure the payment_methods table exists (runtime upgrade for existing installs).
+     *
+     * @return void
+     */
+    public static function maybe_create_payment_methods_table() {
+        global $wpdb;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $table           = self::get_payment_methods_table_name();
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE {$table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            reseller_id bigint(20) unsigned NOT NULL,
+            method_name varchar(20) NOT NULL,
+            number varchar(50) NOT NULL,
+            type varchar(20) NOT NULL DEFAULT 'personal',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY reseller_id (reseller_id)
+        ) {$charset_collate};";
+
+        dbDelta( $sql );
+    }
+
+    /**
+     * Get saved payment methods for a reseller.
+     *
+     * @param int $user_id Reseller ID.
+     *
+     * @return array<int, object>
+     */
+    public static function get_payment_methods( $user_id ) {
+        global $wpdb;
+
+        $table = self::get_payment_methods_table_name();
+
+        return (array) $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$table} WHERE reseller_id = %d ORDER BY created_at DESC",
+                $user_id
+            )
+        );
+    }
+
+    /**
      * Ensure the reseller role exists.
      *
      * @return void
@@ -227,8 +285,12 @@ class Reseller_Helper {
                 'icon'  => 'products',
             ],
             'account'   => [
-                'label' => __( 'Account', 'reseller-management' ),
-                'icon'  => 'account',
+                'label'    => __( 'Account', 'reseller-management' ),
+                'icon'     => 'account',
+                'children' => [
+                    'payment-methods' => __( 'Payment Methods', 'reseller-management' ),
+                    'withdrawals'     => __( 'Withdrawals', 'reseller-management' ),
+                ],
             ],
             'settings'  => [
                 'label' => __( 'Settings', 'reseller-management' ),

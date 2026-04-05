@@ -191,6 +191,20 @@ class Reseller_Dashboard {
      * @return void
      */
     protected function render_tab_content( $tab ) {
+        $subtab = sanitize_key( wp_unslash( $_GET['subtab'] ?? '' ) );
+
+        // Account tab routes to sub-templates by subtab.
+        if ( 'account' === $tab ) {
+            $allowed_subtabs = [ 'payment-methods', 'withdrawals' ];
+            $active_subtab   = in_array( $subtab, $allowed_subtabs, true ) ? $subtab : 'payment-methods';
+            $sub_template    = PLUGIN_BASE_PATH . '/templates/dashboard/account/' . $active_subtab . '.php';
+
+            if ( file_exists( $sub_template ) ) {
+                include $sub_template;
+                return;
+            }
+        }
+
         $template = PLUGIN_BASE_PATH . '/templates/dashboard/' . $tab . '.php';
 
         if ( file_exists( $template ) ) {

@@ -100,3 +100,11 @@ function get_plugin_instance() {
 
 // Load plugin
 get_plugin_instance();
+
+// Ensure payment_methods table exists for existing installs (runs once per 24 hours).
+add_action( 'init', function () {
+    if ( ! get_transient( 'rm_payment_methods_table_checked' ) ) {
+        \BOILERPLATE\Inc\Reseller_Helper::maybe_create_payment_methods_table();
+        set_transient( 'rm_payment_methods_table_checked', 1, DAY_IN_SECONDS );
+    }
+} );

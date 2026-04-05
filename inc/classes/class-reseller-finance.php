@@ -17,6 +17,8 @@ class Reseller_Finance {
         add_action( 'woocommerce_order_status_completed', [ $this, 'credit_order_commission' ] );
         add_action( 'woocommerce_order_status_refunded', [ $this, 'debit_order_shipping' ] );
         add_action( 'wp_ajax_reseller_request_withdrawal', [ $this, 'handle_withdrawal_request' ] );
+        add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );
+        add_action( 'wp_ajax_reseller_delete_payment_method', [ $this, 'handle_delete_payment_method' ] );
     }
 
     /**
@@ -232,5 +234,88 @@ class Reseller_Finance {
         );
 
         wp_send_json_success( __( 'Withdrawal request submitted successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle save (add or update) a payment method.
+     *
+     * @return void
+     */
+    public function handle_save_payment_method() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller_approved( get_current_user_id() ) ) {
+            wp_send_json_error( __( 'You are not allowed to manage payment methods.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $reseller_id = get_current_user_id();
+        $id          = (int) ( $_POST['id'] ?? 0 );
+        $method_name = sanitize_key( wp_unslash( $_POST['method_name'] ?? '' ) );
+        $number      = sanitize_text_field( wp_unslash( $_POST['number'] ?? '' ) );
+        $type        = sanitize_key( wp_unslash( $_POST['type'] ?? '' ) );
+
+        $allowed_methods = [ 'bkash', 'nagad', 'rocket' ];
+        $allowed_types   = [ 'agent', 'personal' ];
+
+        if ( ! in_array( $method_name, $allowed_methods, true ) || empty( $number ) || ! in_array( $type, $allowed_types, true ) ) {
+            wp_send_json_error( __( 'Please provide valid payment method details.', 'reseller-management' ), 422 );
+        }
+
+        $table = Reseller_Helper::get_payment_methods_table_name();
+        $data  = [
+            'reseller_id' => $reseller_id,
+            'method_name' => $method_name,
+            'number'      => $number,
+            'type'        => $type,
+        ];
+        $formats = [ '%d', '%s', '%s', '%s' ];
+
+        if ( $id > 0 ) {
+            // Ensure ownership.
+            $existing = $wpdb->get_var( $wpdb->prepare( "SELECT reseller_id FROM {$table} WHERE id = %d", $id ) );
+            if ( (int) $existing !== $reseller_id ) {
+                wp_send_json_error( __( 'You are not allowed to edit this payment method.', 'reseller-management' ), 403 );
+            }
+
+            $wpdb->update( $table, $data, [ 'id' => $id ], $formats, [ '%d' ] );
+            wp_send_json_success( __( 'Payment method updated successfully.', 'reseller-management' ) );
+        }
+
+        $wpdb->insert( $table, $data, $formats );
+        wp_send_json_success( __( 'Payment method added successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle delete a payment method.
+     *
+     * @return void
+     */
+    public function handle_delete_payment_method() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller_approved( get_current_user_id() ) ) {
+            wp_send_json_error( __( 'You are not allowed to delete payment methods.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $reseller_id = get_current_user_id();
+        $id          = (int) ( $_POST['id'] ?? 0 );
+
+        if ( $id <= 0 ) {
+            wp_send_json_error( __( 'Invalid payment method ID.', 'reseller-management' ), 422 );
+        }
+
+        $table    = Reseller_Helper::get_payment_methods_table_name();
+        $existing = $wpdb->get_var( $wpdb->prepare( "SELECT reseller_id FROM {$table} WHERE id = %d", $id ) );
+
+        if ( (int) $existing !== $reseller_id ) {
+            wp_send_json_error( __( 'You are not allowed to delete this payment method.', 'reseller-management' ), 403 );
+        }
+
+        $wpdb->delete( $table, [ 'id' => $id ], [ '%d' ] );
+        wp_send_json_success( __( 'Payment method deleted successfully.', 'reseller-management' ) );
     }
 }
