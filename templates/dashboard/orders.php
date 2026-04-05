@@ -22,7 +22,9 @@ $products = get_posts(
     <?php include PLUGIN_BASE_PATH . '/templates/dashboard/add-new-order.php'; ?>
 <?php endif; ?>
 
-<?php if ( 'all' === ( $_GET['subtab'] ?? 'all' ) ) : 
+<?php 
+$active_subtab = $_GET['subtab'] ?? 'all';
+if ( ! in_array( $active_subtab, [ 'add', 'edit' ], true ) ) : 
 $user_id      = get_current_user_id();
 $status_counts = \BOILERPLATE\Inc\Reseller_Orders::get_order_status_counts( $user_id );
 $dashboard    = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
@@ -41,30 +43,45 @@ $stats_config = [
     'incomplete' => [ 'label' => __( 'Incomplete Order', 'reseller-management' ), 'icon' => 'status_incomplete', 'color' => '#64748b' ],
 ];
 $active_subtab = $_GET['subtab'] ?? 'all';
-$orders        = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id );
+$paged         = max( 1, get_query_var( 'paged' ), get_query_var( 'page' ), absint( $_GET['paged'] ?? 1 ) );
+$per_page      = ( $_GET['limit'] === 'all' ) ? -1 : absint( $_GET['limit'] ?? 20 );
+$search        = sanitize_text_field( $_GET['search'] ?? '' );
+$date_from     = sanitize_text_field( $_GET['date_from'] ?? '' );
+$date_to       = sanitize_text_field( $_GET['date_to'] ?? '' );
 
-// Filter orders by subtab if not 'all' or 'add' or 'edit'
-if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $stats_config[ $active_subtab ] ) ) {
-    $orders = array_filter(
-        $orders,
-        function( $order ) use ( $active_subtab ) {
-            $status = $order->get_status();
-            switch ( $active_subtab ) {
-                case 'new':        return 'processing' === $status;
-                case 'pending':    return 'pending' === $status || 'on-hold' === $status;
-                case 'confirmed':  return 'confirmed' === $status;
-                case 'packaging':  return 'packaging' === $status;
-                case 'shipping':   return 'shipping' === $status;
-                case 'delivered':  return 'delivered' === $status || 'completed' === $status;
-                case 'wfr':        return 'wfr' === $status;
-                case 'returned':   return 'returned' === $status || 'refunded' === $status;
-                case 'cancel':     return 'cancelled' === $status;
-                case 'incomplete': return 'failed' === $status;
-                default:           return true;
-            }
-        }
-    );
+// Determine WooCommerce status from our subtab
+$wc_status = '';
+if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) ) {
+    switch ( $active_subtab ) {
+        case 'new':        $wc_status = 'processing'; break;
+        case 'pending':    $wc_status = [ 'pending', 'on-hold' ]; break;
+        case 'confirmed':  $wc_status = 'confirmed'; break;
+        case 'packaging':  $wc_status = 'packaging'; break;
+        case 'shipping':   $wc_status = 'shipping'; break;
+        case 'delivered':  $wc_status = [ 'delivered', 'completed' ]; break;
+        case 'wfr':        $wc_status = 'wfr'; break;
+        case 'returned':   $wc_status = [ 'returned', 'refunded' ]; break;
+        case 'cancel':     $wc_status = 'cancelled'; break;
+        case 'incomplete': $wc_status = 'failed'; break;
+    }
 }
+
+// Fetch total count for pagination
+$total_orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_order_count( $user_id, $wc_status, $search, [
+    'date_from' => $date_from,
+    'date_to'   => $date_to,
+] );
+$total_pages  = ( $per_page > 0 ) ? ceil( $total_orders / $per_page ) : 1;
+
+// Fetch paginated orders
+$orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
+    'status'    => $wc_status,
+    'limit'     => $per_page,
+    'offset'    => ( $paged - 1 ) * max( 0, $per_page ),
+    'search'    => $search,
+    'date_from' => $date_from,
+    'date_to'   => $date_to,
+] );
 ?>
 <div class="rm-orders-stats-container">
     <div class="rm-orders-stats-grid">
@@ -87,16 +104,17 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
 
 <div class="rm-orders-controls">
     <div class="rm-filter-group">
-        <input type="date" id="rm-filter-date-from" class="rm-input-date" placeholder="mm/dd/yyyy">
-        <input type="date" id="rm-filter-date-to" class="rm-input-date" placeholder="mm/dd/yyyy">
+        <input type="date" id="rm-filter-date-from" class="rm-input-date" value="<?php echo esc_attr( $date_from ); ?>" placeholder="mm/dd/yyyy">
+        <input type="date" id="rm-filter-date-to" class="rm-input-date" value="<?php echo esc_attr( $date_to ); ?>" placeholder="mm/dd/yyyy">
         <div class="rm-search-wrapper">
-            <input type="text" id="rm-filter-search" class="rm-input-search" placeholder="<?php esc_attr_e( 'Enter Invoice, customer phone, or name', 'reseller-management' ); ?>">
+            <input type="text" id="rm-filter-search" class="rm-input-search" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Enter Invoice, customer phone, or name', 'reseller-management' ); ?>">
         </div>
         <select id="rm-filter-limit" class="rm-input-select">
-            <option value="all"><?php esc_html_e( 'All', 'reseller-management' ); ?></option>
-            <option value="30">30</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
+            <option value="20" <?php selected( $per_page, 20 ); ?>>20</option>
+            <option value="30" <?php selected( $per_page, 30 ); ?>>30</option>
+            <option value="50" <?php selected( $per_page, 50 ); ?>>50</option>
+            <option value="100" <?php selected( $per_page, 100 ); ?>>100</option>
+            <option value="all" <?php selected( $per_page, -1 ); ?>><?php esc_html_e( 'All', 'reseller-management' ); ?></option>
         </select>
     </div>
 </div>
@@ -123,7 +141,7 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                 <tr>
                     <td colspan="11" class="rm-empty-state"><?php esc_html_e( 'No orders found.', 'reseller-management' ); ?></td>
                 </tr>
-            <?php else : $i = 1; foreach ( $orders as $order ) : 
+            <?php else : $i = ( ( $paged - 1 ) * $per_page ) + 1; foreach ( $orders as $order ) : 
                 $items = $order->get_items();
                 $first_item = reset( $items );
                 $product = $first_item ? $first_item->get_product() : null;
@@ -217,4 +235,37 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
         </tbody>
     </table>
 </div>
+
+<?php if ( $total_pages > 1 ) : ?>
+    <div class="rm-pagination">
+        <?php
+        $pagination_args = [
+            'base'      => add_query_arg( 'paged', '%#%' ),
+            'format'    => '',
+            'prev_text' => '&laquo; ' . __( 'Previous', 'reseller-management' ),
+            'next_text' => __( 'Next', 'reseller-management' ) . ' &raquo;',
+            'total'     => $total_pages,
+            'current'   => $paged,
+            'type'      => 'list',
+        ];
+
+        if ( ! empty( $search ) ) {
+            $pagination_args['add_args']['search'] = $search;
+        }
+        if ( ! empty( $date_from ) ) {
+            $pagination_args['add_args']['date_from'] = $date_from;
+        }
+        if ( ! empty( $date_to ) ) {
+            $pagination_args['add_args']['date_to'] = $date_to;
+        }
+        if ( $per_page > 0 && $per_page !== 20 ) {
+            $pagination_args['add_args']['limit'] = $per_page;
+        } elseif ( $per_page === -1 ) {
+            $pagination_args['add_args']['limit'] = 'all';
+        }
+
+        echo paginate_links( $pagination_args );
+        ?>
+    </div>
+<?php endif; ?>
 <?php endif; ?>

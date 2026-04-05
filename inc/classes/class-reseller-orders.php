@@ -97,29 +97,98 @@ class Reseller_Orders {
     /**
      * Fetch orders assigned to a reseller.
      *
-     * @param int $user_id Reseller ID.
+     * @param int   $user_id Reseller ID.
+     * @param array $args    Optional arguments for wc_get_orders.
      *
      * @return array<int, \WC_Order>
      */
-    public static function get_reseller_orders( $user_id ) {
+    public static function get_reseller_orders( $user_id, $args = [] ) {
         if ( ! class_exists( 'WooCommerce' ) ) {
             return [];
         }
 
-        return wc_get_orders(
-            [
-                'limit'      => -1,
-                'type'       => 'shop_order',
-                'orderby'    => 'date',
-                'order'      => 'DESC',
-                'meta_query' => [
-                    [
-                        'key'   => '_assigned_reseller_id',
-                        'value' => (string) $user_id,
-                    ],
+        $default_args = [
+            'limit'      => -1,
+            'type'       => 'shop_order',
+            'orderby'    => 'date',
+            'order'      => 'DESC',
+            'meta_query' => [
+                [
+                    'key'   => '_assigned_reseller_id',
+                    'value' => (string) $user_id,
                 ],
-            ]
-        );
+            ],
+        ];
+
+        if ( ! empty( $args['search'] ) ) {
+            $default_args['s'] = sanitize_text_field( $args['search'] );
+        }
+
+        if ( ! empty( $args['date_from'] ) || ! empty( $args['date_to'] ) ) {
+            $date_query = [];
+            if ( ! empty( $args['date_from'] ) ) {
+                $date_query['after'] = $args['date_from'];
+            }
+            if ( ! empty( $args['date_to'] ) ) {
+                $date_query['before'] = $args['date_to'];
+            }
+            $date_query['inclusive'] = true;
+            $default_args['date_query'] = [ $date_query ];
+        }
+
+        $query_args = wp_parse_args( $args, $default_args );
+
+        return wc_get_orders( $query_args );
+    }
+
+    /**
+     * Get total order count for a reseller.
+     *
+     * @param int    $user_id Reseller ID.
+     * @param string $status  Optional status filter.
+     * @param string $search     Optional search term.
+     * @param array  $args_extra Optional extra arguments (date_from, date_to).
+     *
+     * @return int
+     */
+    public static function get_reseller_order_count( $user_id, $status = '', $search = '', $args_extra = [] ) {
+        if ( ! class_exists( 'WooCommerce' ) ) {
+            return 0;
+        }
+
+        $args = [
+            'limit'      => -1,
+            'return'     => 'ids',
+            'meta_query' => [
+                [
+                    'key'   => '_assigned_reseller_id',
+                    'value' => (string) $user_id,
+                ],
+            ],
+        ];
+
+        if ( ! empty( $status ) ) {
+            $args['status'] = $status;
+        }
+
+        if ( ! empty( $search ) ) {
+            $args['s'] = $search;
+        }
+
+        if ( ! empty( $args_extra['date_from'] ) || ! empty( $args_extra['date_to'] ) ) {
+            $date_query = [];
+            if ( ! empty( $args_extra['date_from'] ) ) {
+                $date_query['after'] = $args_extra['date_from'];
+            }
+            if ( ! empty( $args_extra['date_to'] ) ) {
+                $date_query['before'] = $args_extra['date_to'];
+            }
+            $date_query['inclusive'] = true;
+            $args['date_query'] = [ $date_query ];
+        }
+
+        $orders = wc_get_orders( $args );
+        return count( $orders );
     }
 
     /**

@@ -555,75 +555,29 @@
     // Dynamic Filter
     var $ordersTable = $('.rm-enriched-table tbody');
     if ($ordersTable.length) {
+      var filterTimeout;
       function filterOrders() {
         var dateFrom = $('#rm-filter-date-from').val();
         var dateTo = $('#rm-filter-date-to').val();
-        var searchQuery = $('#rm-filter-search').val().toLowerCase().trim();
+        var searchQuery = $('#rm-filter-search').val().trim();
         var limit = $('#rm-filter-limit').val();
 
-        var visibleCount = 0;
-
-        $ordersTable.find('tr:not(.rm-empty-state, .rm-filter-empty)').each(function () {
-          var $row = $(this);
-          var show = true;
-
-          // Date Filter
-          var orderDateText = $row.find('.rm-order-date').text().trim();
-          if (dateFrom || dateTo) {
-             // Replace dashes with slashes to ensure consistent parsing across browsers
-             var orderDate = new Date(orderDateText.replace(/-/g, '/'));
-             if (dateFrom) {
-               var fromDate = new Date(dateFrom.replace(/-/g, '/'));
-               fromDate.setHours(0, 0, 0, 0);
-               if (orderDate < fromDate) show = false;
-             }
-             if (show && dateTo) {
-               var toDate = new Date(dateTo.replace(/-/g, '/'));
-               toDate.setHours(23, 59, 59, 999);
-               if (orderDate > toDate) show = false;
-             }
-          }
-
-          // Search Filter
-          if (show && searchQuery) {
-            var invoice = $row.find('.rm-invoice-id').text().toLowerCase();
-            var phone = $row.find('.rm-customer-phone-badge span:nth-child(2)').text().toLowerCase();
-            var name = $row.find('.rm-customer-name').text().toLowerCase();
-            
-            if (invoice.indexOf(searchQuery) === -1 && phone.indexOf(searchQuery) === -1 && name.indexOf(searchQuery) === -1) {
-              show = false;
-            }
-          }
-
-          if (show) {
-            if (limit !== 'all' && visibleCount >= parseInt(limit, 10)) {
-               show = false;
-            } else {
-               $row.show();
-               visibleCount++;
-            }
-          } else {
-            $row.hide();
-          }
-        });
-
-        // Handle empty state
-        if (visibleCount === 0 && $ordersTable.find('tr:not(.rm-empty-state, .rm-filter-empty)').length > 0) {
-           if ($ordersTable.find('.rm-filter-empty').length === 0) {
-             $ordersTable.append('<tr class="rm-filter-empty"><td colspan="11" class="rm-empty-state" style="text-align:center; padding: 20px;">No matching orders found.</td></tr>');
-           } else {
-             $ordersTable.find('.rm-filter-empty').show();
-           }
-        } else {
-           $ordersTable.find('.rm-filter-empty').hide();
-        }
+        var url = new URL(window.location.href);
+        if (dateFrom) url.searchParams.set('date_from', dateFrom); else url.searchParams.delete('date_from');
+        if (dateTo) url.searchParams.set('date_to', dateTo); else url.searchParams.delete('date_to');
+        if (searchQuery) url.searchParams.set('search', searchQuery); else url.searchParams.delete('search');
+        if (limit && limit !== '20') url.searchParams.set('limit', limit); else url.searchParams.delete('limit');
+        
+        url.searchParams.set('paged', '1'); // Reset to first page on new filter
+        window.location.href = url.toString();
       }
 
-      $('#rm-filter-date-from, #rm-filter-date-to, #rm-filter-search, #rm-filter-limit').on('input change', filterOrders);
+      $('#rm-filter-date-from, #rm-filter-date-to, #rm-filter-limit').on('change', filterOrders);
       
-      if ($('#rm-filter-limit').val() !== 'all') {
-          filterOrders();
-      }
+      $('#rm-filter-search').on('input', function() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(filterOrders, 600);
+      });
     }
 
     // Product Dynamic Filter
@@ -637,32 +591,32 @@
       var $subSubCatSelect = $('.rm-filter-subsubcat');
 
       // Build root categories (parent = 0)
-      var rootCats = productCategories.filter(function(c) { return c.parent == 0; });
-      rootCats.forEach(function(c) {
+      var rootCats = productCategories.filter(function (c) { return c.parent == 0; });
+      rootCats.forEach(function (c) {
         $catSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
       });
 
-      $catSelect.on('change', function() {
+      $catSelect.on('change', function () {
         var parentId = $(this).val();
         $subCatSelect.find('option:not(:first)').remove();
         $subSubCatSelect.find('option:not(:first)').remove();
 
         if (parentId) {
-          var subCats = productCategories.filter(function(c) { return c.parent == parentId; });
-          subCats.forEach(function(c) {
+          var subCats = productCategories.filter(function (c) { return c.parent == parentId; });
+          subCats.forEach(function (c) {
             $subCatSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
           });
         }
         filterProducts();
       });
 
-      $subCatSelect.on('change', function() {
+      $subCatSelect.on('change', function () {
         var parentId = $(this).val();
         $subSubCatSelect.find('option:not(:first)').remove();
 
         if (parentId) {
-          var subSubCats = productCategories.filter(function(c) { return c.parent == parentId; });
-          subSubCats.forEach(function(c) {
+          var subSubCats = productCategories.filter(function (c) { return c.parent == parentId; });
+          subSubCats.forEach(function (c) {
             $subSubCatSelect.append('<option value="' + c.id + '">' + c.name + '</option>');
           });
         }
@@ -681,7 +635,7 @@
 
         var visibleCount = 0;
 
-        $('.rm-product-card').each(function() {
+        $('.rm-product-card').each(function () {
           var $card = $(this);
           var show = true;
 
@@ -771,7 +725,7 @@
     // Download Product Images
     $(document).on('click', '.download-btn', function (e) {
       e.preventDefault();
-      var images = $(this).data('images'); 
+      var images = $(this).data('images');
       if (!images || !images.length) return;
 
       alert('Downloading ' + images.length + ' image(s)...');
@@ -792,13 +746,13 @@
             document.body.removeChild(a);
           })
           .catch(() => {
-             var a = document.createElement('a');
-             a.href = url;
-             a.download = '';
-             a.target = '_blank';
-             document.body.appendChild(a);
-             a.click();
-             document.body.removeChild(a);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           });
       });
     });
@@ -807,16 +761,16 @@
     var $customerInput = $('#rm-customer-search-input');
     var $customerSearchBtn = $('#rm-customer-search-btn');
     var $customerTable = $('#rm-customers-tbody');
-    
+
     if ($customerInput.length && $customerTable.length) {
       function filterCustomers() {
         var query = $customerInput.val().toLowerCase().trim();
         var visibleCount = 0;
-        
-        $customerTable.find('tr:not(.rm-empty-state, .rm-search-empty)').each(function() {
+
+        $customerTable.find('tr:not(.rm-empty-state, .rm-search-empty)').each(function () {
           var name = $(this).find('td:nth-child(2)').text().toLowerCase();
           var phone = $(this).find('td:nth-child(3)').text().toLowerCase();
-          
+
           if (name.indexOf(query) > -1 || phone.indexOf(query) > -1) {
             $(this).show();
             visibleCount++;
@@ -824,7 +778,7 @@
             $(this).hide();
           }
         });
-        
+
         if (visibleCount === 0 && $customerTable.find('tr:not(.rm-empty-state, .rm-search-empty)').length > 0) {
           if ($customerTable.find('.rm-search-empty').length === 0) {
             $customerTable.append('<tr class="rm-search-empty"><td colspan="5" style="text-align: center; padding: 30px;">No matching customers found.</td></tr>');
@@ -835,13 +789,13 @@
           $customerTable.find('.rm-search-empty').hide();
         }
       }
-      
+
       $customerInput.on('input keyup', filterCustomers);
       $customerSearchBtn.on('click', filterCustomers);
     }
 
     // Withdraw Flow Logic
-    $('#rm-btn-balance-check').on('click', function() {
+    $('#rm-btn-balance-check').on('click', function () {
       var $display = $('#rm-balance-display');
       if ($display.is(':visible')) {
         $display.slideUp(200);
@@ -850,15 +804,15 @@
       }
     });
 
-    $('#rm-btn-open-withdraw-modal').on('click', function() {
+    $('#rm-btn-open-withdraw-modal').on('click', function () {
       $('#rm-withdraw-modal').css('display', 'flex').hide().fadeIn(200);
     });
 
-    $('#rm-btn-close-withdraw-modal').on('click', function() {
+    $('#rm-btn-close-withdraw-modal').on('click', function () {
       $('#rm-withdraw-modal').fadeOut(200);
     });
 
-    $('#rm-withdraw-method-select').on('change', function() {
+    $('#rm-withdraw-method-select').on('change', function () {
       var $selected = $(this).find('option:selected');
       var number = $selected.data('number');
       if (number) {
@@ -872,8 +826,8 @@
       selector: '#rm-form-withdraw',
       action: 'reseller_request_withdrawal',
       resetOnSuccess: true,
-      onSuccess: function(response) {
-        setTimeout(function() {
+      onSuccess: function (response) {
+        setTimeout(function () {
           $('#rm-withdraw-modal').fadeOut(200);
           window.location.reload();
         }, 1500);
