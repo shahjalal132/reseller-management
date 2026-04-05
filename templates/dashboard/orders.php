@@ -141,6 +141,7 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                             <span class="rm-info-trigger" title="View Info">ⓘ</span>
                         </div>
                         <div class="rm-customer-address"><?php echo esc_html( $order->get_billing_address_1() ); ?></div>
+                        <div class="rm-customer-order-id" style="font-size: 0.75rem; color: #000000ff; margin-top: 4px; font-weight: bold;"><?php echo esc_html__( 'Order ID:', 'reseller-management' ); ?> #<?php echo esc_html( (string) $order->get_id() ); ?></div>
                     </td>
                     <td class="rm-col-product">
                         <?php if ( $product ) : ?>
