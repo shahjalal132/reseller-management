@@ -832,5 +832,45 @@
       $customerSearchBtn.on('click', filterCustomers);
     }
 
+    // Withdraw Flow Logic
+    $('#rm-btn-balance-check').on('click', function() {
+      var $display = $('#rm-balance-display');
+      if ($display.is(':visible')) {
+        $display.slideUp(200);
+      } else {
+        $display.slideDown(200);
+      }
+    });
+
+    $('#rm-btn-open-withdraw-modal').on('click', function() {
+      $('#rm-withdraw-modal').css('display', 'flex').hide().fadeIn(200);
+    });
+
+    $('#rm-btn-close-withdraw-modal').on('click', function() {
+      $('#rm-withdraw-modal').fadeOut(200);
+    });
+
+    $('#rm-withdraw-method-select').on('change', function() {
+      var $selected = $(this).find('option:selected');
+      var number = $selected.data('number');
+      if (number) {
+        $('#rm-withdraw-account-details').val(number);
+      } else {
+        $('#rm-withdraw-account-details').val('');
+      }
+    });
+
+    submitAjaxForm({
+      selector: '#rm-form-withdraw',
+      action: 'reseller_request_withdrawal',
+      resetOnSuccess: true,
+      onSuccess: function(response) {
+        setTimeout(function() {
+          $('#rm-withdraw-modal').fadeOut(200);
+          window.location.reload();
+        }, 1500);
+      }
+    });
+
   });
 })(jQuery);

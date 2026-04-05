@@ -166,11 +166,62 @@ class Reseller_Dashboard {
                 </header>
 
                 <div class="rm-dashboard-body-inner">
-                    <?php if ( 'dashboard' === $tab ) : ?>
-                    <div class="rm-balance-check-container">
-                        <button class="rm-button rm-button-balance-check">
+                    <?php if ( 'dashboard' === $tab ) : 
+                        $current_balance = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $user_id );
+                        $payment_methods = \BOILERPLATE\Inc\Reseller_Helper::get_payment_methods( $user_id );
+                    ?>
+                    <div class="rm-balance-check-container" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
+                        <button class="rm-button rm-button-balance-check" id="rm-btn-balance-check" style="margin-bottom: 10px;">
                             <?php esc_html_e( 'Balance Check', 'reseller-management' ); ?>
                         </button>
+                        
+                        <div class="rm-balance-display-wrap" id="rm-balance-display" style="display: none; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e8edf3; text-align: center;">
+                            <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;"><?php esc_html_e( 'Available Balance', 'reseller-management' ); ?></div>
+                            <div class="rm-balance-amount" style="font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">
+                                ৳ <?php echo esc_html( number_format( $current_balance, 2 ) ); ?>
+                            </div>
+                            <button class="rm-button rm-button-withdraw-request" id="rm-btn-open-withdraw-modal" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none;">
+                                <?php esc_html_e( 'Request Withdrawal', 'reseller-management' ); ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Withdraw Modal -->
+                    <div id="rm-withdraw-modal" class="rm-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                        <div class="rm-modal-content" style="background: #fff; padding: 32px; border-radius: 16px; width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                            <button class="rm-modal-close" id="rm-btn-close-withdraw-modal" style="position: absolute; top: 16px; right: 16px; border: none; background: #f1f5f9; color: #64748b; font-size: 18px; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+                            <h3 style="margin-top: 0; margin-bottom: 24px; color: #0f172a; font-size: 1.3rem; font-weight: 800;"><?php esc_html_e( 'Withdrawal Request', 'reseller-management' ); ?></h3>
+                            
+                            <form id="rm-form-withdraw" class="rm-form row">
+                                <div class="col-12" style="margin-bottom: 16px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Amount', 'reseller-management' ); ?> (৳)</label>
+                                    <input type="number" name="amount" class="rm-input" min="1" max="<?php echo esc_attr( $current_balance ); ?>" required placeholder="0.00" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600;">
+                                </div>
+                                <div class="col-12" style="margin-bottom: 16px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Payment Method', 'reseller-management' ); ?></label>
+                                    <select name="payment_method" id="rm-withdraw-method-select" class="rm-select" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #fff;">
+                                        <option value=""><?php esc_html_e( '-- Select Method --', 'reseller-management' ); ?></option>
+                                        <?php if ( ! empty( $payment_methods ) ) : ?>
+                                            <?php foreach ( $payment_methods as $method ) : ?>
+                                                <option value="<?php echo esc_attr( $method->method_name ); ?>" data-number="<?php echo esc_attr( $method->number ); ?>">
+                                                    <?php echo esc_html( ucfirst( $method->method_name ) . ' (' . ucfirst( $method->type ) . ')' ); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else : ?>
+                                            <option value="" disabled><?php esc_html_e( 'No saved methods. Please add one.', 'reseller-management' ); ?></option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12" style="margin-bottom: 24px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Account Details', 'reseller-management' ); ?></label>
+                                    <input type="text" name="account_details" id="rm-withdraw-account-details" class="rm-input" readonly required placeholder="<?php esc_attr_e( 'Select a payment method above', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #f8fafc; color: #64748b;">
+                                </div>
+                                <div class="col-12">
+                                    <div class="rm-form-response" style="margin-bottom: 15px; font-size: 0.85rem; font-weight: 600; border-radius: 8px;"></div>
+                                    <button type="submit" class="rm-button" style="width: 100%; background: #0f172a; color: #fff; padding: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer;"><?php esc_html_e( 'Submit Request', 'reseller-management' ); ?></button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     <?php endif; ?>
 
