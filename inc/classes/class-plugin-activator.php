@@ -82,9 +82,11 @@ class Plugin_Activator {
         $sql_withdrawals = "CREATE TABLE {$withdrawals_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             reseller_id bigint(20) unsigned NOT NULL,
+            transaction_id varchar(50) NOT NULL,
             amount decimal(10,2) NOT NULL,
             payment_method varchar(50) NOT NULL,
             account_details text NOT NULL,
+            note text DEFAULT NULL,
             status varchar(20) DEFAULT 'pending' NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),

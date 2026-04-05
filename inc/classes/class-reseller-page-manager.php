@@ -58,6 +58,19 @@ if ( ! class_exists( 'Reseller_Page_Manager' ) ) {
 		}
 
 		/**
+		 * Remove created pages on plugin deactivation.
+		 */
+		public function remove_pages() {
+			foreach ( $this->pages as $key => $page_data ) {
+				$page_id = $this->get_page_id_by_slug( $page_data['page_name'] );
+
+				if ( $page_id ) {
+					wp_delete_post( $page_id, true );
+				}
+			}
+		}
+
+		/**
 		 * Get page ID by slug.
 		 *
 		 * @param string $slug The page slug.

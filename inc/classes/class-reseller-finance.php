@@ -197,6 +197,7 @@ class Reseller_Finance {
         $amount           = round( (float) wp_unslash( $_POST['amount'] ?? 0 ), 2 );
         $payment_method   = sanitize_text_field( wp_unslash( $_POST['payment_method'] ?? '' ) );
         $account_details  = sanitize_textarea_field( wp_unslash( $_POST['account_details'] ?? '' ) );
+        $note             = sanitize_textarea_field( wp_unslash( $_POST['note'] ?? '' ) );
         $current_balance  = Reseller_Helper::get_current_balance( $reseller_id );
 
         if ( $amount <= 0 || empty( $payment_method ) || empty( $account_details ) ) {
@@ -207,17 +208,21 @@ class Reseller_Finance {
             wp_send_json_error( __( 'Withdrawal amount exceeds your current balance.', 'reseller-management' ), 422 );
         }
 
+        $transaction_id = 'TXN-' . strtoupper( uniqid() );
+
         $inserted = $wpdb->insert(
             Reseller_Helper::get_withdrawals_table_name(),
             [
                 'reseller_id'     => $reseller_id,
+                'transaction_id'  => $transaction_id,
                 'amount'          => $amount,
                 'payment_method'  => $payment_method,
                 'account_details' => $account_details,
+                'note'            => $note,
                 'status'          => 'pending',
                 'created_at'      => current_time( 'mysql' ),
             ],
-            [ '%d', '%f', '%s', '%s', '%s', '%s' ]
+            [ '%d', '%s', '%f', '%s', '%s', '%s', '%s', '%s' ]
         );
 
         if ( ! $inserted ) {

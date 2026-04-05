@@ -216,6 +216,10 @@ class Reseller_Dashboard {
                                     <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Account Details', 'reseller-management' ); ?></label>
                                     <input type="text" name="account_details" id="rm-withdraw-account-details" class="rm-input" readonly required placeholder="<?php esc_attr_e( 'Select a payment method above', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #f8fafc; color: #64748b;">
                                 </div>
+                                <div class="col-12" style="margin-bottom: 24px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Note (Optional)', 'reseller-management' ); ?></label>
+                                    <textarea name="note" class="rm-input" placeholder="<?php esc_attr_e( 'Add any additional notes here...', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; min-height: 80px;"></textarea>
+                                </div>
                                 <div class="col-12">
                                     <div class="rm-form-response" style="margin-bottom: 15px; font-size: 0.85rem; font-weight: 600; border-radius: 8px;"></div>
                                     <button type="submit" class="rm-button" style="width: 100%; background: #0f172a; color: #fff; padding: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer;"><?php esc_html_e( 'Submit Request', 'reseller-management' ); ?></button>
@@ -246,8 +250,8 @@ class Reseller_Dashboard {
 
         // Account tab routes to sub-templates by subtab.
         if ( 'account' === $tab ) {
-            $allowed_subtabs = [ 'payment-methods', 'withdrawals' ];
-            $active_subtab   = in_array( $subtab, $allowed_subtabs, true ) ? $subtab : 'payment-methods';
+            $allowed_subtabs = [ 'withdrawals', 'payment-methods' ];
+            $active_subtab   = in_array( $subtab, $allowed_subtabs, true ) ? $subtab : 'withdrawals';
             $sub_template    = PLUGIN_BASE_PATH . '/templates/dashboard/account/' . $active_subtab . '.php';
 
             if ( file_exists( $sub_template ) ) {

@@ -8,45 +8,15 @@
 defined( 'ABSPATH' ) || exit;
 
 /* ── Helpers ────────────────────────────────────────────── */
-$reseller_id  = get_current_user_id();
-$live_data    = \BOILERPLATE\Inc\Reseller_Finance::get_withdrawals( $reseller_id );
-
-/* ── 20 Dummy withdrawals (used when live data is empty) ── */
-$dummy_withdrawals = [];
-$dummy_methods     = [ 'bkash', 'nagad', 'rocket' ];
-$dummy_statuses    = [ 'pending', 'pending', 'pending', 'approved', 'rejected' ]; // mostly pending
-$dummy_details     = [
-    'bkash'  => [ '01711223344', '01899887766', '01600112233', '01755443322', '01622334455' ],
-    'nagad'  => [ '01911223344', '01844556677', '01966778899', '01933221100', '01877665544' ],
-    'rocket' => [ '01611223344', '01534455667', '01512233445', '01577889900', '01566778899' ],
-];
-$base_time = strtotime( '2026-01-15 09:00:00' );
-
-for ( $i = 1; $i <= 30; $i++ ) {
-    $method  = $dummy_methods[ ( $i - 1 ) % 3 ];
-    $numbers = $dummy_details[ $method ];
-    $number  = $numbers[ ( $i - 1 ) % count( $numbers ) ];
-    $status  = $dummy_statuses[ ( $i - 1 ) % count( $dummy_statuses ) ];
-    $ts      = $base_time + ( $i - 1 ) * 3 * DAY_IN_SECONDS;
-
-    $dummy_withdrawals[] = (object) [
-        'id'             => $i,
-        'txn_id'         => 'TXN-' . strtoupper( substr( md5( 'wd' . $i ), 0, 8 ) ),
-        'reseller_id'    => $reseller_id,
-        'amount'         => round( 500 + ( $i * 137.5 ) + ( $i % 4 ) * 250, 2 ),
-        'payment_method' => $method,
-        'account_details'=> $number,
-        'status'         => $status,
-        'created_at'     => date( 'Y-m-d H:i:s', $ts ),
-    ];
-}
-
-/* Use live data if available, otherwise dummy */
-$all_withdrawals = ! empty( $live_data ) ? $live_data : $dummy_withdrawals;
+$reseller_id     = get_current_user_id();
+$live_data       = \BOILERPLATE\Inc\Reseller_Finance::get_withdrawals( $reseller_id );
+$all_withdrawals = is_array( $live_data ) ? $live_data : [];
 
 /* Inject txn_id into live data rows that don't have one */
 foreach ( $all_withdrawals as &$wd ) {
-    if ( empty( $wd->txn_id ) ) {
+    if ( ! empty( $wd->transaction_id ) ) {
+        $wd->txn_id = (string) $wd->transaction_id;
+    } elseif ( empty( $wd->txn_id ) ) {
         $wd->txn_id = 'TXN-' . strtoupper( substr( md5( 'wd' . $wd->id ), 0, 8 ) );
     }
 }

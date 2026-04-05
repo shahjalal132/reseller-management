@@ -288,8 +288,8 @@ class Reseller_Helper {
                 'label'    => __( 'Account', 'reseller-management' ),
                 'icon'     => 'account',
                 'children' => [
-                    'payment-methods' => __( 'Payment Methods', 'reseller-management' ),
                     'withdrawals'     => __( 'Withdrawals', 'reseller-management' ),
+                    'payment-methods' => __( 'Payment Methods', 'reseller-management' ),
                 ],
             ],
             'settings'  => [
