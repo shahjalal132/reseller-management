@@ -14,11 +14,74 @@ class Reseller_Orders {
      * Register hooks.
      */
     protected function __construct() {
+        add_action( 'init', [ $this, 'register_custom_order_statuses' ] );
+        add_filter( 'wc_order_statuses', [ $this, 'add_custom_order_statuses' ] );
         add_action( 'wp_ajax_reseller_create_order', [ $this, 'handle_create_order' ] );
         add_action( 'wp_ajax_reseller_update_order', [ $this, 'handle_update_order' ] );
         add_action( 'wp_ajax_reseller_update_order_status', [ $this, 'handle_update_order_status' ] );
         add_action( 'wp_ajax_reseller_search_products', [ $this, 'handle_search_products' ] );
         add_action( 'template_redirect', [ $this, 'handle_print_invoice' ] );
+    }
+
+    /**
+     * Register custom order statuses.
+     */
+    public function register_custom_order_statuses() {
+        register_post_status( 'wc-packaging', [
+            'label'                     => __( 'Packaging', 'reseller-management' ),
+            'public'                    => true,
+            'exclude_from_search'       => false,
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'label_count'               => _n_noop( 'Packaging <span class="count">(%s)</span>', 'Packaging <span class="count">(%s)</span>', 'reseller-management' ),
+        ] );
+
+        register_post_status( 'wc-shipping', [
+            'label'                     => __( 'Shipping', 'reseller-management' ),
+            'public'                    => true,
+            'exclude_from_search'       => false,
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'label_count'               => _n_noop( 'Shipping <span class="count">(%s)</span>', 'Shipping <span class="count">(%s)</span>', 'reseller-management' ),
+        ] );
+
+        register_post_status( 'wc-delivered', [
+            'label'                     => __( 'Delivered', 'reseller-management' ),
+            'public'                    => true,
+            'exclude_from_search'       => false,
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'label_count'               => _n_noop( 'Delivered <span class="count">(%s)</span>', 'Delivered <span class="count">(%s)</span>', 'reseller-management' ),
+        ] );
+
+        register_post_status( 'wc-confirmed', [
+            'label'                     => __( 'Confirmed', 'reseller-management' ),
+            'public'                    => true,
+            'exclude_from_search'       => false,
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'label_count'               => _n_noop( 'Confirmed <span class="count">(%s)</span>', 'Confirmed <span class="count">(%s)</span>', 'reseller-management' ),
+        ] );
+    }
+
+    /**
+     * Add custom order statuses to WooCommerce.
+     */
+    public function add_custom_order_statuses( $order_statuses ) {
+        $new_order_statuses = [];
+
+        foreach ( $order_statuses as $key => $status ) {
+            $new_order_statuses[ $key ] = $status;
+
+            if ( 'wc-processing' === $key ) {
+                $new_order_statuses['wc-packaging']  = __( 'Packaging', 'reseller-management' );
+                $new_order_statuses['wc-shipping'] = __( 'Shipping', 'reseller-management' );
+                $new_order_statuses['wc-delivered'] = __( 'Delivered', 'reseller-management' );
+                $new_order_statuses['wc-confirmed'] = __( 'Confirmed', 'reseller-management' );
+            }
+        }
+
+        return $new_order_statuses;
     }
 
     /**
@@ -62,8 +125,8 @@ class Reseller_Orders {
             'new'        => 0,
             'pending'    => 0,
             'confirmed'  => 0,
-            'packaging'  => 0,
-            'shipment'   => 0,
+            'packaging'    => 0,
+            'shipping'   => 0,
             'delivered'  => 0,
             'wfr'        => 0,
             'returned'   => 0,
@@ -79,15 +142,25 @@ class Reseller_Orders {
             // Note: These mappings might need adjustment based on custom statuses in use.
             switch ( $status ) {
                 case 'pending':
+                case 'on-hold':
                     $counts['pending']++;
                     break;
                 case 'processing':
                     $counts['new']++;
                     break;
-                case 'on-hold':
+                case 'confirmed':
                     $counts['confirmed']++;
                     break;
                 case 'completed':
+                    $counts['delivered']++;
+                    break;
+                case 'packaging':
+                    $counts['packaging']++;
+                    break;
+                case 'shipping':
+                    $counts['shipping']++;
+                    break;
+                case 'delivered':
                     $counts['delivered']++;
                     break;
                 case 'cancelled':
@@ -404,7 +477,7 @@ class Reseller_Orders {
         }
 
         // Validate status
-        $valid_statuses = [ 'pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed' ];
+        $valid_statuses = [ 'pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed', 'packaging', 'shipping', 'delivered', 'confirmed' ];
         if ( ! in_array( $new_status, $valid_statuses, true ) ) {
             wp_send_json_error( __( 'Invalid status value.', 'reseller-management' ), 422 );
         }

@@ -15,6 +15,7 @@ class Reseller_Finance {
      */
     protected function __construct() {
         add_action( 'woocommerce_order_status_completed', [ $this, 'credit_order_commission' ] );
+        add_action( 'woocommerce_order_status_delivered', [ $this, 'credit_order_commission' ] );
         add_action( 'woocommerce_order_status_refunded', [ $this, 'debit_order_shipping' ] );
         add_action( 'wp_ajax_reseller_request_withdrawal', [ $this, 'handle_withdrawal_request' ] );
         add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );

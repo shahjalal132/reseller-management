@@ -290,6 +290,7 @@ class Reseller_Helper {
                 'children' => [
                     'withdrawals'     => __( 'Withdrawals', 'reseller-management' ),
                     'payment-methods' => __( 'Payment Methods', 'reseller-management' ),
+                    'transactions'    => __( 'Transaction Statement', 'reseller-management' ),
                 ],
             ],
             'settings'  => [

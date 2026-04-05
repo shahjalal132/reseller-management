@@ -31,8 +31,8 @@ $stats_config = [
     'new'        => [ 'label' => __( 'New', 'reseller-management' ), 'icon' => 'status_new', 'color' => '#000' ],
     'pending'    => [ 'label' => __( 'Pending', 'reseller-management' ), 'icon' => 'status_pending', 'color' => '#f59e0b' ],
     'confirmed'  => [ 'label' => __( 'Confirmed', 'reseller-management' ), 'icon' => 'status_confirmed', 'color' => '#10b981' ],
-    'packaging'  => [ 'label' => __( 'Packaging', 'reseller-management' ), 'icon' => 'status_packaging', 'color' => '#3b82f6' ],
-    'shipment'   => [ 'label' => __( 'Shipment', 'reseller-management' ), 'icon' => 'status_shipment', 'color' => '#6366f1' ],
+    'packaging'    => [ 'label' => __( 'Packaging', 'reseller-management' ), 'icon' => 'status_packaging', 'color' => '#3b82f6' ],
+    'shipping'   => [ 'label' => __( 'Shipping', 'reseller-management' ), 'icon' => 'status_shipment', 'color' => '#6366f1' ],
     'delivered'  => [ 'label' => __( 'Delivered', 'reseller-management' ), 'icon' => 'status_delivered', 'color' => '#059669' ],
     'wfr'        => [ 'label' => __( 'WFR', 'reseller-management' ), 'icon' => 'status_wfr', 'color' => '#d97706' ],
     'returned'   => [ 'label' => __( 'Returned', 'reseller-management' ), 'icon' => 'status_returned', 'color' => '#9333ea' ],
@@ -51,12 +51,12 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
             $status = $order->get_status();
             switch ( $active_subtab ) {
                 case 'new':        return 'processing' === $status;
-                case 'pending':    return 'pending' === $status;
-                case 'confirmed':  return 'on-hold' === $status;
-                case 'packaging':  return 'packaging' === $status; // Assuming custom status
-                case 'shipment':   return 'shipment' === $status; // Assuming custom status
-                case 'delivered':  return 'completed' === $status;
-                case 'wfr':        return 'wfr' === $status; // Assuming custom status
+                case 'pending':    return 'pending' === $status || 'on-hold' === $status;
+                case 'confirmed':  return 'confirmed' === $status;
+                case 'packaging':    return 'packaging' === $status;
+                case 'shipping':   return 'shipping' === $status;
+                case 'delivered':  return 'delivered' === $status || 'completed' === $status;
+                case 'wfr':        return 'wfr' === $status;
                 case 'returned':   return 'refunded' === $status;
                 case 'cancel':     return 'cancelled' === $status;
                 case 'incomplete': return 'failed' === $status;
@@ -182,7 +182,11 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                     </td>
                     <td class="rm-col-action">
                         <div class="rm-action-dropdown-container">
-                            <button class="rm-btn-action-trigger" title="Action">
+                            <?php 
+                            $restricted_statuses = [ 'delivered', 'shipping', 'packaging', 'cancelled' ];
+                            $is_restricted = in_array( $status, $restricted_statuses, true );
+                            ?>
+                            <button class="rm-btn-action-trigger" title="Action" <?php echo $is_restricted ? 'disabled' : ''; ?> style="<?php echo $is_restricted ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
                                 <?php echo $dashboard->get_svg_icon('status_all'); ?>
                             </button>
                             <div class="rm-action-dropdown-menu">
@@ -192,7 +196,7 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                                 <button class="rm-dropdown-item item-pending" data-order-id="<?php echo $order->get_id(); ?>" data-status="pending">
                                     <span><?php esc_html_e( 'Pending', 'reseller-management' ); ?></span>
                                 </button>
-                                <button class="rm-dropdown-item item-confirmed" data-order-id="<?php echo $order->get_id(); ?>" data-status="on-hold">
+                                <button class="rm-dropdown-item item-confirmed" data-order-id="<?php echo $order->get_id(); ?>" data-status="confirmed">
                                     <span><?php esc_html_e( 'Confirmed', 'reseller-management' ); ?></span>
                                 </button>
                                 <button class="rm-dropdown-item item-cancel" data-order-id="<?php echo $order->get_id(); ?>" data-status="cancelled">

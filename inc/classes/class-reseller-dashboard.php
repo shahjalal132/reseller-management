@@ -250,7 +250,7 @@ class Reseller_Dashboard {
 
         // Account tab routes to sub-templates by subtab.
         if ( 'account' === $tab ) {
-            $allowed_subtabs = [ 'withdrawals', 'payment-methods' ];
+            $allowed_subtabs = [ 'withdrawals', 'payment-methods', 'transactions' ];
             $active_subtab   = in_array( $subtab, $allowed_subtabs, true ) ? $subtab : 'withdrawals';
             $sub_template    = PLUGIN_BASE_PATH . '/templates/dashboard/account/' . $active_subtab . '.php';
 

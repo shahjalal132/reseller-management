@@ -460,7 +460,11 @@
         'pending': 'Pending',
         'processing': 'New',
         'on-hold': 'Confirmed',
+        'confirmed': 'Confirmed',
         'completed': 'Completed',
+        'packaging': 'Packaging',
+        'shipping': 'Shipping',
+        'delivered': 'Delivered',
         'cancelled': 'Cancel',
         'refunded': 'Returned',
         'failed': 'Failed'
@@ -513,15 +517,18 @@
             var newStatusKey = newStatus;
 
             if (currentStatus === 'processing') oldStatusKey = 'new';
-            if (currentStatus === 'on-hold') oldStatusKey = 'confirmed';
+            if (currentStatus === 'on-hold') oldStatusKey = 'pending';
             if (currentStatus === 'completed') oldStatusKey = 'delivered';
             if (currentStatus === 'refunded') oldStatusKey = 'returned';
             if (currentStatus === 'cancelled') oldStatusKey = 'cancel';
             if (currentStatus === 'failed') oldStatusKey = 'incomplete';
 
             if (newStatus === 'processing') newStatusKey = 'new';
-            if (newStatus === 'on-hold') newStatusKey = 'confirmed';
+            if (newStatus === 'on-hold') newStatusKey = 'pending';
             if (newStatus === 'completed') newStatusKey = 'delivered';
+            if (newStatus === 'packaging') newStatusKey = 'packaging';
+            if (newStatus === 'shipping') newStatusKey = 'shipping';
+            if (newStatus === 'delivered') newStatusKey = 'delivered';
             if (newStatus === 'refunded') newStatusKey = 'returned';
             if (newStatus === 'cancelled') newStatusKey = 'cancel';
             if (newStatus === 'failed') newStatusKey = 'incomplete';

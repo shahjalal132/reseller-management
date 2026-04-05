@@ -13,7 +13,17 @@ class Plugin_Activator {
         self::validate_dependencies();
         self::create_reseller_role();
         self::create_financial_tables();
+        self::register_order_statuses();
         \BOILERPLATE\Inc\Reseller_Page_Manager::get_instance()->check_and_create_pages();
+    }
+
+    /**
+     * Register custom order statuses.
+     */
+    protected static function register_order_statuses() {
+        if ( class_exists( '\BOILERPLATE\Inc\Reseller_Orders' ) ) {
+            \BOILERPLATE\Inc\Reseller_Orders::get_instance()->register_custom_order_statuses();
+        }
     }
 
     /**
