@@ -31,6 +31,10 @@ class Admin_Top_Menu {
         add_action( 'admin_post_rm_update_reseller_ban',    [ $this, 'handle_reseller_ban_update' ] );
         add_action( 'admin_post_rm_mark_withdrawal_paid',  [ $this, 'handle_mark_withdrawal_paid' ] );
 
+        // Admin Withdrawals actions
+        add_action( 'admin_post_rm_delete_withdrawal', [ $this, 'handle_delete_withdrawal' ] );
+        add_action( 'admin_post_rm_edit_withdrawal',   [ $this, 'handle_edit_withdrawal' ] );
+
         // Delete reseller handler.
         add_action( 'admin_post_rm_delete_reseller', [ $this, 'handle_delete_reseller' ] );
     }
@@ -481,6 +485,83 @@ class Admin_Top_Menu {
         wp_delete_user( $reseller_id );
 
         $this->redirect_with_notice( admin_url( 'admin.php?page=reseller-hub-users' ), 'reseller-deleted' );
+    }
+
+    /**
+     * Handle editing a withdrawal via form submit.
+     *
+     * @return void
+     */
+    public function handle_edit_withdrawal() {
+        global $wpdb;
+
+        $withdrawal_id = absint( $_POST['wd_id'] ?? 0 );
+        check_admin_referer( 'rm_edit_withdrawal_' . $withdrawal_id );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to edit withdrawals.', 'reseller-management' ) );
+        }
+
+        $amount          = round( (float) wp_unslash( $_POST['amount'] ?? 0 ), 2 );
+        $payment_method  = sanitize_text_field( wp_unslash( $_POST['payment_method'] ?? '' ) );
+        $account_details = sanitize_textarea_field( wp_unslash( $_POST['account_details'] ?? '' ) );
+        $note            = sanitize_textarea_field( wp_unslash( $_POST['note'] ?? '' ) );
+        $status          = sanitize_text_field( wp_unslash( $_POST['status'] ?? 'pending' ) );
+
+        $allowed_statuses = [ 'pending', 'approved', 'rejected', 'completed' ];
+        if ( ! in_array( $status, $allowed_statuses, true ) ) {
+            $status = 'pending';
+        }
+
+        if ( $withdrawal_id > 0 ) {
+            $wpdb->update(
+                Reseller_Helper::get_withdrawals_table_name(),
+                [
+                    'amount'          => $amount,
+                    'payment_method'  => $payment_method,
+                    'account_details' => $account_details,
+                    'note'            => $note,
+                    'status'          => $status,
+                ],
+                [ 'id' => $withdrawal_id ],
+                [ '%f', '%s', '%s', '%s', '%s' ],
+                [ '%d' ]
+            );
+        }
+
+        $this->redirect_with_notice(
+            admin_url( 'admin.php?page=reseller-hub-withdrawals' ),
+            'withdrawal-updated'
+        );
+    }
+
+    /**
+     * Handle deleting a withdrawal.
+     *
+     * @return void
+     */
+    public function handle_delete_withdrawal() {
+        global $wpdb;
+
+        $withdrawal_id = absint( $_GET['wd_id'] ?? 0 );
+        check_admin_referer( 'rm_delete_withdrawal_' . $withdrawal_id );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to delete withdrawals.', 'reseller-management' ) );
+        }
+
+        if ( $withdrawal_id > 0 ) {
+            $wpdb->delete(
+                Reseller_Helper::get_withdrawals_table_name(),
+                [ 'id' => $withdrawal_id ],
+                [ '%d' ]
+            );
+        }
+
+        $this->redirect_with_notice(
+            admin_url( 'admin.php?page=reseller-hub-withdrawals' ),
+            'withdrawal-deleted'
+        );
     }
 
     /**

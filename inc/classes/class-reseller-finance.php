@@ -19,6 +19,7 @@ class Reseller_Finance {
         add_action( 'wp_ajax_reseller_request_withdrawal', [ $this, 'handle_withdrawal_request' ] );
         add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );
         add_action( 'wp_ajax_reseller_delete_payment_method', [ $this, 'handle_delete_payment_method' ] );
+        add_action( 'wp_ajax_rm_admin_update_withdrawal_status', [ $this, 'handle_admin_update_withdrawal_status' ] );
     }
 
     /**
@@ -322,5 +323,45 @@ class Reseller_Finance {
 
         $wpdb->delete( $table, [ 'id' => $id ], [ '%d' ] );
         wp_send_json_success( __( 'Payment method deleted successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle updating withdrawal status from admin dashboard via AJAX.
+     *
+     * @return void
+     */
+    public function handle_admin_update_withdrawal_status() {
+        check_ajax_referer( 'rm_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'You are not allowed to update withdrawal statuses.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $wd_id  = (int) ( $_POST['wd_id'] ?? 0 );
+        $status = sanitize_text_field( wp_unslash( $_POST['status'] ?? '' ) );
+
+        $allowed_statuses = [ 'pending', 'approved', 'rejected', 'completed' ];
+
+        if ( $wd_id <= 0 || ! in_array( $status, $allowed_statuses, true ) ) {
+            wp_send_json_error( __( 'Invalid request details.', 'reseller-management' ), 422 );
+        }
+
+        $table = Reseller_Helper::get_withdrawals_table_name();
+        
+        $updated = $wpdb->update(
+            $table,
+            [ 'status' => $status ],
+            [ 'id'     => $wd_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+
+        if ( false === $updated ) {
+            wp_send_json_error( __( 'Database update failed.', 'reseller-management' ), 500 );
+        }
+
+        wp_send_json_success( __( 'Withdrawal status updated successfully.', 'reseller-management' ) );
     }
 }
