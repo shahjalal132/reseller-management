@@ -20,116 +20,35 @@ if ( ! $rm_user ) {
 
 $back_url = admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $rm_reseller_id );
 
-// ── Dummy statement rows ────────────────────────────────────────────────────
-// Each entry: date, type (credit|debit), description, amount, running_balance
-$dummy_statements = [
-    [
-        'date'            => '2026-04-01',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10241 (Delivered)',
-        'amount'          => 520.00,
-        'running_balance' => 3870.50,
-        'ref'             => 'ORD-10241',
-    ],
-    [
-        'date'            => '2026-03-30',
-        'type'            => 'debit',
-        'description'     => 'Withdrawal — bKash to 01712-345678',
-        'amount'          => -1500.00,
-        'running_balance' => 3350.50,
-        'ref'             => 'WD-8812',
-    ],
-    [
-        'date'            => '2026-03-28',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10238 (Delivered)',
-        'amount'          => 380.00,
-        'running_balance' => 4850.50,
-        'ref'             => 'ORD-10238',
-    ],
-    [
-        'date'            => '2026-03-25',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10230 (Delivered)',
-        'amount'          => 250.00,
-        'running_balance' => 4470.50,
-        'ref'             => 'ORD-10230',
-    ],
-    [
-        'date'            => '2026-03-22',
-        'type'            => 'debit',
-        'description'     => 'Shipping deduction — Order #10221',
-        'amount'          => -60.00,
-        'running_balance' => 4220.50,
-        'ref'             => 'ORD-10221',
-    ],
-    [
-        'date'            => '2026-03-20',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10221 (Delivered)',
-        'amount'          => 640.00,
-        'running_balance' => 4280.50,
-        'ref'             => 'ORD-10221',
-    ],
-    [
-        'date'            => '2026-03-18',
-        'type'            => 'debit',
-        'description'     => 'Withdrawal — Nagad to 01811-987654',
-        'amount'          => -2000.00,
-        'running_balance' => 3640.50,
-        'ref'             => 'WD-8791',
-    ],
-    [
-        'date'            => '2026-03-15',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10209 (Delivered)',
-        'amount'          => 410.00,
-        'running_balance' => 5640.50,
-        'ref'             => 'ORD-10209',
-    ],
-    [
-        'date'            => '2026-03-12',
-        'type'            => 'credit',
-        'description'     => 'Bonus — March performance incentive',
-        'amount'          => 500.00,
-        'running_balance' => 5230.50,
-        'ref'             => 'BONUS-MAR26',
-    ],
-    [
-        'date'            => '2026-03-10',
-        'type'            => 'debit',
-        'description'     => 'Shipping deduction — Order #10198',
-        'amount'          => -80.00,
-        'running_balance' => 4730.50,
-        'ref'             => 'ORD-10198',
-    ],
-    [
-        'date'            => '2026-03-08',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10198 (Delivered)',
-        'amount'          => 290.00,
-        'running_balance' => 4810.50,
-        'ref'             => 'ORD-10198',
-    ],
-    [
-        'date'            => '2026-03-05',
-        'type'            => 'credit',
-        'description'     => 'Commission — Order #10185 (Delivered)',
-        'amount'          => 175.00,
-        'running_balance' => 4520.50,
-        'ref'             => 'ORD-10185',
-    ],
-];
+// ── Real statement rows ────────────────────────────────────────────────────
+$all_transactions = \BOILERPLATE\Inc\Reseller_Finance::get_transactions( $rm_reseller_id );
 
-// Summary stats
-$total_credits = array_sum( array_column(
-    array_filter( $dummy_statements, fn( $r ) => $r['type'] === 'credit' ),
-    'amount'
-) );
-$total_debits = abs( array_sum( array_column(
-    array_filter( $dummy_statements, fn( $r ) => $r['type'] === 'debit' ),
-    'amount'
-) ) );
+// Calculate summary stats and prepare rows with running balance.
+$total_credits = 0.0;
+$total_debits  = 0.0;
+$current_temp_balance = $rm_balance; // Starting from current total and working backwards for DESC order.
+
+$processed_statements = [];
+foreach ( $all_transactions as $tx ) {
+    $amount = (float) $tx->amount;
+    if ( $amount > 0 ) {
+        $total_credits += $amount;
+    } else {
+        $total_debits += abs( $amount );
+    }
+
+    $processed_statements[] = [
+        'date'            => $tx->created_at,
+        'type'            => $amount >= 0 ? 'credit' : 'debit',
+        'description'     => $tx->description,
+        'amount'          => $amount,
+        'running_balance' => $current_temp_balance,
+        'ref'             => $tx->order_id ? 'ORD-' . $tx->order_id : 'TXN-' . $tx->id,
+    ];
+
+    // Subtract the amount to get the balance before this transaction.
+    $current_temp_balance -= $amount;
+}
 
 $fmt = function ( $amount ) {
     return '৳' . number_format( abs( $amount ), 2 );
@@ -186,7 +105,7 @@ $fmt = function ( $amount ) {
         <div class="rm-stmt-card-body">
             <span class="rm-stmt-card-label"><?php esc_html_e( 'Current Balance', 'reseller-management' ); ?></span>
             <span class="rm-stmt-card-value">
-                <?php echo esc_html( $fmt( $rm_balance > 0 ? $rm_balance : 3870.50 ) ); ?>
+                <?php echo esc_html( $fmt( $rm_balance ) ); ?>
             </span>
         </div>
     </div>
@@ -223,7 +142,7 @@ $fmt = function ( $amount ) {
         </div>
         <div class="rm-stmt-card-body">
             <span class="rm-stmt-card-label"><?php esc_html_e( 'Total Transactions', 'reseller-management' ); ?></span>
-            <span class="rm-stmt-card-value"><?php echo esc_html( (string) count( $dummy_statements ) ); ?></span>
+            <span class="rm-stmt-card-value"><?php echo esc_html( (string) count( $processed_statements ) ); ?></span>
         </div>
     </div>
 
@@ -233,7 +152,6 @@ $fmt = function ( $amount ) {
 <div class="rm-section-card" style="margin-top:20px;">
     <div class="rm-section-card-header">
         <p class="rm-section-card-title"><?php esc_html_e( 'Transaction Ledger', 'reseller-management' ); ?></p>
-        <span style="font-size:12px;color:#9ca3af;font-style:italic;"><?php esc_html_e( 'Showing sample data', 'reseller-management' ); ?></span>
     </div>
 
     <table class="rm-users-table rm-stmt-table">
@@ -248,36 +166,44 @@ $fmt = function ( $amount ) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach ( $dummy_statements as $stmt ) :
-                $is_credit   = $stmt['type'] === 'credit';
-                $type_class  = $is_credit ? 'rm-stmt-type--credit' : 'rm-stmt-type--debit';
-                $type_label  = $is_credit ? __( 'Credit', 'reseller-management' ) : __( 'Debit', 'reseller-management' );
-                $amount_sign = $is_credit ? '+' : '−';
-                $amount_cls  = $is_credit ? 'rm-stmt-amount--credit' : 'rm-stmt-amount--debit';
-            ?>
-            <tr>
-                <td style="white-space:nowrap;color:#6b7280;font-size:13px;">
-                    <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $stmt['date'] ) ) ); ?>
-                </td>
-                <td>
-                    <code class="rm-stmt-ref"><?php echo esc_html( $stmt['ref'] ); ?></code>
-                </td>
-                <td style="font-size:13.5px;color:#374151;"><?php echo esc_html( $stmt['description'] ); ?></td>
-                <td>
-                    <span class="rm-stmt-type-badge <?php echo esc_attr( $type_class ); ?>">
-                        <?php echo esc_html( $type_label ); ?>
-                    </span>
-                </td>
-                <td style="text-align:right;">
-                    <span class="rm-stmt-amount <?php echo esc_attr( $amount_cls ); ?>">
-                        <?php echo esc_html( $amount_sign . ' ' . $fmt( $stmt['amount'] ) ); ?>
-                    </span>
-                </td>
-                <td style="text-align:right;font-weight:600;color:#111827;">
-                    <?php echo esc_html( $fmt( $stmt['running_balance'] ) ); ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
+            <?php if ( empty( $processed_statements ) ) : ?>
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:40px;color:#9ca3af;">
+                        <?php esc_html_e( 'No transactions found for this reseller.', 'reseller-management' ); ?>
+                    </td>
+                </tr>
+            <?php else : ?>
+                <?php foreach ( $processed_statements as $stmt ) :
+                    $is_credit   = $stmt['type'] === 'credit';
+                    $type_class  = $is_credit ? 'rm-stmt-type--credit' : 'rm-stmt-type--debit';
+                    $type_label  = $is_credit ? __( 'Credit', 'reseller-management' ) : __( 'Debit', 'reseller-management' );
+                    $amount_sign = $is_credit ? '+' : '−';
+                    $amount_cls  = $is_credit ? 'rm-stmt-amount--credit' : 'rm-stmt-amount--debit';
+                ?>
+                <tr>
+                    <td style="white-space:nowrap;color:#6b7280;font-size:13px;">
+                        <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ', h:i A', strtotime( $stmt['date'] ) ) ); ?>
+                    </td>
+                    <td>
+                        <code class="rm-stmt-ref"><?php echo esc_html( $stmt['ref'] ); ?></code>
+                    </td>
+                    <td style="font-size:13.5px;color:#374151;"><?php echo esc_html( $stmt['description'] ); ?></td>
+                    <td>
+                        <span class="rm-stmt-type-badge <?php echo esc_attr( $type_class ); ?>">
+                            <?php echo esc_html( $type_label ); ?>
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <span class="rm-stmt-amount <?php echo esc_attr( $amount_cls ); ?>">
+                            <?php echo esc_html( $amount_sign . ' ' . $fmt( $stmt['amount'] ) ); ?>
+                        </span>
+                    </td>
+                    <td style="text-align:right;font-weight:600;color:#111827;">
+                        <?php echo esc_html( $fmt( $stmt['running_balance'] ) ); ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
