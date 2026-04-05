@@ -528,6 +528,7 @@
             if (newStatus === 'completed') newStatusKey = 'delivered';
             if (newStatus === 'packaging') newStatusKey = 'packaging';
             if (newStatus === 'shipping') newStatusKey = 'shipping';
+            if (newStatus === 'returned') newStatusKey = 'returned';
             if (newStatus === 'delivered') newStatusKey = 'delivered';
             if (newStatus === 'refunded') newStatusKey = 'returned';
             if (newStatus === 'cancelled') newStatusKey = 'cancel';

@@ -21,6 +21,9 @@ class Reseller_Finance {
         add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );
         add_action( 'wp_ajax_reseller_delete_payment_method', [ $this, 'handle_delete_payment_method' ] );
         add_action( 'wp_ajax_rm_admin_update_withdrawal_status', [ $this, 'handle_admin_update_withdrawal_status' ] );
+
+        // COD Deduction.
+        add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_cod_deduction' ] );
     }
 
     /**
@@ -364,5 +367,51 @@ class Reseller_Finance {
         }
 
         wp_send_json_success( __( 'Withdrawal status updated successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Apply COD deduction when an order is delivered.
+     *
+     * @param int $order_id Order ID.
+     *
+     * @return void
+     */
+    public function apply_cod_deduction( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return;
+        }
+
+        $reseller_id = (int) $order->get_meta( '_assigned_reseller_id', true );
+        if ( ! $reseller_id || self::ledger_entry_exists_for_order( $order_id, 'cod_deduction' ) ) {
+            return;
+        }
+
+        $settings = get_option( 'rm_settings', [] );
+        if ( ( $settings['cod_enabled'] ?? 'no' ) !== 'yes' ) {
+            return;
+        }
+
+        $percentage = (float) ( $settings['cod_input1'] ?? 0 );
+        if ( $percentage <= 0 ) {
+            return;
+        }
+
+        $total     = (float) $order->get_total();
+        $deduction = ( $total * $percentage ) / 100;
+
+        if ( $deduction <= 0 ) {
+            return;
+        }
+
+        Reseller_Helper::insert_ledger_entry(
+            [
+                'reseller_id' => $reseller_id,
+                'order_id'    => $order_id,
+                'type'        => 'cod_deduction',
+                'amount'      => -1 * abs( $deduction ),
+                'description' => sprintf( 'COD Deduction (%s%%) for Order #%d', $percentage, $order_id ),
+            ]
+        );
     }
 }

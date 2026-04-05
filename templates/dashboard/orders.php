@@ -53,11 +53,11 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                 case 'new':        return 'processing' === $status;
                 case 'pending':    return 'pending' === $status || 'on-hold' === $status;
                 case 'confirmed':  return 'confirmed' === $status;
-                case 'packaging':    return 'packaging' === $status;
+                case 'packaging':  return 'packaging' === $status;
                 case 'shipping':   return 'shipping' === $status;
                 case 'delivered':  return 'delivered' === $status || 'completed' === $status;
                 case 'wfr':        return 'wfr' === $status;
-                case 'returned':   return 'refunded' === $status;
+                case 'returned':   return 'returned' === $status || 'refunded' === $status;
                 case 'cancel':     return 'cancelled' === $status;
                 case 'incomplete': return 'failed' === $status;
                 default:           return true;
@@ -183,7 +183,7 @@ if ( ! in_array( $active_subtab, [ 'all', 'add', 'edit' ], true ) && isset( $sta
                     <td class="rm-col-action">
                         <div class="rm-action-dropdown-container">
                             <?php 
-                            $restricted_statuses = [ 'delivered', 'shipping', 'packaging', 'cancelled' ];
+                            $restricted_statuses = [ 'delivered', 'shipping', 'packaging', 'cancelled', 'returned' ];
                             $is_restricted = in_array( $status, $restricted_statuses, true );
                             ?>
                             <button class="rm-btn-action-trigger" title="Action" <?php echo $is_restricted ? 'disabled' : ''; ?> style="<?php echo $is_restricted ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">

@@ -62,6 +62,15 @@ class Reseller_Orders {
             'show_in_admin_status_list' => true,
             'label_count'               => _n_noop( 'Confirmed <span class="count">(%s)</span>', 'Confirmed <span class="count">(%s)</span>', 'reseller-management' ),
         ] );
+
+        register_post_status( 'wc-returned', [
+            'label'                     => __( 'Returned', 'reseller-management' ),
+            'public'                    => true,
+            'exclude_from_search'       => false,
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'label_count'               => _n_noop( 'Returned <span class="count">(%s)</span>', 'Returned <span class="count">(%s)</span>', 'reseller-management' ),
+        ] );
     }
 
     /**
@@ -78,6 +87,7 @@ class Reseller_Orders {
                 $new_order_statuses['wc-shipping'] = __( 'Shipping', 'reseller-management' );
                 $new_order_statuses['wc-delivered'] = __( 'Delivered', 'reseller-management' );
                 $new_order_statuses['wc-confirmed'] = __( 'Confirmed', 'reseller-management' );
+                $new_order_statuses['wc-returned'] = __( 'Returned', 'reseller-management' );
             }
         }
 
@@ -159,6 +169,9 @@ class Reseller_Orders {
                     break;
                 case 'shipping':
                     $counts['shipping']++;
+                    break;
+                case 'returned':
+                    $counts['returned']++;
                     break;
                 case 'delivered':
                     $counts['delivered']++;

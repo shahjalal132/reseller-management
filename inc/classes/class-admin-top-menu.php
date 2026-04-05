@@ -37,6 +37,9 @@ class Admin_Top_Menu {
 
         // Delete reseller handler.
         add_action( 'admin_post_rm_delete_reseller', [ $this, 'handle_delete_reseller' ] );
+
+        // Settings handler.
+        add_action( 'admin_post_rm_save_settings', [ $this, 'handle_settings_save' ] );
     }
 
     /**
@@ -262,7 +265,12 @@ class Admin_Top_Menu {
      * @return void
      */
     public function render_settings_page() {
-        $this->render_page( 'settings', PLUGIN_BASE_PATH . '/templates/admin/rm-settings.php' );
+        $settings = get_option( 'rm_settings', [] );
+        $this->render_page(
+            'settings',
+            PLUGIN_BASE_PATH . '/templates/admin/rm-settings.php',
+            [ 'rm_settings' => $settings ]
+        );
     }
 
     /**
@@ -562,6 +570,30 @@ class Admin_Top_Menu {
             admin_url( 'admin.php?page=reseller-hub-withdrawals' ),
             'withdrawal-deleted'
         );
+    }
+
+    /**
+     * Handle saving global plugin settings.
+     *
+     * @return void
+     */
+    public function handle_settings_save() {
+        check_admin_referer( 'rm_save_settings' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to manage settings.', 'reseller-management' ) );
+        }
+
+        $settings = [
+            'cod_enabled'            => isset( $_POST['cod_enabled'] ) ? 'yes' : 'no',
+            'cod_input1'             => sanitize_text_field( wp_unslash( $_POST['cod_input1'] ?? '' ) ),
+            'packaging_cost_enabled' => isset( $_POST['packaging_cost_enabled'] ) ? 'yes' : 'no',
+            'packaging_cost_input1'  => sanitize_text_field( wp_unslash( $_POST['packaging_cost_input1'] ?? '' ) ),
+        ];
+
+        update_option( 'rm_settings', $settings );
+
+        $this->redirect_with_notice( admin_url( 'admin.php?page=reseller-hub-settings' ), 'settings-updated' );
     }
 
     /**

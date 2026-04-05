@@ -1,19 +1,105 @@
 <?php
 /**
- * Reseller Hub – Settings placeholder.
+ * Reseller Hub – Settings page.
+ *
+ * @package reseller-management
  */
 defined( 'ABSPATH' ) || exit;
+
+$rm_settings = $rm_settings ?? get_option( 'rm_settings', [] );
+
+// Notices.
+$notice       = $_GET['rm_notice'] ?? '';
+$notice_msg   = '';
+$notice_class = 'rm-notice-success';
+
+if ( 'settings-updated' === $notice ) {
+    $notice_msg = __( 'Settings updated successfully.', 'reseller-management' );
+}
 ?>
+
 <div class="rm-page-header">
     <h1 class="rm-page-title"><?php esc_html_e( 'Settings', 'reseller-management' ); ?></h1>
 </div>
-<div class="rm-section-card">
-    <div class="rm-coming-soon">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-        </svg>
-        <h3><?php esc_html_e( 'Settings Coming Soon', 'reseller-management' ); ?></h3>
-        <p><?php esc_html_e( 'Global reseller program settings will be configurable here in a future update.', 'reseller-management' ); ?></p>
+
+<?php if ( $notice_msg ) : ?>
+    <div class="rm-notice <?php echo esc_attr( $notice_class ); ?>">
+        <p><?php echo esc_html( $notice_msg ); ?></p>
     </div>
-</div>
+<?php endif; ?>
+
+<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+    <?php wp_nonce_field( 'rm_save_settings' ); ?>
+    <input type="hidden" name="action" value="rm_save_settings">
+
+    <div class="rm-section-card">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'COD Settings', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <div class="rm-form-group">
+                <label class="rm-toggle">
+                    <input type="checkbox" name="cod_enabled" value="yes" <?php checked( 'yes', $rm_settings['cod_enabled'] ?? 'no' ); ?>>
+                    <span class="rm-toggle-slider"></span>
+                    <span class="rm-toggle-label"><?php esc_html_e( 'Enable COD Option', 'reseller-management' ); ?></span>
+                </label>
+            </div>
+            
+            <div class="rm-grid rm-grid-1 mt-20">
+                <div class="rm-field">
+                    <span><?php esc_html_e( 'COD Percentage (%)', 'reseller-management' ); ?></span>
+                    <input type="number" step="0.01" name="cod_input1" value="<?php echo esc_attr( $rm_settings['cod_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter percentage (e.g. 5)', 'reseller-management' ); ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Packaging Cost Settings', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <div class="rm-form-group">
+                <label class="rm-toggle">
+                    <input type="checkbox" name="packaging_cost_enabled" value="yes" <?php checked( 'yes', $rm_settings['packaging_cost_enabled'] ?? 'no' ); ?>>
+                    <span class="rm-toggle-slider"></span>
+                    <span class="rm-toggle-label"><?php esc_html_e( 'Enable Packaging Cost Option', 'reseller-management' ); ?></span>
+                </label>
+            </div>
+            
+            <div class="rm-grid rm-grid-1 mt-20">
+                <div class="rm-field">
+                    <span><?php esc_html_e( 'Packaging Cost', 'reseller-management' ); ?></span>
+                    <input type="text" name="packaging_cost_input1" value="<?php echo esc_attr( $rm_settings['packaging_cost_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter value', 'reseller-management' ); ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-form-actions mt-20">
+        <button type="submit" class="rm-button">
+            <?php esc_html_e( 'Save Settings', 'reseller-management' ); ?>
+        </button>
+    </div>
+</form>
+
+<style>
+    .mt-20 { margin-top: 20px; }
+    .rm-section-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+    .rm-card-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fafafa; }
+    .rm-card-title { margin: 0; font-size: 16px; font-weight: 600; color: #333; }
+    .rm-card-body { padding: 20px; }
+    .rm-toggle { display: flex; align-items: center; cursor: pointer; gap: 10px; }
+    .rm-toggle input { display: none; }
+    .rm-toggle-slider { position: relative; width: 40px; height: 20px; background: #ccc; border-radius: 20px; transition: .3s; }
+    .rm-toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
+    .rm-toggle input:checked + .rm-toggle-slider { background: #2271b1; }
+    .rm-toggle input:checked + .rm-toggle-slider:before { transform: translateX(20px); }
+    .rm-toggle-label { font-weight: 500; color: #444; }
+    
+    .rm-notice { padding: 10px 15px; border-left: 4px solid #46b450; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,0.04); margin-bottom: 20px; }
+    .rm-notice p { margin: 0.5em 0; padding: 2px; }
+    
+    .rm-button { background: #2271b1; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+    .rm-button:hover { background: #135e96; }
+</style>
