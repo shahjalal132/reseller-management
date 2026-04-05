@@ -16,6 +16,9 @@ class Reseller_Auth {
     protected function __construct() {
         add_filter( 'wp_authenticate_user', [ $this, 'restrict_reseller_login' ], 10, 2 );
         add_action( 'login_head', [ $this, 'custom_login_design' ] );
+        add_filter( 'woocommerce_login_redirect', [ $this, 'custom_login_redirect' ], 10, 2 );
+        add_filter( 'login_redirect', [ $this, 'custom_login_redirect' ], 10, 3 );
+        add_action( 'template_redirect', [ $this, 'restrict_dashboard_access' ] );
     }
 
     /**
@@ -256,5 +259,61 @@ class Reseller_Auth {
             'reseller_pending',
             __( 'Your reseller account is pending approval from the administrator.', 'reseller-management' )
         );
+    }
+
+    /**
+     * Custom login redirect for resellers and users.
+     *
+     * @param string            $redirect_to     The redirect URL.
+     * @param \WP_User|string   $request_or_user The requested URL or user object.
+     * @param \WP_User|null     $user            The user object.
+     *
+     * @return string
+     */
+    public function custom_login_redirect( $redirect_to, $request_or_user, $user = null ) {
+        $current_user = null;
+        if ( $user instanceof \WP_User ) {
+            $current_user = $user;
+        } elseif ( $request_or_user instanceof \WP_User ) {
+            $current_user = $request_or_user;
+        }
+
+        if ( ! $current_user ) {
+            return $redirect_to;
+        }
+
+        if ( Reseller_Helper::is_reseller( $current_user ) ) {
+            $dashboard_page = get_page_by_path( 'reseller-dashboard' );
+            if ( $dashboard_page ) {
+                return get_permalink( $dashboard_page->ID );
+            }
+        } elseif ( in_array( 'customer', (array) $current_user->roles, true ) || in_array( 'subscriber', (array) $current_user->roles, true ) ) {
+            $my_account_page = get_option( 'woocommerce_myaccount_page_id' );
+            if ( $my_account_page ) {
+                return get_permalink( $my_account_page );
+            }
+        }
+
+        return $redirect_to;
+    }
+
+    /**
+     * Restrict regular users from accessing the reseller dashboard.
+     *
+     * @return void
+     */
+    public function restrict_dashboard_access() {
+        if ( is_page( 'reseller-dashboard' ) ) {
+            if ( is_user_logged_in() && ! Reseller_Helper::is_reseller( get_current_user_id() ) ) {
+                $my_account_page = get_option( 'woocommerce_myaccount_page_id' );
+                if ( $my_account_page ) {
+                    wp_safe_redirect( get_permalink( $my_account_page ) );
+                    exit;
+                } else {
+                    wp_safe_redirect( home_url() );
+                    exit;
+                }
+            }
+        }
     }
 }
