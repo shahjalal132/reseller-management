@@ -27,73 +27,110 @@ class Reseller_Registration {
     public function render_registration_shortcode() {
         ob_start();
         ?>
-        <div class="rm-auth-card">
-            <div class="rm-auth-header">
-                <h2><?php esc_html_e( 'Become a Reseller', 'reseller-management' ); ?></h2>
-                <p><?php esc_html_e( 'Submit your business details for admin approval.', 'reseller-management' ); ?></p>
+        <div class="rm-registration-wrapper">
+            <div class="rm-registration-card">
+                <div class="rm-reg-left">
+                    <div class="rm-reg-left-content">
+                        <h3><?php esc_html_e( 'Join as a Reseller', 'reseller-management' ); ?></h3>
+                        <p><?php esc_html_e( 'Start your business journey with us today. Get exclusive access to wholesale products, manage orders easily, and multiply your earnings.', 'reseller-management' ); ?></p>
+                        
+                        <div class="rm-reg-features">
+                            <div class="rm-reg-feature">
+                                <span class="dashicons dashicons-cart"></span>
+                                <span><?php esc_html_e( 'Access Premium Products', 'reseller-management' ); ?></span>
+                            </div>
+                            <div class="rm-reg-feature">
+                                <span class="dashicons dashicons-chart-line"></span>
+                                <span><?php esc_html_e( 'Track Sales & Growth', 'reseller-management' ); ?></span>
+                            </div>
+                            <div class="rm-reg-feature">
+                                <span class="dashicons dashicons-money-alt"></span>
+                                <span><?php esc_html_e( 'Easy Withdrawals', 'reseller-management' ); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rm-reg-right">
+                    <div class="rm-auth-header-modern">
+                        <h2><?php esc_html_e( 'Create Account', 'reseller-management' ); ?></h2>
+                        <p><?php esc_html_e( 'Submit your business details for admin approval.', 'reseller-management' ); ?></p>
+                    </div>
+
+                    <form id="rm-registration-form" class="rm-form-modern" enctype="multipart/form-data">
+                        <div class="rm-grid rm-grid-2">
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'Full Name', 'reseller-management' ); ?></label>
+                                <input type="text" name="name" required placeholder="<?php esc_attr_e( 'John Doe', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'Email Address', 'reseller-management' ); ?></label>
+                                <input type="email" name="email" required placeholder="<?php esc_attr_e( 'john@example.com', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'Phone Number', 'reseller-management' ); ?></label>
+                                <input type="text" name="phone" required placeholder="<?php esc_attr_e( '+880 1XXX', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'Business Name', 'reseller-management' ); ?></label>
+                                <input type="text" name="business_name" required placeholder="<?php esc_attr_e( 'My Store', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern rm-field-full">
+                                <label>
+                                    <?php esc_html_e( 'Facebook Page URL', 'reseller-management' ); ?> 
+                                    <span class="rm-optional"><?php esc_html_e( '(Optional)', 'reseller-management' ); ?></span>
+                                </label>
+                                <input type="url" name="facebook_url" placeholder="<?php esc_attr_e( 'https://facebook.com/mystore', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern rm-field-full">
+                                <label>
+                                    <?php esc_html_e( 'Website URL', 'reseller-management' ); ?> 
+                                    <span class="rm-optional"><?php esc_html_e( '(Optional)', 'reseller-management' ); ?></span>
+                                </label>
+                                <input type="url" name="website_url" placeholder="<?php esc_attr_e( 'https://mystore.com', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern rm-field-full">
+                                <label><?php esc_html_e( 'Password', 'reseller-management' ); ?></label>
+                                <input type="password" name="password" required minlength="8" placeholder="<?php esc_attr_e( 'Min 8 characters', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern rm-field-full">
+                                <label><?php esc_html_e( 'Confirm Password', 'reseller-management' ); ?></label>
+                                <input type="password" name="confirm_password" required minlength="8" placeholder="<?php esc_attr_e( 'Confirm your password', 'reseller-management' ); ?>">
+                            </div>
+
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'NID Front Image', 'reseller-management' ); ?></label>
+                                <input type="file" name="nid_front" accept="image/*" required class="rm-modern-file">
+                            </div>
+
+                            <div class="rm-field-modern">
+                                <label><?php esc_html_e( 'NID Back Image', 'reseller-management' ); ?></label>
+                                <input type="file" name="nid_back" accept="image/*" required class="rm-modern-file">
+                            </div>
+                        </div>
+
+                        <div class="rm-form-actions-modern">
+                            <button type="submit" class="rm-button-modern">
+                                <?php esc_html_e( 'Submit Application', 'reseller-management' ); ?>
+                                <span class="dashicons dashicons-arrow-right-alt2"></span>
+                            </button>
+                        </div>
+
+                        <div class="rm-form-response" aria-live="polite"></div>
+                        
+                        <div class="rm-auth-footer">
+                            <p><?php esc_html_e( 'Already have an account?', 'reseller-management' ); ?> <a href="<?php echo esc_url( wp_login_url() ); ?>"><?php esc_html_e( 'Login Here', 'reseller-management'); ?></a></p>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <form id="rm-registration-form" class="rm-form" enctype="multipart/form-data">
-                <div class="rm-grid rm-grid-2">
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Name', 'reseller-management' ); ?></span>
-                        <input type="text" name="name" required>
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Email', 'reseller-management' ); ?></span>
-                        <input type="email" name="email" required>
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Phone', 'reseller-management' ); ?></span>
-                        <input type="text" name="phone" required>
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Business Name', 'reseller-management' ); ?></span>
-                        <input type="text" name="business_name" required>
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Facebook Page URL', 'reseller-management' ); ?></span>
-                        <input type="url" name="facebook_url">
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Website URL', 'reseller-management' ); ?></span>
-                        <input type="url" name="website_url">
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Password', 'reseller-management' ); ?></span>
-                        <input type="password" name="password" required minlength="8">
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'Confirm Password', 'reseller-management' ); ?></span>
-                        <input type="password" name="confirm_password" required minlength="8">
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'NID Front Image', 'reseller-management' ); ?></span>
-                        <input type="file" name="nid_front" accept="image/*" required>
-                    </label>
-
-                    <label class="rm-field">
-                        <span><?php esc_html_e( 'NID Back Image', 'reseller-management' ); ?></span>
-                        <input type="file" name="nid_back" accept="image/*" required>
-                    </label>
-                </div>
-
-                <div class="rm-form-actions">
-                    <button type="submit" class="rm-button">
-                        <?php esc_html_e( 'Submit Application', 'reseller-management' ); ?>
-                    </button>
-                </div>
-
-                <div class="rm-form-response" aria-live="polite"></div>
-            </form>
         </div>
         <?php
 
