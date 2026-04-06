@@ -20,22 +20,50 @@ if ( ! $rm_user ) {
 
 $back_url = admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $rm_reseller_id );
 
-// ── Real statement rows ────────────────────────────────────────────────────
-$all_transactions = \BOILERPLATE\Inc\Reseller_Finance::get_transactions( $rm_reseller_id );
+// ── Pagination logic ──────────────────────────────────────────────────────
+$paged    = max( 1, (int) ( $_GET['rm_paged'] ?? 1 ) );
+$per_page = 20;
+$offset   = ( $paged - 1 ) * $per_page;
 
-// Calculate summary stats and prepare rows with running balance.
+$total_transactions = \BOILERPLATE\Inc\Reseller_Finance::get_total_transactions_count( $rm_reseller_id );
+$total_pages        = max( 1, (int) ceil( $total_transactions / $per_page ) );
+$paged              = min( $paged, $total_pages );
+$offset             = ( $paged - 1 ) * $per_page;
+
+// ── Real statement rows ────────────────────────────────────────────────────
+$all_transactions = \BOILERPLATE\Inc\Reseller_Finance::get_transactions( $rm_reseller_id, $per_page, $offset );
+
+// To calculate running balance correctly for this page, we need to know the starting balance.
+// Starting balance for this page = Current Balance - Sum of transactions BEFORE this page.
+$sum_before           = \BOILERPLATE\Inc\Reseller_Finance::get_transactions_sum_before_offset( $rm_reseller_id, $offset );
+$current_temp_balance = $rm_balance - $sum_before;
+
+// Calculate summary stats (for the whole history, we might need separate sums or just use the injected $rm_balance)
+// The $total_credits and $total_debits shown in summary usually reflect the WHOLE history.
+// However, the original code calculated them from $all_transactions (which was all rows).
+// Since we now paginate, we should probably fetch the absolute totals for the summary cards.
+// But for now, let's keep the logic simple if the user only wanted pagination for the table.
+// Wait, the original code did:
 $total_credits = 0.0;
 $total_debits  = 0.0;
-$current_temp_balance = $rm_balance; // Starting from current total and working backwards for DESC order.
+
+// If we want accurate summary cards, we need the full sums from DB.
+global $wpdb;
+$table = \BOILERPLATE\Inc\Reseller_Helper::get_ledger_table_name();
+$summary_stats = $wpdb->get_row( $wpdb->prepare(
+    "SELECT 
+        SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as total_credits,
+        SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as total_debits
+    FROM {$table} WHERE reseller_id = %d",
+    $rm_reseller_id
+) );
+
+$total_credits = (float) ( $summary_stats->total_credits ?? 0 );
+$total_debits  = (float) ( $summary_stats->total_debits  ?? 0 );
 
 $processed_statements = [];
 foreach ( $all_transactions as $tx ) {
     $amount = (float) $tx->amount;
-    if ( $amount > 0 ) {
-        $total_credits += $amount;
-    } else {
-        $total_debits += abs( $amount );
-    }
 
     $processed_statements[] = [
         'date'            => $tx->created_at,
@@ -49,6 +77,12 @@ foreach ( $all_transactions as $tx ) {
     // Subtract the amount to get the balance before this transaction.
     $current_temp_balance -= $amount;
 }
+
+// URL helper for pagination
+$base_url = admin_url( 'admin.php?page=reseller-hub-user-statements&reseller_id=' . $rm_reseller_id );
+$page_url = function ( $p ) use ( $base_url ) {
+    return esc_url( add_query_arg( 'rm_paged', $p, $base_url ) );
+};
 
 $fmt = function ( $amount ) {
     return '৳' . number_format( abs( $amount ), 2 );
@@ -142,7 +176,7 @@ $fmt = function ( $amount ) {
         </div>
         <div class="rm-stmt-card-body">
             <span class="rm-stmt-card-label"><?php esc_html_e( 'Total Transactions', 'reseller-management' ); ?></span>
-            <span class="rm-stmt-card-value"><?php echo esc_html( (string) count( $processed_statements ) ); ?></span>
+            <span class="rm-stmt-card-value"><?php echo esc_html( (string) $total_transactions ); ?></span>
         </div>
     </div>
 
@@ -206,4 +240,58 @@ $fmt = function ( $amount ) {
             <?php endif; ?>
         </tbody>
     </table>
+
+    <!-- Pagination -->
+    <?php if ( $total_pages > 1 ) : ?>
+    <div class="rm-pagination" style="padding: 15px 20px; border-top: 1px solid #f3f4f6;">
+        <div class="rm-pagination-info" style="font-size: 13px; color: #6b7280;">
+            <?php
+            $from_item = $offset + 1;
+            $to_item   = min( $offset + $per_page, $total_transactions );
+            printf(
+                /* translators: 1: from, 2: to, 3: total */
+                esc_html__( 'Showing %1$d–%2$d of %3$d transactions', 'reseller-management' ),
+                (int) $from_item,
+                (int) $to_item,
+                (int) $total_transactions
+            );
+            ?>
+        </div>
+        <div class="rm-pagination-links">
+            <?php if ( $paged > 1 ) : ?>
+                <a href="<?php echo $page_url( $paged - 1 ); ?>" class="rm-page-btn rm-page-btn--prev">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="15" height="15">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+                    </svg>
+                </a>
+            <?php endif; ?>
+
+            <?php
+            $range = 2;
+            for ( $i = 1; $i <= $total_pages; $i++ ) :
+                if ( $i === 1 || $i === $total_pages || abs( $i - $paged ) <= $range ) :
+            ?>
+                <a href="<?php echo $page_url( $i ); ?>"
+                   class="rm-page-btn<?php echo $i === $paged ? ' rm-page-btn--active' : ''; ?>">
+                    <?php echo esc_html( (string) $i ); ?>
+                </a>
+            <?php
+                elseif ( abs( $i - $paged ) === $range + 1 ) :
+            ?>
+                <span class="rm-page-ellipsis">…</span>
+            <?php
+                endif;
+            endfor;
+            ?>
+
+            <?php if ( $paged < $total_pages ) : ?>
+                <a href="<?php echo $page_url( $paged + 1 ); ?>" class="rm-page-btn rm-page-btn--next">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="15" height="15">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+                    </svg>
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>

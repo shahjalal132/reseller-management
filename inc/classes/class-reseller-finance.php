@@ -50,21 +50,75 @@ class Reseller_Finance {
     }
 
     /**
-     * Get ledger rows for a reseller.
+     * Get ledger rows for a reseller with optional pagination.
      *
-     * @param int $user_id Reseller ID.
+     * @param int $user_id User ID.
+     * @param int $limit   Optional limit.
+     * @param int $offset  Optional offset.
      *
      * @return array<int, object>
      */
-    public static function get_transactions( $user_id ) {
+    public static function get_transactions( $user_id, $limit = 0, $offset = 0 ) {
+        global $wpdb;
+
+        $table = Reseller_Helper::get_ledger_table_name();
+        $query = "SELECT * FROM {$table} WHERE reseller_id = %d ORDER BY created_at DESC, id DESC";
+
+        if ( $limit > 0 ) {
+            $query .= $wpdb->prepare( " LIMIT %d OFFSET %d", $limit, $offset );
+        }
+
+        return (array) $wpdb->get_results( $wpdb->prepare( $query, $user_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+    }
+
+    /**
+     * Get total number of transactions for a reseller.
+     *
+     * @param int $user_id User ID.
+     *
+     * @return int
+     */
+    public static function get_total_transactions_count( $user_id ) {
         global $wpdb;
 
         $table = Reseller_Helper::get_ledger_table_name();
 
-        return (array) $wpdb->get_results(
+        return (int) $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT * FROM {$table} WHERE reseller_id = %d ORDER BY created_at DESC, id DESC",
+                "SELECT COUNT(id) FROM {$table} WHERE reseller_id = %d",
                 $user_id
+            )
+        );
+    }
+
+    /**
+     * Sum transaction amounts before a certain offset in DESC order.
+     * Used for calculating running balance correctly in paginated views.
+     *
+     * @param int $user_id User ID.
+     * @param int $offset  Offset.
+     *
+     * @return float
+     */
+    public static function get_transactions_sum_before_offset( $user_id, $offset ) {
+        if ( $offset <= 0 ) {
+            return 0.0;
+        }
+
+        global $wpdb;
+        $table = Reseller_Helper::get_ledger_table_name();
+
+        // Calculate sum of amounts for the first $offset rows in the DESC sort order.
+        return (float) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COALESCE(SUM(amount), 0) FROM (
+                    SELECT amount FROM {$table} 
+                    WHERE reseller_id = %d 
+                    ORDER BY created_at DESC, id DESC 
+                    LIMIT %d
+                ) as sub",
+                $user_id,
+                $offset
             )
         );
     }
