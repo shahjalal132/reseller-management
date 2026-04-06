@@ -189,7 +189,7 @@ if ( $is_edit ) {
                             </div>
                         </div>
                         <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Paid (paid amount will pay from your cashbook)', 'reseller-management' ); ?></span>
+                            <span><?php esc_html_e( 'Paid (advance payment from your balance)', 'reseller-management' ); ?></span>
                             <div class="rm-summary-input-wrapper">
                                 <input type="number" id="rm-paid-amount" value="<?php echo esc_attr( $paid_amount ); ?>">
                             </div>

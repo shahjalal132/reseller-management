@@ -399,6 +399,27 @@ class Reseller_Orders {
             $order->set_discount_total( $discount );
         }
 
+        // Handle advance payment deduction from balance.
+        if ( $paid_amount > 0 ) {
+            $user_id         = get_current_user_id();
+            $current_balance = Reseller_Helper::get_current_balance( $user_id );
+
+            if ( $paid_amount > $current_balance ) {
+                $order->delete( true );
+                wp_send_json_error( __( 'Insufficient balance for advance payment.', 'reseller-management' ), 422 );
+            }
+
+            Reseller_Helper::insert_ledger_entry(
+                [
+                    'reseller_id' => $user_id,
+                    'order_id'    => $order->get_id(),
+                    'type'        => 'advance_payment',
+                    'amount'      => -1 * abs( $paid_amount ),
+                    'description' => sprintf( 'Advance payment for Order #%d', $order->get_id() ),
+                ]
+            );
+        }
+
         $order->update_meta_data( '_assigned_reseller_id', get_current_user_id() );
         $order->update_meta_data( '_order_district', $district );
         $order->update_meta_data( '_order_thana', $thana );
@@ -519,7 +540,32 @@ class Reseller_Orders {
         $order->set_discount_total( $discount );
         $order->update_meta_data( '_order_district', $district );
         $order->update_meta_data( '_order_thana', $thana );
-        $order->update_meta_data( '_paid_amount', $paid_amount );
+
+        // Handle advance payment adjustment.
+        $old_paid_amount = (float) $order->get_meta( '_paid_amount' );
+        if ( $paid_amount !== $old_paid_amount ) {
+            $diff = $paid_amount - $old_paid_amount;
+
+            if ( $diff > 0 ) {
+                // Additional deduction check
+                $current_balance = Reseller_Helper::get_current_balance( $user_id );
+                if ( $diff > $current_balance ) {
+                    wp_send_json_error( __( 'Insufficient balance for additional advance payment.', 'reseller-management' ), 422 );
+                }
+            }
+
+            Reseller_Helper::insert_ledger_entry(
+                [
+                    'reseller_id' => $user_id,
+                    'order_id'    => $order->get_id(),
+                    'type'        => 'advance_payment_adjustment',
+                    'amount'      => -1 * $diff,
+                    'description' => sprintf( 'Advance payment adjustment for Order #%d', $order->get_id() ),
+                ]
+            );
+
+            $order->update_meta_data( '_paid_amount', $paid_amount );
+        }
         
         $order->calculate_totals();
         $order->save();
