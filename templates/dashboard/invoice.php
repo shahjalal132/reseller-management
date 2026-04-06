@@ -18,13 +18,20 @@ $reseller_phone = get_user_meta( $reseller_id, '_reseller_phone', true );
 $reseller_website = get_user_meta( $reseller_id, '_reseller_web_url', true );
 $reseller_email = $reseller->user_email;
 
+$items = $order->get_items();
+$items_subtotal = 0;
+foreach ( $items as $item_id => $item ) {
+    $resale_price = $item->get_meta('_resale_price');
+    $unit_price = $resale_price ? floatval($resale_price) : ($item->get_quantity() > 0 ? $item->get_subtotal() / $item->get_quantity() : 0);
+    $items_subtotal += $unit_price * $item->get_quantity();
+}
+
 $discount = $order->get_total_discount();
 $shipping = $order->get_shipping_total();
-$total = $order->get_total();
-$paid = $order->get_meta('_paid_amount') ?: '0';
-$due = $total - $paid;
+$paid = floatval( $order->get_meta('_paid_amount') ?: '0' );
 
-$items = $order->get_items();
+$calculated_total = $items_subtotal + $shipping - $discount;
+$due = $calculated_total - $paid;
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -341,7 +348,7 @@ $items = $order->get_items();
                 <table>
                     <tr>
                         <td><?php esc_html_e( 'Subtotal', 'reseller-management' ); ?></td>
-                        <td><?php echo wc_price( $order->get_subtotal() ); ?></td>
+                        <td><?php echo wc_price( $items_subtotal ); ?></td>
                     </tr>
                     <?php if ( $discount > 0 ) : ?>
                     <tr>
@@ -350,11 +357,15 @@ $items = $order->get_items();
                     </tr>
                     <?php endif; ?>
                     <tr>
-                        <td><?php esc_html_e( 'Shipping', 'reseller-management' ); ?></td>
+                        <td><?php esc_html_e( 'Shipping(+)', 'reseller-management' ); ?></td>
                         <td><?php echo wc_price( $shipping ); ?></td>
                     </tr>
+                    <tr style="border-top: 1px dashed var(--border-color);">
+                        <td><strong><?php esc_html_e( 'Total', 'reseller-management' ); ?></strong></td>
+                        <td><strong><?php echo wc_price( $calculated_total ); ?></strong></td>
+                    </tr>
                     <tr>
-                        <td><?php esc_html_e( 'Paid', 'reseller-management' ); ?></td>
+                        <td><?php esc_html_e( 'Advance Paid', 'reseller-management' ); ?></td>
                         <td><?php echo wc_price( $paid ); ?></td>
                     </tr>
                     <tr class="total-row">

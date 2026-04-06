@@ -174,11 +174,23 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                     </td>
                     <td class="rm-col-details">
                         <div class="rm-details-grid">
-                            <div class="rm-detail-row"><span>Total:</span> <strong><?php echo $order->get_total(); ?></strong></div>
-                            <div class="rm-detail-row"><span>Discount:</span> <strong><?php echo $order->get_total_discount(); ?></strong></div>
-                            <div class="rm-detail-row"><span>Paid:</span> <strong>0</strong></div>
-                            <div class="rm-detail-row"><span>Shipping:</span> <strong><?php echo $order->get_shipping_total(); ?></strong></div>
-                            <div class="rm-detail-row"><span>Due:</span> <strong><?php echo $order->get_total(); ?></strong></div>
+                            <?php
+                            $items_subtotal = 0;
+                            foreach ( $order->get_items() as $item ) {
+                                $res_price = $item->get_meta('_resale_price');
+                                $u_price = $res_price ? floatval($res_price) : ($item->get_quantity() > 0 ? $item->get_subtotal() / $item->get_quantity() : 0);
+                                $items_subtotal += $u_price * $item->get_quantity();
+                            }
+                            $ord_shipping = $order->get_shipping_total();
+                            $ord_paid = floatval( $order->get_meta('_paid_amount') ?: '0' );
+                            $calc_total = $items_subtotal + $ord_shipping - $order->get_total_discount();
+                            $calc_due = $calc_total - $ord_paid;
+                            ?>
+                            <div class="rm-detail-row"><span>Total:</span> <strong><?php echo wc_price( $calc_total ); ?></strong></div>
+                            <div class="rm-detail-row"><span>Shipping:</span> <strong><?php echo wc_price( $ord_shipping ); ?></strong></div>
+                            <div class="rm-detail-row"><span>Paid:</span> <strong><?php echo wc_price( $ord_paid ); ?></strong></div>
+                            <div style="border-top: 1px solid #d1d5db; margin: 6px 0; width: 100%;"></div>
+                            <div class="rm-detail-row"><span>Due:</span> <strong><?php echo wc_price( $calc_due ); ?></strong></div>
                             <div class="rm-detail-row rm-detail-profit"><span>Profit:</span> <strong><?php echo $commission; ?></strong></div>
                         </div>
                     </td>

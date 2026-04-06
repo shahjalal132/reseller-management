@@ -418,6 +418,16 @@ class Reseller_Orders {
                     'description' => sprintf( 'Advance payment for Order #%d', $order->get_id() ),
                 ]
             );
+
+            // Apply advance payment as a negative fee to reduce the Order Total
+            $fee = new \WC_Order_Item_Fee();
+            $fee->set_name( __( 'Advance Paid', 'reseller-management' ) );
+            $fee->set_amount( -$paid_amount );
+            $fee->set_total( -$paid_amount );
+            // Ensure no tax is calculated on this fee
+            $fee->set_tax_class( '' );
+            $fee->set_tax_status( 'none' );
+            $order->add_item( $fee );
         }
 
         $order->update_meta_data( '_assigned_reseller_id', get_current_user_id() );
@@ -567,6 +577,24 @@ class Reseller_Orders {
             $order->update_meta_data( '_paid_amount', $paid_amount );
         }
         
+        // Always remove existing advance paid fee to re-apply correctly
+        foreach ( $order->get_items( 'fee' ) as $item_id => $item ) {
+            if ( $item->get_name() === __( 'Advance Paid', 'reseller-management' ) ) {
+                $order->remove_item( $item_id );
+            }
+        }
+
+        // Apply new advance payment as a negative fee
+        if ( $paid_amount > 0 ) {
+            $fee = new \WC_Order_Item_Fee();
+            $fee->set_name( __( 'Advance Paid', 'reseller-management' ) );
+            $fee->set_amount( -$paid_amount );
+            $fee->set_total( -$paid_amount );
+            $fee->set_tax_class( '' );
+            $fee->set_tax_status( 'none' );
+            $order->add_item( $fee );
+        }
+
         $order->calculate_totals();
         $order->save();
 

@@ -34,7 +34,23 @@ class Enqueue_Assets {
      * @return void
      */
     public function enqueue_admin_assets( $page_now ) {
-        if ( false === strpos( (string) $page_now, 'reseller-hub' ) ) {
+        $is_reseller_page = false !== strpos( (string) $page_now, 'reseller-hub' );
+        $is_order_page    = in_array( $page_now, [ 'post.php', 'post-new.php', 'woocommerce_page_wc-orders' ], true );
+
+        if ( ! $is_reseller_page && ! $is_order_page ) {
+            return;
+        }
+
+        // Only enqueue on order edit pages if it's an order
+        if ( $is_order_page && ! isset( $_GET['post_type'] ) && ! isset( $_GET['post'] ) && $page_now !== 'woocommerce_page_wc-orders' ) {
+             // HPOS uses woocommerce_page_wc-orders, traditional uses post.php?post=ID&action=edit
+        }
+        
+        // Actually, just checking if it's the right screen is better
+        $screen = get_current_screen();
+        $is_order_screen = $screen && ( 'shop_order' === $screen->post_type || 'woocommerce_page_wc-orders' === $screen->id );
+
+        if ( ! $is_reseller_page && ! $is_order_screen ) {
             return;
         }
 

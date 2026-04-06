@@ -315,6 +315,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -728,10 +729,25 @@
   flex-shrink: 0;
 }
 
-.rm-stat-icon.teal  { background: #e3f4f3; color: #005f5a; }
-.rm-stat-icon.blue  { background: #eff6ff; color: #3b82f6; }
-.rm-stat-icon.amber { background: #fff7ed; color: #b45309; }
-.rm-stat-icon.green { background: #dcfce7; color: #166534; }
+.rm-stat-icon.teal {
+  background: #e3f4f3;
+  color: #005f5a;
+}
+
+.rm-stat-icon.blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.rm-stat-icon.amber {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.rm-stat-icon.green {
+  background: #dcfce7;
+  color: #166534;
+}
 
 .rm-stat-icon svg {
   width: 24px;
@@ -1329,7 +1345,7 @@
 }
 
 .rm-toolbar-btn--orders:hover .rm-toolbar-badge {
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 
@@ -1365,7 +1381,7 @@
 .rm-orders-filters-form {
   background: #fff;
   border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
   padding: 16px 20px;
 }
 
@@ -1425,7 +1441,7 @@
 
 .rm-filter-input:focus {
   border-color: #005f5a !important;
-  box-shadow: 0 0 0 3px rgba(0,95,90,0.09) !important;
+  box-shadow: 0 0 0 3px rgba(0, 95, 90, 0.09) !important;
 }
 
 .rm-filter-select {
@@ -1505,14 +1521,41 @@
   white-space: nowrap;
 }
 
-.rm-order-status-processing  { background: #dbeafe; color: #1d4ed8; }
-.rm-order-status-completed   { background: #dcfce7; color: #166534; }
+.rm-order-status-processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.rm-order-status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .rm-order-status-pending,
-.rm-order-status-pending-payment { background: #fef9c3; color: #854d0e; }
-.rm-order-status-on-hold     { background: #fff7ed; color: #b45309; }
-.rm-order-status-cancelled   { background: #fee2e2; color: #991b1b; }
-.rm-order-status-refunded    { background: #f3e8ff; color: #7c3aed; }
-.rm-order-status-failed      { background: #fee2e2; color: #991b1b; }
+.rm-order-status-pending-payment {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.rm-order-status-on-hold {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.rm-order-status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rm-order-status-refunded {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.rm-order-status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 .rm-item-count-badge {
   display: inline-flex;
@@ -1621,7 +1664,7 @@
 .rm-stmt-card {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
   padding: 18px 20px;
   display: flex;
   align-items: center;
@@ -1643,10 +1686,25 @@
   height: 22px;
 }
 
-.rm-stmt-card--balance   .rm-stmt-card-icon { background:#e3f4f3; color:#005f5a; }
-.rm-stmt-card--credits   .rm-stmt-card-icon { background:#dcfce7; color:#166534; }
-.rm-stmt-card--debits    .rm-stmt-card-icon { background:#fee2e2; color:#991b1b; }
-.rm-stmt-card--transactions .rm-stmt-card-icon { background:#eff6ff; color:#3b82f6; }
+.rm-stmt-card--balance .rm-stmt-card-icon {
+  background: #e3f4f3;
+  color: #005f5a;
+}
+
+.rm-stmt-card--credits .rm-stmt-card-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.rm-stmt-card--debits .rm-stmt-card-icon {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rm-stmt-card--transactions .rm-stmt-card-icon {
+  background: #eff6ff;
+  color: #3b82f6;
+}
 
 .rm-stmt-card-body {
   display: flex;
@@ -1681,16 +1739,28 @@
   letter-spacing: 0.04em;
 }
 
-.rm-stmt-type--credit { background:#dcfce7; color:#166534; }
-.rm-stmt-type--debit  { background:#fee2e2; color:#991b1b; }
+.rm-stmt-type--credit {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.rm-stmt-type--debit {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 .rm-stmt-amount {
   font-size: 14px;
   font-weight: 700;
 }
 
-.rm-stmt-amount--credit { color: #16a34a; }
-.rm-stmt-amount--debit  { color: #dc2626; }
+.rm-stmt-amount--credit {
+  color: #16a34a;
+}
+
+.rm-stmt-amount--debit {
+  color: #dc2626;
+}
 
 .rm-stmt-ref {
   background: #f3f4f6;
@@ -1700,4 +1770,121 @@
   color: #374151;
   font-family: monospace;
   white-space: nowrap;
+}
+
+/* Due Amount Styling */
+.rm-due-amount-row {
+  background-color: #f0fdf9 !important;
+}
+
+.rm-due-amount-row td {
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
+}
+
+.rm-due-amount-row .label,
+.rm-due-amount-row .total {
+  font-size: 1.4em !important;
+  font-weight: 700 !important;
+  color: #0d9488 !important;
+  vertical-align: middle !important;
+}
+
+.rm-due-amount-row .total .woocommerce-Price-amount {
+  color: #0d9488 !important;
+}
+
+/* Hide standard WC total and redundant rows for reseller orders */
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr.total:not(.rm-due-amount-row) {
+  display: none !important;
+}
+
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr.total:not(.rm-due-amount-row)~tr {
+  display: none !important;
+}
+
+/* Order Total Separator and Styling */
+.rm-order-total-row td {
+  border-top: 2px solid #ddd !important;
+  padding-top: 20px !important;
+}
+
+.rm-order-total-row .label,
+.rm-order-total-row .total {
+  font-size: 1.5em !important;
+  font-weight: 800 !important;
+  color: #0d9488 !important;
+}
+
+/* Hide standard Shipping row */
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:not(.rm-shipping-row) td.label:contains('Shipping'),
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:not(.rm-shipping-row) td.label:has(span:contains('Shipping')) {
+  display: none !important;
+}
+
+/* More reliable way to hide standard Shipping row */
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:nth-child(2) {
+  /* Assuming Shipping is usually the second row after Subtotal */
+  /* Wait, this is not reliable if there are discounts. */
+}
+
+/* Hijacking standard rows by label name is hard in CSS (requires JS), but we can target the ones that aren't ours. */
+/* Hide standard shipping row by finding the row that contains 'Shipping' but doesn't have our class. */
+/* Using :has selector (modern browsers) */
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:not([class*="rm-"]) td.label:has(span:contains('Shipping')),
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:not([class*="rm-"]) td.label:contains('Shipping') {
+  /* We'll just hide the entire row if possible. */
+}
+
+/* Actually, the best way to hide standard shipping and total without JS is to target their position or known classes. */
+/* Subtotal is row 1. Shipping is row 2. Disount is row 3. Total is tr.total. */
+
+.wc-order-totals tr:not([class*="rm-"]):nth-child(2) {
+  display: none !important;
+  /* Hide standard shipping */
+}
+
+.rm-separator-row hr {
+  margin: 5px 0;
+  border: 0;
+  border-top: 1px solid #dfdfdf;
+}
+
+.rm-order-total-row .label,
+.rm-order-total-row .total {
+  font-weight: 700 !important;
+  font-size: 1.1em !important;
+}
+
+/* Final robust cleanup for Reseller Order Totals */
+.woocommerce-order-data #order_line_items+.wc-order-data-row table.wc-order-totals tr:not([class*="rm-"]):not(:first-child) {
+  display: none !important;
+}
+
+.rm-due-amount-row .label,
+.rm-due-amount-row .total {
+  font-size: 1.4em !important;
+  font-weight: 700 !important;
+  color: #0d9488 !important;
+  vertical-align: middle !important;
+}
+
+.rm-due-amount-row {
+  background-color: #f0fdf9 !important;
+}
+
+.rm-due-amount-row td {
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
+}
+
+.rm-order-total-row .label,
+.rm-order-total-row .total {
+  font-weight: 700 !important;
+}
+
+.rm-separator-row hr {
+  margin: 5px 0;
+  border: 0;
+  border-top: 1px solid #dfdfdf;
 }

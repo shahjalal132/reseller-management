@@ -173,38 +173,49 @@ if ( $is_edit ) {
 
                     <div class="rm-order-summary">
                         <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Total Amount', 'reseller-management' ); ?></span>
-                            <span id="rm-summary-total">0</span>
+                            <span><?php esc_html_e( 'Items Subtotal:', 'reseller-management' ); ?></span>
+                            <div><span id="rm-summary-items-subtotal">0.00</span>৳</div>
                         </div>
                         <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Shipping charge', 'reseller-management' ); ?></span>
-                            <div class="rm-summary-input-wrapper">
-                                <input type="number" id="rm-shipping-charge" value="<?php echo esc_attr( $shipping_charge ); ?>">
+                            <span><?php esc_html_e( 'Shipping(+):', 'reseller-management' ); ?></span>
+                            <div class="rm-summary-input-wrapper" style="display:flex; align-items:center;">
+                                <input type="number" id="rm-shipping-charge" value="<?php echo esc_attr( $shipping_charge ); ?>" style="width: 80px; text-align: right; margin-right: 5px;"> ৳
                             </div>
                         </div>
-                        <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Discount (discount amount will reduce from your profit)', 'reseller-management' ); ?></span>
-                            <div class="rm-summary-input-wrapper">
-                                <input type="number" id="rm-discount" value="<?php echo esc_attr( $discount ); ?>">
+                        <div class="rm-summary-row" style="display:none;">
+                            <span><?php esc_html_e( 'Discount:', 'reseller-management' ); ?></span>
+                            <div class="rm-summary-input-wrapper" style="display:flex; align-items:center;">
+                                <input type="number" id="rm-discount" value="<?php echo esc_attr( $discount ); ?>" style="width: 80px; text-align: right; margin-right: 5px;"> ৳
                             </div>
                         </div>
+
+                        <hr style="margin: 10px 0; border: none; border-top: 1px dashed #ccc;">
+
                         <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Paid (advance payment from your balance)', 'reseller-management' ); ?></span>
-                            <div class="rm-summary-input-wrapper">
-                                <input type="number" id="rm-paid-amount" value="<?php echo esc_attr( $paid_amount ); ?>">
+                            <span><?php esc_html_e( 'Total:', 'reseller-management' ); ?></span>
+                            <div><span id="rm-summary-total">0.00</span>৳</div>
+                        </div>
+                        <div class="rm-summary-row">
+                            <span><?php esc_html_e( 'Advance Paid:', 'reseller-management' ); ?> <small>(it would be deduct from total amount)</small></span>
+                            <div class="rm-summary-input-wrapper" style="display:flex; align-items:center;">
+                                <input type="number" id="rm-paid-amount" value="<?php echo esc_attr( $paid_amount ); ?>" style="width: 80px; text-align: right; margin-right: 5px;"> ৳
                             </div>
                         </div>
-                        <div class="rm-summary-row rm-summary-payable">
-                            <span><?php esc_html_e( 'Payable Amount', 'reseller-management' ); ?></span>
-                            <span id="rm-summary-payable">0</span>
-                        </div>
+
+                        <hr style="margin: 10px 0; border: none; border-top: 1px dashed #ccc;">
+                        
                         <div class="rm-summary-row">
-                            <span><?php esc_html_e( 'Due Amount', 'reseller-management' ); ?></span>
-                            <span id="rm-summary-due">0</span>
+                            <span><?php esc_html_e( 'Due Amount:', 'reseller-management' ); ?></span>
+                            <div><span id="rm-summary-due">0.00</span>৳</div>
                         </div>
+                        <div class="rm-summary-row" style="font-size: 1.1em; font-weight: bold; color: var(--rm-primary, #000);">
+                            <span><?php esc_html_e( 'Order Total:', 'reseller-management' ); ?></span>
+                            <div><span id="rm-summary-order-total">0.00</span>৳</div>
+                        </div>
+                        
                         <div class="rm-summary-row rm-summary-profit">
-                            <span><?php esc_html_e( 'Profit Amount', 'reseller-management' ); ?></span>
-                            <span id="rm-summary-profit">0</span>
+                            <span><?php esc_html_e( 'Profit Amount:', 'reseller-management' ); ?></span>
+                            <div><span id="rm-summary-profit">0.00</span>৳</div>
                         </div>
                     </div>
 

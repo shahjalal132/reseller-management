@@ -338,10 +338,10 @@
       });
 
       function calculateTotals() {
-        var total = 0;
+        var itemsSubtotal = 0;
         var baseTotal = 0;
         orderItems.forEach(item => {
-          total += item.resale_price * item.quantity;
+          itemsSubtotal += item.resale_price * item.quantity;
           baseTotal += item.price * item.quantity;
         });
 
@@ -349,13 +349,15 @@
         var discount = parseFloat($('#rm-discount').val()) || 0;
         var paid = parseFloat($('#rm-paid-amount').val()) || 0;
 
-        var payable = total + shipping - discount;
-        var due = payable - paid;
-        var profit = (total - baseTotal) - discount;
+        var total = itemsSubtotal + shipping - discount;
+        var due = total - paid;
+        var orderTotal = due; // Order total is now due amount
+        var profit = (itemsSubtotal - baseTotal) - discount;
 
+        $('#rm-summary-items-subtotal').text(itemsSubtotal.toFixed(2));
         $('#rm-summary-total').text(total.toFixed(2));
-        $('#rm-summary-payable').text(payable.toFixed(2));
         $('#rm-summary-due').text(due.toFixed(2));
+        $('#rm-summary-order-total').text(orderTotal.toFixed(2));
         $('#rm-summary-profit').text(profit.toFixed(2));
       }
 
@@ -567,14 +569,14 @@
         if (dateTo) url.searchParams.set('date_to', dateTo); else url.searchParams.delete('date_to');
         if (searchQuery) url.searchParams.set('search', searchQuery); else url.searchParams.delete('search');
         if (limit && limit !== '20') url.searchParams.set('limit', limit); else url.searchParams.delete('limit');
-        
+
         url.searchParams.set('paged', '1'); // Reset to first page on new filter
         window.location.href = url.toString();
       }
 
       $('#rm-filter-date-from, #rm-filter-date-to, #rm-filter-limit').on('change', filterOrders);
-      
-      $('#rm-filter-search').on('input', function() {
+
+      $('#rm-filter-search').on('input', function () {
         clearTimeout(filterTimeout);
         filterTimeout = setTimeout(filterOrders, 600);
       });

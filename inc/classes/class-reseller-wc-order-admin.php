@@ -24,6 +24,9 @@ class Reseller_Wc_Order_Admin {
 		
 		// Rename meta keys for display
 		add_filter( 'woocommerce_order_item_display_meta_key', [ $this, 'rename_order_item_meta_keys' ], 10, 3 );
+
+		// totals customizations
+		add_action( 'woocommerce_admin_order_totals_after_shipping', [ $this, 'render_paid_and_due_amount_rows' ] );
 	}
 
 	/**
@@ -135,5 +138,36 @@ class Reseller_Wc_Order_Admin {
 		}
 
 		return $display_key;
+	}
+
+	/**
+	 * Render "Paid" and "Due Amount" rows in the totals section.
+	 *
+	 * @param int $order_id Order ID.
+	 * @return void
+	 */
+	public function render_paid_and_due_amount_rows( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
+		$reseller_id = $order->get_meta( '_assigned_reseller_id' );
+		if ( ! $reseller_id ) {
+			return;
+		}
+
+		$paid_amount = (float) $order->get_meta( '_paid_amount' );
+
+		?>
+		<tr class="rm-paid-row">
+			<td class="label"><?php esc_html_e( 'Advance Paid', 'reseller-management' ); ?>:</td>
+			<td width="1%"></td>
+			<td class="total"><?php echo wc_price( $paid_amount, array( 'currency' => $order->get_currency() ) ); ?></td>
+		</tr>
+		<tr class="rm-separator-row">
+			<td colspan="3"><hr></td>
+		</tr>
+		<?php
 	}
 }
