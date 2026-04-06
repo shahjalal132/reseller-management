@@ -589,6 +589,7 @@ class Admin_Top_Menu {
             'cod_input1'             => sanitize_text_field( wp_unslash( $_POST['cod_input1'] ?? '' ) ),
             'packaging_cost_enabled' => isset( $_POST['packaging_cost_enabled'] ) ? 'yes' : 'no',
             'packaging_cost_input1'  => sanitize_text_field( wp_unslash( $_POST['packaging_cost_input1'] ?? '' ) ),
+            'steadfast_secret_token' => sanitize_text_field( wp_unslash( $_POST['steadfast_secret_token'] ?? '' ) ),
         ];
 
         update_option( 'rm_settings', $settings );

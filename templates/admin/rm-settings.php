@@ -73,6 +73,25 @@ if ( 'settings-updated' === $notice ) {
                     <input type="text" name="packaging_cost_input1" value="<?php echo esc_attr( $rm_settings['packaging_cost_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter value', 'reseller-management' ); ?>">
                 </div>
             </div>
+    <div class="rm-section-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Steadfast Webhook Integration', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <div class="rm-form-group">
+                <div class="rm-field">
+                    <span><?php esc_html_e( 'Callback URL', 'reseller-management' ); ?></span>
+                    <input type="text" value="<?php echo esc_url( get_rest_url( null, 'reseller/v1/steadfast-webhook' ) ); ?>" readonly onclick="this.select();" style="width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: #f9f9f9;">
+                    <p class="description"><?php esc_html_e( 'Copy this URL and paste it into your Steadfast Webhook configuration.', 'reseller-management' ); ?></p>
+                </div>
+            </div>
+            
+            <div class="rm-grid rm-grid-1 mt-20">
+                <div class="rm-field">
+                    <span><?php esc_html_e( 'Secret Token', 'reseller-management' ); ?></span>
+                    <input type="text" name="steadfast_secret_token" value="<?php echo esc_attr( $rm_settings['steadfast_secret_token'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter secret token from Steadfast', 'reseller-management' ); ?>" style="width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px;">
+                </div>
+            </div>
         </div>
     </div>
 

@@ -825,6 +825,18 @@
     });
 
     submitAjaxForm({
+      selector: '#rm-profile-form',
+      action: 'reseller_update_profile',
+    });
+
+    submitAjaxForm({
+      selector: '#rm-password-form',
+      action: 'reseller_change_password',
+      resetOnSuccess: true,
+    });
+
+
+    submitAjaxForm({
       selector: '#rm-form-withdraw',
       action: 'reseller_request_withdrawal',
       resetOnSuccess: true,

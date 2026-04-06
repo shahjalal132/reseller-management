@@ -199,8 +199,16 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                     </td>
                     <td class="rm-col-courier">
                         <div class="rm-courier-info">
-                            <span class="rm-courier-name">Steadfast 2</span>
-                            <a href="#" class="rm-courier-link">https://steadfast.co</a>
+                            <?php 
+                            $consignment_id = $order->get_meta( '_steadfast_consignment_id' );
+                            if ( $consignment_id ) : ?>
+                                <span class="rm-courier-name"><?php esc_html_e( 'Steadfast', 'reseller-management' ); ?></span>
+                                <a href="<?php echo esc_url( 'https://steadfast.com.bd/t/' . $consignment_id ); ?>" target="_blank" class="rm-courier-link">
+                                    <?php echo esc_html( $consignment_id ); ?>
+                                </a>
+                            <?php else : ?>
+                                <span class="rm-no-courier"><?php esc_html_e( 'Not Shipped', 'reseller-management' ); ?></span>
+                            <?php endif; ?>
                         </div>
                     </td>
                     <td class="rm-col-comment">
