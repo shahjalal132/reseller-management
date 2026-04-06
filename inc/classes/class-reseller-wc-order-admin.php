@@ -21,6 +21,9 @@ class Reseller_Wc_Order_Admin {
 		// High-Performance Order Storage (HPOS)
 		add_filter( 'manage_woocommerce_page_wc-orders_columns', [ $this, 'add_reseller_column' ], 20 );
 		add_action( 'manage_woocommerce_page_wc-orders_custom_column', [ $this, 'render_reseller_column_hpos' ], 20, 2 );
+		
+		// Rename meta keys for display
+		add_filter( 'woocommerce_order_item_display_meta_key', [ $this, 'rename_order_item_meta_keys' ], 10, 3 );
 	}
 
 	/**
@@ -112,5 +115,25 @@ class Reseller_Wc_Order_Admin {
 		$edit_link = admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $reseller_id );
 
 		echo '<a href="' . esc_url( $edit_link ) . '"><strong>' . esc_html( $reseller_name ) . '</strong></a>';
+	}
+
+	/**
+	 * Rename order item meta keys for display (e.g., _resale_price -> Resale Price).
+	 *
+	 * @param string          $display_key Display key.
+	 * @param \WC_Meta_Data   $meta        Meta data object.
+	 * @param \WC_Order_Item  $item        Order item object.
+	 * @return string Updated display key.
+	 */
+	public function rename_order_item_meta_keys( $display_key, $meta, $item ) {
+		if ( '_resale_price' === $display_key ) {
+			return __( 'Resale Price', 'reseller-management' );
+		}
+
+		if ( '_base_price' === $display_key ) {
+			return __( 'Base Price', 'reseller-management' );
+		}
+
+		return $display_key;
 	}
 }
