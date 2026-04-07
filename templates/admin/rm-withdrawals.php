@@ -153,10 +153,6 @@ if ( $view_wd ) :
                 </div>
                 <div class="rm-wdv-footer">
                     <span style="font-size:0.75rem;color:#94a3b8;font-weight:600;">ID: <strong>#<?php echo esc_html( (string) $view_wd->id ); ?></strong></span>
-                    <div class="rm-wdv-actions">
-                        <button class="rm-btn rm-btn-dark" onclick="window.print()">🖨 Print</button>
-                        <a href="<?php echo esc_url( add_query_arg( [ 'action' => 'edit', 'wd_id' => $view_wd->id ], $base_url ) ); ?>" class="rm-btn rm-btn-primary">✏ Edit</a>
-                    </div>
                 </div>
             </div>
         </div>

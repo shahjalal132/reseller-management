@@ -2322,6 +2322,14 @@ body.rm-dashboard-body {
   line-height: 1.7;
 }
 .rmhp-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 40px; }
+.rmhp-hero .rmhp-btn-outline {
+  border-color: #fff;
+  color: #fff;
+}
+.rmhp-hero .rmhp-btn-outline:hover {
+  background: #fff;
+  color: var(--rm-primary, #005b4e);
+}
 .rmhp-hero-stats { display: flex; align-items: center; gap: 20px; }
 .rmhp-hero-stat-divider { width: 1px; height: 32px; background: rgba(255,255,255,.25); }
 .rmhp-stat-num { display: block; font-size: 1.5rem; font-weight: 800; color: #fff; line-height: 1; }
