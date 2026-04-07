@@ -57,7 +57,7 @@ class Reseller_Registration {
                         <p><?php esc_html_e( 'Submit your business details for admin approval.', 'reseller-management' ); ?></p>
                     </div>
 
-                    <form id="rm-registration-form" class="rm-form-modern" enctype="multipart/form-data">
+                    <form id="rm-registration-form" class="rm-form-modern" method="post" action="" enctype="multipart/form-data">
                         <div class="rm-grid rm-grid-2">
                             <div class="rm-field-modern">
                                 <label><?php esc_html_e( 'Full Name', 'reseller-management' ); ?></label>

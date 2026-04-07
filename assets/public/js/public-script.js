@@ -825,6 +825,12 @@
     });
 
     submitAjaxForm({
+      selector: '#rm-registration-form',
+      action: 'reseller_register_user',
+      resetOnSuccess: true,
+    });
+
+    submitAjaxForm({
       selector: '#rm-profile-form',
       action: 'reseller_update_profile',
     });
