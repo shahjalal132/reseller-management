@@ -104,10 +104,11 @@ class Steadfast_Webhook {
      */
     private function update_order_status( $order, $status ) {
         $status_map = [
-            'pending'           => 'processing',
-            'delivered'         => 'completed',
-            'partial_delivered' => 'completed',
+            'pending'           => 'shipping',
+            'delivered'         => 'delivered',
+            'partial_delivered' => 'delivered',
             'cancelled'         => 'cancelled',
+            'returned'          => 'returned',
             'unknown'           => 'on-hold',
         ];
 
