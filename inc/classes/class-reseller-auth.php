@@ -155,6 +155,19 @@ class Reseller_Auth {
             body.login #nav a:hover, body.login #backtoblog a:hover {
                 text-decoration: underline;
             }
+            body.login .rm-login-reseller-link {
+                margin: 12px 0 0;
+                padding: 0;
+                text-align: center;
+            }
+            body.login .rm-login-reseller-link a {
+                color: var(--rm-primary) !important;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            body.login .rm-login-reseller-link a:hover {
+                text-decoration: underline;
+            }
             .rm-auth-header-modern {
                 margin-bottom: 20px;
             }
@@ -186,6 +199,10 @@ class Reseller_Auth {
             }
         </style>
         <script>
+            var rmResellerRegistration = {
+                url: <?php echo wp_json_encode( home_url( '/reseller-registration/' ) ); ?>,
+                label: <?php echo wp_json_encode( __( 'Become a Reseller', 'reseller-management' ) ); ?>
+            };
             document.addEventListener("DOMContentLoaded", function() {
                 var loginDiv = document.getElementById("login");
                 if (!loginDiv) return;
@@ -210,6 +227,17 @@ class Reseller_Auth {
                 
                 rightPane.appendChild(customHeader);
                 rightPane.appendChild(loginDiv);
+
+                var nav = loginDiv.querySelector("#nav");
+                if (nav && rmResellerRegistration && rmResellerRegistration.url) {
+                    var regP = document.createElement("p");
+                    regP.className = "rm-login-reseller-link";
+                    var regA = document.createElement("a");
+                    regA.href = rmResellerRegistration.url;
+                    regA.textContent = rmResellerRegistration.label;
+                    regP.appendChild(regA);
+                    nav.parentNode.insertBefore(regP, nav.nextSibling);
+                }
             });
         </script>
         <?php
