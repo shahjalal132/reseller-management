@@ -39,6 +39,7 @@ if ( ! $rm_user ) {
 $rm_status       = \BOILERPLATE\Inc\Reseller_Helper::get_reseller_status( $rm_reseller_id );
 $rm_banned_until = (int) get_user_meta( $rm_reseller_id, '_reseller_banned_until', true );
 
+$avatar_id     = (int) get_user_meta( $rm_reseller_id, '_reseller_avatar_id', true );
 $avatar_letter = strtoupper( mb_substr( $rm_user->display_name, 0, 1 ) );
 $joined_date   = date_i18n( get_option( 'date_format' ), strtotime( $rm_user->user_registered ) );
 
@@ -120,7 +121,13 @@ $rm_statements_url = admin_url( 'admin.php?page=reseller-hub-user-statements&res
         <div class="rm-card" style="text-align:center;">
             <p class="rm-card-title"><?php esc_html_e( 'Reseller Profile', 'reseller-management' ); ?></p>
             <div class="rm-profile-card-inner">
-                <div class="rm-big-avatar"><?php echo esc_html( $avatar_letter ); ?></div>
+                <div class="rm-big-avatar<?php echo ( $avatar_id && wp_attachment_is_image( $avatar_id ) ) ? ' rm-big-avatar--has-photo' : ''; ?>">
+                    <?php if ( $avatar_id && wp_attachment_is_image( $avatar_id ) ) : ?>
+                        <?php echo wp_get_attachment_image( $avatar_id, [ 160, 160 ], false, [ 'alt' => '' ] ); ?>
+                    <?php else : ?>
+                        <?php echo esc_html( $avatar_letter ); ?>
+                    <?php endif; ?>
+                </div>
                 <p class="rm-profile-name"><?php echo esc_html( $rm_user->display_name ); ?></p>
                 <p class="rm-profile-email"><?php echo esc_html( $rm_user->user_email ); ?></p>
                 <p class="rm-profile-joined">

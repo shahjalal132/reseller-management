@@ -577,6 +577,20 @@
   text-transform: uppercase;
 }
 
+.rm-user-avatar--has-photo {
+  padding: 0;
+  overflow: hidden;
+  background: #e8ecef;
+}
+
+.rm-user-avatar--has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
 .rm-user-display-name {
   font-weight: 600;
   color: #111827;
@@ -989,6 +1003,20 @@
   font-size: 32px;
   margin: 0 auto 16px;
   text-transform: uppercase;
+}
+
+.rm-big-avatar--has-photo {
+  padding: 0;
+  overflow: hidden;
+  background: #e8ecef;
+}
+
+.rm-big-avatar--has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
 }
 
 .rm-profile-name {

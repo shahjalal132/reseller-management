@@ -69,6 +69,7 @@ $rm_search = sanitize_text_field( wp_unslash( $_GET['rm_search'] ?? '' ) ); // p
         <?php else : ?>
             <?php foreach ( $rm_users as $rm_u ) :
                 $uid           = absint( $rm_u['ID'] );
+                $avatar_id     = (int) get_user_meta( $uid, '_reseller_avatar_id', true );
                 $avatar_letter = strtoupper( mb_substr( (string) $rm_u['name'], 0, 1 ) );
                 $status        = (string) $rm_u['status'];
                 $status_label  = 'approved' === $status ? __( 'active', 'reseller-management' ) : ucfirst( $status );
@@ -85,7 +86,13 @@ $rm_search = sanitize_text_field( wp_unslash( $_GET['rm_search'] ?? '' ) ); // p
             <tr>
                 <td>
                     <div class="rm-user-name-cell">
-                        <div class="rm-user-avatar"><?php echo esc_html( $avatar_letter ); ?></div>
+                        <div class="rm-user-avatar<?php echo ( $avatar_id && wp_attachment_is_image( $avatar_id ) ) ? ' rm-user-avatar--has-photo' : ''; ?>">
+                            <?php if ( $avatar_id && wp_attachment_is_image( $avatar_id ) ) : ?>
+                                <?php echo wp_get_attachment_image( $avatar_id, [ 76, 76 ], false, [ 'alt' => '' ] ); ?>
+                            <?php else : ?>
+                                <?php echo esc_html( $avatar_letter ); ?>
+                            <?php endif; ?>
+                        </div>
                         <span class="rm-user-display-name"><?php echo esc_html( (string) $rm_u['name'] ); ?></span>
                     </div>
                 </td>
