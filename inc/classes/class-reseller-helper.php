@@ -102,17 +102,25 @@ class Reseller_Helper {
      * @return void
      */
     public static function maybe_register_role() {
-        if ( get_role( self::get_role_slug() ) ) {
+        $slug = self::get_role_slug();
+        $role = get_role( $slug );
+
+        if ( ! $role ) {
+            add_role(
+                $slug,
+                __( 'Reseller', 'reseller-management' ),
+                [
+                    'read'         => true,
+                    'upload_files' => true,
+                ]
+            );
+
             return;
         }
 
-        add_role(
-            self::get_role_slug(),
-            __( 'Reseller', 'reseller-management' ),
-            [
-                'read' => true,
-            ]
-        );
+        if ( ! $role->has_cap( 'upload_files' ) ) {
+            $role->add_cap( 'upload_files' );
+        }
     }
 
     /**

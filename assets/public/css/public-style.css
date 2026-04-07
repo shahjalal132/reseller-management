@@ -79,6 +79,34 @@ body.rm-dashboard-body {
   grid-column: 1 / -1;
 }
 
+.rm-profile-avatar-field .rm-profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.rm-profile-avatar-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rm-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.rm-profile-avatar-upload input[type="file"] {
+  max-width: 100%;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.rm-profile-avatar-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
 .rm-field input,
 .rm-field textarea,
 .rm-field select {

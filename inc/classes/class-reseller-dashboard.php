@@ -16,6 +16,7 @@ class Reseller_Dashboard {
     protected function __construct() {
         add_shortcode( 'reseller_dashboard', [ $this, 'render_dashboard_shortcode' ] );
         add_filter( 'template_include', [ $this, 'maybe_use_dashboard_template' ] );
+        add_filter( 'get_avatar_url', [ $this, 'filter_reseller_avatar_url' ], 10, 3 );
         add_action( 'wp_ajax_reseller_update_profile', [ $this, 'handle_profile_update' ] );
         add_action( 'wp_ajax_reseller_change_password', [ $this, 'handle_password_change' ] );
     }
@@ -299,6 +300,43 @@ class Reseller_Dashboard {
     }
 
     /**
+     * Use uploaded reseller profile image for avatars when set.
+     *
+     * @param string              $url         Default avatar URL.
+     * @param mixed               $id_or_email User id, email, or object.
+     * @param array<string,mixed> $args        Avatar arguments.
+     *
+     * @return string
+     */
+    public function filter_reseller_avatar_url( $url, $id_or_email, $args ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+        $user_id = 0;
+
+        if ( is_numeric( $id_or_email ) ) {
+            $user_id = (int) $id_or_email;
+        } elseif ( $id_or_email instanceof \WP_User ) {
+            $user_id = (int) $id_or_email->ID;
+        } elseif ( is_string( $id_or_email ) && is_email( $id_or_email ) ) {
+            $user = get_user_by( 'email', $id_or_email );
+            if ( $user ) {
+                $user_id = (int) $user->ID;
+            }
+        }
+
+        if ( ! $user_id ) {
+            return $url;
+        }
+
+        $attachment_id = (int) get_user_meta( $user_id, '_reseller_avatar_id', true );
+        if ( ! $attachment_id ) {
+            return $url;
+        }
+
+        $custom = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+
+        return $custom ? $custom : $url;
+    }
+
+    /**
      * Handle profile updates from the settings tab.
      *
      * @return void
@@ -321,6 +359,37 @@ class Reseller_Dashboard {
             wp_send_json_error( __( 'Name, phone, and business name are required.', 'reseller-management' ), 422 );
         }
 
+        if ( ! empty( $_FILES['avatar']['name'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $upload_error = (int) ( $_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE );
+            if ( UPLOAD_ERR_OK !== $upload_error ) {
+                wp_send_json_error( __( 'Avatar upload failed. Please try a smaller image or a different file.', 'reseller-management' ), 422 );
+            }
+
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+
+            $attachment_id = media_handle_upload( 'avatar', 0 );
+
+            if ( is_wp_error( $attachment_id ) ) {
+                wp_send_json_error( $attachment_id->get_error_message(), 422 );
+            }
+
+            wp_update_post(
+                [
+                    'ID'          => $attachment_id,
+                    'post_author' => $user_id,
+                ]
+            );
+
+            $old_avatar = (int) get_user_meta( $user_id, '_reseller_avatar_id', true );
+            if ( $old_avatar && $old_avatar !== $attachment_id ) {
+                wp_delete_attachment( $old_avatar, true );
+            }
+
+            update_user_meta( $user_id, '_reseller_avatar_id', $attachment_id );
+        }
+
         wp_update_user(
             [
                 'ID'           => $user_id,
@@ -334,7 +403,15 @@ class Reseller_Dashboard {
         update_user_meta( $user_id, '_reseller_fb_url', $facebook_url );
         update_user_meta( $user_id, '_reseller_web_url', $website_url );
 
-        wp_send_json_success( __( 'Profile updated successfully.', 'reseller-management' ) );
+        $avatar_attachment = (int) get_user_meta( $user_id, '_reseller_avatar_id', true );
+        $avatar_url        = $avatar_attachment ? (string) wp_get_attachment_image_url( $avatar_attachment, [ 96, 96 ] ) : '';
+
+        wp_send_json_success(
+            [
+                'message'    => __( 'Profile updated successfully.', 'reseller-management' ),
+                'avatar_url' => $avatar_url,
+            ]
+        );
     }
 
     /**

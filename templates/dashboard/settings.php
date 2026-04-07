@@ -12,8 +12,19 @@ $user    = get_userdata( $user_id );
 ?>
 <div class="rm-card">
     <h3><?php esc_html_e( 'Profile Settings', 'reseller-management' ); ?></h3>
-    <form id="rm-profile-form" class="rm-form">
+    <form id="rm-profile-form" class="rm-form" method="post" enctype="multipart/form-data">
         <div class="rm-grid rm-grid-2" style="padding-left: 25px; padding-bottom: 25px;">
+            <div class="rm-field rm-field-full rm-profile-avatar-field">
+                <span><?php esc_html_e( 'Profile photo', 'reseller-management' ); ?></span>
+                <div class="rm-profile-avatar-row">
+                    <?php echo get_avatar( $user_id, 96, '', '', [ 'class' => 'rm-profile-avatar-preview' ] ); ?>
+                    <label class="rm-profile-avatar-upload">
+                        <span class="screen-reader-text"><?php esc_html_e( 'Upload profile photo', 'reseller-management' ); ?></span>
+                        <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp">
+                    </label>
+                </div>
+                <p class="rm-profile-avatar-hint"><?php esc_html_e( 'JPG, PNG, GIF, or WebP. Leave empty to keep your current photo.', 'reseller-management' ); ?></p>
+            </div>
             <label class="rm-field">
                 <span><?php esc_html_e( 'Name', 'reseller-management' ); ?></span>
                 <input type="text" name="display_name" value="<?php echo esc_attr( $user ? $user->display_name : '' ); ?>" required>

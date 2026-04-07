@@ -39,11 +39,14 @@
         processData: false,
         contentType: false,
         success: function (response) {
-          renderResponse(
-            $response,
-            response.data || "Request completed successfully.",
-            !!response.success
-          );
+          var payload = response.data;
+          var message =
+            typeof payload === "string"
+              ? payload
+              : payload && typeof payload.message === "string"
+                ? payload.message
+                : "Request completed successfully.";
+          renderResponse($response, message, !!response.success);
 
           if (response.success && config.resetOnSuccess) {
             $form[0].reset();
@@ -833,6 +836,13 @@
     submitAjaxForm({
       selector: '#rm-profile-form',
       action: 'reseller_update_profile',
+      onSuccess: function (response) {
+        var url = response.data && response.data.avatar_url;
+        if (url) {
+          $('.rm-profile-avatar-preview').attr('src', url);
+          $('.rm-user-profile-header .avatar').attr('src', url);
+        }
+      },
     });
 
     submitAjaxForm({
