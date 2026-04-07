@@ -19,6 +19,7 @@ class Autoloader {
         APIS::get_instance();
         Reseller_Auth::get_instance();
         Reseller_Registration::get_instance();
+        Reseller_Homepage::get_instance();
         Reseller_Dashboard::get_instance();
         Reseller_Orders::get_instance();
         Reseller_Finance::get_instance();

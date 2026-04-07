@@ -866,3 +866,103 @@
 
   });
 })(jQuery);
+
+/* ═══════════════════════════════════════════════════
+   RESELLER HOMEPAGE interactions (no jQuery required)
+   ═══════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* ── Smooth scroll for all .rmhp-scroll-link anchors ── */
+    document.querySelectorAll('.rmhp-scroll-link').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        var href = link.getAttribute('href');
+        if (!href || href.charAt(0) !== '#') { return; }
+        var target = document.querySelector(href);
+        if (!target) { return; }
+        e.preventDefault();
+        var header = document.getElementById('rmhp-header');
+        var offset = header ? header.offsetHeight + 8 : 72;
+        var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+
+        /* close mobile nav if open */
+        var nav = document.getElementById('rmhp-nav');
+        if (nav) { nav.classList.remove('rmhp-nav-open'); }
+      });
+    });
+
+    /* ── Hamburger menu toggle ── */
+    var hamburger = document.getElementById('rmhp-hamburger');
+    var nav       = document.getElementById('rmhp-nav');
+    if (hamburger && nav) {
+      hamburger.addEventListener('click', function () {
+        nav.classList.toggle('rmhp-nav-open');
+        hamburger.setAttribute('aria-expanded', nav.classList.contains('rmhp-nav-open') ? 'true' : 'false');
+      });
+    }
+
+    /* ── Active nav link on scroll ── */
+    var navLinks = document.querySelectorAll('.rmhp-nav-link');
+    var sections = [];
+    navLinks.forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (href && href.charAt(0) === '#') {
+        var sec = document.querySelector(href);
+        if (sec) { sections.push({ el: sec, link: link }); }
+      }
+    });
+
+    function updateActiveNav() {
+      var header = document.getElementById('rmhp-header');
+      var offset = header ? header.offsetHeight + 20 : 90;
+      var scrollY = window.pageYOffset;
+      var active  = null;
+      sections.forEach(function (s) {
+        if (s.el.offsetTop - offset <= scrollY) { active = s; }
+      });
+      navLinks.forEach(function (l) { l.classList.remove('rmhp-nav-active'); });
+      if (active) { active.link.classList.add('rmhp-nav-active'); }
+    }
+
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    updateActiveNav();
+
+    /* ── Sticky header shadow ── */
+    var rmHeader = document.getElementById('rmhp-header');
+    if (rmHeader) {
+      window.addEventListener('scroll', function () {
+        rmHeader.style.boxShadow = window.pageYOffset > 10
+          ? '0 2px 20px rgba(15,23,42,.1)'
+          : '0 1px 8px rgba(15,23,42,.05)';
+      }, { passive: true });
+    }
+
+    /* ── FAQ accordion ── */
+    document.querySelectorAll('.rmhp-faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var item   = btn.closest('.rmhp-faq-item');
+        var answer = document.getElementById(btn.getAttribute('aria-controls'));
+        var isOpen = !answer.hidden;
+
+        /* close all */
+        document.querySelectorAll('.rmhp-faq-item').forEach(function (i) {
+          i.classList.remove('rmhp-faq-open');
+          var q = i.querySelector('.rmhp-faq-question');
+          var a = document.getElementById(q.getAttribute('aria-controls'));
+          if (q && a) { q.setAttribute('aria-expanded', 'false'); a.hidden = true; }
+        });
+
+        /* open clicked if it was closed */
+        if (!isOpen) {
+          item.classList.add('rmhp-faq-open');
+          btn.setAttribute('aria-expanded', 'true');
+          answer.hidden = false;
+        }
+      });
+    });
+
+  });
+}());

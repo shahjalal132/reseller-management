@@ -35,6 +35,11 @@ if ( ! class_exists( 'Reseller_Page_Manager' ) ) {
 				'content'   => '[reseller_dashboard]',
 				'page_name' => 'reseller-dashboard',
 			),
+			'reseller_homepage'     => array(
+				'title'     => 'Reseller Homepage',
+				'content'   => '[reseller_homepage]',
+				'page_name' => 'reseller-homepage',
+			),
 		);
 
 		/**
