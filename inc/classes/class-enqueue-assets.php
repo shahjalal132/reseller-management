@@ -34,7 +34,23 @@ class Enqueue_Assets {
      * @return void
      */
     public function enqueue_admin_assets( $page_now ) {
-        if ( false === strpos( (string) $page_now, 'reseller-hub' ) ) {
+        $is_reseller_page = false !== strpos( (string) $page_now, 'reseller-hub' );
+        $is_order_page    = in_array( $page_now, [ 'post.php', 'post-new.php', 'woocommerce_page_wc-orders' ], true );
+
+        if ( ! $is_reseller_page && ! $is_order_page ) {
+            return;
+        }
+
+        // Only enqueue on order edit pages if it's an order
+        if ( $is_order_page && ! isset( $_GET['post_type'] ) && ! isset( $_GET['post'] ) && $page_now !== 'woocommerce_page_wc-orders' ) {
+             // HPOS uses woocommerce_page_wc-orders, traditional uses post.php?post=ID&action=edit
+        }
+        
+        // Actually, just checking if it's the right screen is better
+        $screen = get_current_screen();
+        $is_order_screen = $screen && ( 'shop_order' === $screen->post_type || 'woocommerce_page_wc-orders' === $screen->id );
+
+        if ( ! $is_reseller_page && ! $is_order_screen ) {
             return;
         }
 
@@ -67,24 +83,7 @@ class Enqueue_Assets {
                 'nonce'       => wp_create_nonce( 'rm_public_nonce' ),
                 'profit_data' => Reseller_Helper::get_monthly_profit_summary( get_current_user_id() ),
                 'order_stats' => $this->get_order_stats_for_chart( get_current_user_id() ),
-                'locations'   => [
-                    'districts' => [
-                        'Dhaka', 'Chittagong', 'Rajshahi', 'Khulna', 'Barisal', 'Sylhet', 'Rangpur', 'Mymensingh',
-                        'Bagerhat', 'Bandarban', 'Barguna', 'Bhola', 'Bogra', 'Brahmanbaria', 'Chandpur', 'Chapainawabganj',
-                        'Chuadanga', 'Comilla', 'Cox\'s Bazar', 'Dinajpur', 'Faridpur', 'Feni', 'Gaibandha', 'Gazipur',
-                        'Gopalganj', 'Habiganj', 'Jamalpur', 'Jessore', 'Jhalokati', 'Jhenaidah', 'Joypurhat', 'Khagrachhari',
-                        'Kishoreganj', 'Kurigram', 'Kushtia', 'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj',
-                        'Meherpur', 'Moulvibazar', 'Munshiganj', 'Naogaon', 'Narail', 'Narayanganj', 'Narsingdi', 'Natore',
-                        'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna', 'Panchagarh', 'Patuakhali', 'Pirojpur', 'Rajbari', 'Shariatpur',
-                        'Sherpur', 'Sirajganj', 'Sunamganj', 'Tangail', 'Thakurgaon'
-                    ],
-                    'thanas' => [
-                        'Dhaka' => ['Abdullahpur', 'Uttara', 'Mirpur', 'Gulshan', 'Banani', 'Dhanmondi', 'Motijheel', 'Badda', 'Khilgaon', 'Basundhara'],
-                        'Chittagong' => ['Pahartali', 'Kotwali', 'Double Mooring', 'Bandar', 'Panchlaish', 'Bakalia', 'Chandgaon'],
-                        'Comilla' => ['Laksam', 'Comilla Sadar', 'Barura', 'Chandina', 'Daudkandi', 'Homna', 'Muradnagar'],
-                        // Simplified for now, can be expanded or fetched via AJAX if needed
-                    ]
-                ]
+                'locations'   => $this->get_locations_data()
             ]
         );
     }
@@ -116,5 +115,63 @@ class Enqueue_Assets {
         }
 
         return $stats;
+    }
+
+    /**
+     * Get dynamic locations parsed from JSON.
+     *
+     * @return array
+     */
+    private function get_locations_data() {
+        $districts_file = PLUGIN_BASE_PATH . '/assets/data/districts.json';
+        $upazilas_file  = PLUGIN_BASE_PATH . '/assets/data/upazilas.json';
+
+        $districts    = [];
+        $thanas       = [];
+        $district_map = [];
+
+        if ( file_exists( $districts_file ) ) {
+            $data = json_decode( file_get_contents( $districts_file ), true );
+            if ( is_array( $data ) ) {
+                foreach ( $data as $section ) {
+                    if ( isset( $section['type'] ) && 'table' === $section['type'] && 'districts' === $section['name'] && ! empty( $section['data'] ) ) {
+                        foreach ( $section['data'] as $d ) {
+                            $district_map[ $d['id'] ] = $d['name'];
+                            $districts[] = $d['name'];
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( file_exists( $upazilas_file ) ) {
+            $data = json_decode( file_get_contents( $upazilas_file ), true );
+            if ( is_array( $data ) ) {
+                foreach ( $data as $section ) {
+                    if ( isset( $section['type'] ) && 'table' === $section['type'] && 'upazilas' === $section['name'] && ! empty( $section['data'] ) ) {
+                        foreach ( $section['data'] as $u ) {
+                            $district_id = $u['district_id'];
+                            if ( isset( $district_map[ $district_id ] ) ) {
+                                $district_name = $district_map[ $district_id ];
+                                if ( ! isset( $thanas[ $district_name ] ) ) {
+                                    $thanas[ $district_name ] = [];
+                                }
+                                $thanas[ $district_name ][] = $u['name'];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        sort( $districts );
+        foreach ( $thanas as $key => $thana_list ) {
+            sort( $thanas[ $key ] );
+        }
+
+        return [
+            'districts' => $districts,
+            'thanas'    => $thanas,
+        ];
     }
 }

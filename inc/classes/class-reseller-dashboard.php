@@ -76,6 +76,17 @@ class Reseller_Dashboard {
         if ( empty( $tabs[ $tab ] ) ) {
             $tab = 'dashboard';
         }
+
+        $subtab     = sanitize_key( wp_unslash( $_GET['subtab'] ?? '' ) );
+        $page_title = $tabs[ $tab ]['label'] ?? '';
+
+        if ( ! empty( $subtab ) && isset( $tabs[ $tab ]['children'][ $subtab ] ) ) {
+            $page_title = $tabs[ $tab ]['children'][ $subtab ];
+        } elseif ( empty( $subtab ) && ! empty( $tabs[ $tab ]['children'] ) ) {
+            // Default to the first child if children exist but no subtab is specified
+            $first_child = reset( $tabs[ $tab ]['children'] );
+            $page_title  = $first_child;
+        }
         ?>
         <div class="rm-dashboard-app">
             <aside class="rm-dashboard-sidebar">
@@ -144,6 +155,7 @@ class Reseller_Dashboard {
                         <button class="rm-sidebar-toggle">
                             <span class="dashicons dashicons-menu"></span>
                         </button>
+                        <h2 class="rm-page-title"><?php echo esc_html( $page_title ); ?></h2>
                     </div>
                     <div class="rm-header-right">
                         <div class="rm-user-profile-header">
@@ -154,11 +166,66 @@ class Reseller_Dashboard {
                 </header>
 
                 <div class="rm-dashboard-body-inner">
-                    <?php if ( 'dashboard' === $tab ) : ?>
-                    <div class="rm-balance-check-container">
-                        <button class="rm-button rm-button-balance-check">
+                    <?php if ( 'dashboard' === $tab ) : 
+                        $current_balance = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $user_id );
+                        $payment_methods = \BOILERPLATE\Inc\Reseller_Helper::get_payment_methods( $user_id );
+                    ?>
+                    <div class="rm-balance-check-container" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
+                        <button class="rm-button rm-button-balance-check" id="rm-btn-balance-check" style="margin-bottom: 10px;">
                             <?php esc_html_e( 'Balance Check', 'reseller-management' ); ?>
                         </button>
+                        
+                        <div class="rm-balance-display-wrap" id="rm-balance-display" style="display: none; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e8edf3; text-align: center;">
+                            <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;"><?php esc_html_e( 'Available Balance', 'reseller-management' ); ?></div>
+                            <div class="rm-balance-amount" style="font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">
+                                ৳ <?php echo esc_html( number_format( $current_balance, 2 ) ); ?>
+                            </div>
+                            <button class="rm-button rm-button-withdraw-request" id="rm-btn-open-withdraw-modal" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none;">
+                                <?php esc_html_e( 'Request Withdrawal', 'reseller-management' ); ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Withdraw Modal -->
+                    <div id="rm-withdraw-modal" class="rm-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                        <div class="rm-modal-content" style="background: #fff; padding: 32px; border-radius: 16px; width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                            <button class="rm-modal-close" id="rm-btn-close-withdraw-modal" style="position: absolute; top: 16px; right: 16px; border: none; background: #f1f5f9; color: #64748b; font-size: 18px; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+                            <h3 style="margin-top: 0; margin-bottom: 24px; color: #0f172a; font-size: 1.3rem; font-weight: 800;"><?php esc_html_e( 'Withdrawal Request', 'reseller-management' ); ?></h3>
+                            
+                            <form id="rm-form-withdraw" class="rm-form row">
+                                <div class="col-12" style="margin-bottom: 16px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Amount', 'reseller-management' ); ?> (৳)</label>
+                                    <input type="number" name="amount" class="rm-input" min="1" max="<?php echo esc_attr( $current_balance ); ?>" required placeholder="0.00" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600;">
+                                </div>
+                                <div class="col-12" style="margin-bottom: 16px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Payment Method', 'reseller-management' ); ?></label>
+                                    <select name="payment_method" id="rm-withdraw-method-select" class="rm-select" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #fff;">
+                                        <option value=""><?php esc_html_e( '-- Select Method --', 'reseller-management' ); ?></option>
+                                        <?php if ( ! empty( $payment_methods ) ) : ?>
+                                            <?php foreach ( $payment_methods as $method ) : ?>
+                                                <option value="<?php echo esc_attr( $method->method_name ); ?>" data-number="<?php echo esc_attr( $method->number ); ?>">
+                                                    <?php echo esc_html( ucfirst( $method->method_name ) . ' (' . ucfirst( $method->type ) . ')' ); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else : ?>
+                                            <option value="" disabled><?php esc_html_e( 'No saved methods. Please add one.', 'reseller-management' ); ?></option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12" style="margin-bottom: 24px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Account Details', 'reseller-management' ); ?></label>
+                                    <input type="text" name="account_details" id="rm-withdraw-account-details" class="rm-input" readonly required placeholder="<?php esc_attr_e( 'Select a payment method above', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #f8fafc; color: #64748b;">
+                                </div>
+                                <div class="col-12" style="margin-bottom: 24px;">
+                                    <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Note (Optional)', 'reseller-management' ); ?></label>
+                                    <textarea name="note" class="rm-input" placeholder="<?php esc_attr_e( 'Add any additional notes here...', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; min-height: 80px;"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <div class="rm-form-response" style="margin-bottom: 15px; font-size: 0.85rem; font-weight: 600; border-radius: 8px;"></div>
+                                    <button type="submit" class="rm-button" style="width: 100%; background: #0f172a; color: #fff; padding: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer;"><?php esc_html_e( 'Submit Request', 'reseller-management' ); ?></button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     <?php endif; ?>
 
@@ -179,6 +246,20 @@ class Reseller_Dashboard {
      * @return void
      */
     protected function render_tab_content( $tab ) {
+        $subtab = sanitize_key( wp_unslash( $_GET['subtab'] ?? '' ) );
+
+        // Account tab routes to sub-templates by subtab.
+        if ( 'account' === $tab ) {
+            $allowed_subtabs = [ 'withdrawals', 'payment-methods', 'transactions' ];
+            $active_subtab   = in_array( $subtab, $allowed_subtabs, true ) ? $subtab : 'withdrawals';
+            $sub_template    = PLUGIN_BASE_PATH . '/templates/dashboard/account/' . $active_subtab . '.php';
+
+            if ( file_exists( $sub_template ) ) {
+                include $sub_template;
+                return;
+            }
+        }
+
         $template = PLUGIN_BASE_PATH . '/templates/dashboard/' . $tab . '.php';
 
         if ( file_exists( $template ) ) {
@@ -311,6 +392,7 @@ class Reseller_Dashboard {
             'status_cancel'     => '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>',
             'status_all'        => '<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>',
             'status_incomplete' => '<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>',
+            'whatsapp'          => '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .004 5.408 0 12.044c0 2.123.555 4.191 1.613 6.011L0 24l6.117-1.605a11.845 11.845 0 005.932 1.577h.005c6.631 0 12.046-5.408 12.05-12.044a11.813 11.813 0 00-3.592-8.514z"/>',
         ];
 
         $path = $icons[ $name ] ?? '';

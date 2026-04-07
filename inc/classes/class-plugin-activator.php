@@ -13,7 +13,17 @@ class Plugin_Activator {
         self::validate_dependencies();
         self::create_reseller_role();
         self::create_financial_tables();
+        self::register_order_statuses();
         \BOILERPLATE\Inc\Reseller_Page_Manager::get_instance()->check_and_create_pages();
+    }
+
+    /**
+     * Register custom order statuses.
+     */
+    protected static function register_order_statuses() {
+        if ( class_exists( '\BOILERPLATE\Inc\Reseller_Orders' ) ) {
+            \BOILERPLATE\Inc\Reseller_Orders::get_instance()->register_custom_order_statuses();
+        }
     }
 
     /**
@@ -56,11 +66,14 @@ class Plugin_Activator {
     protected static function create_financial_tables() {
         global $wpdb;
 
+        \BOILERPLATE\Inc\Reseller_Helper::maybe_create_payment_methods_table();
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        $charset_collate   = $wpdb->get_charset_collate();
-        $ledger_table      = \BOILERPLATE\Inc\Reseller_Helper::get_ledger_table_name();
-        $withdrawals_table = \BOILERPLATE\Inc\Reseller_Helper::get_withdrawals_table_name();
+        $charset_collate       = $wpdb->get_charset_collate();
+        $ledger_table          = \BOILERPLATE\Inc\Reseller_Helper::get_ledger_table_name();
+        $withdrawals_table     = \BOILERPLATE\Inc\Reseller_Helper::get_withdrawals_table_name();
+        $payment_methods_table = \BOILERPLATE\Inc\Reseller_Helper::get_payment_methods_table_name();
 
         $sql_ledger = "CREATE TABLE {$ledger_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -79,9 +92,11 @@ class Plugin_Activator {
         $sql_withdrawals = "CREATE TABLE {$withdrawals_table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             reseller_id bigint(20) unsigned NOT NULL,
+            transaction_id varchar(50) NOT NULL,
             amount decimal(10,2) NOT NULL,
             payment_method varchar(50) NOT NULL,
             account_details text NOT NULL,
+            note text DEFAULT NULL,
             status varchar(20) DEFAULT 'pending' NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
@@ -89,8 +104,20 @@ class Plugin_Activator {
             KEY status (status)
         ) {$charset_collate};";
 
+        $sql_payment_methods = "CREATE TABLE {$payment_methods_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            reseller_id bigint(20) unsigned NOT NULL,
+            method_name varchar(20) NOT NULL,
+            number varchar(50) NOT NULL,
+            type varchar(20) NOT NULL DEFAULT 'personal',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY reseller_id (reseller_id)
+        ) {$charset_collate};";
+
         dbDelta( $sql_ledger );
         dbDelta( $sql_withdrawals );
+        dbDelta( $sql_payment_methods );
     }
 
 }

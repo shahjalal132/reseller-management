@@ -24,5 +24,7 @@ class Autoloader {
         Reseller_Finance::get_instance();
         Reseller_Product_Meta::get_instance();
         Reseller_User_Profile_Admin::get_instance();
+        Reseller_Wc_Order_Admin::get_instance();
+        Steadfast_Webhook::get_instance();
     }
 }

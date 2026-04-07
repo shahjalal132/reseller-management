@@ -15,8 +15,15 @@ class Reseller_Finance {
      */
     protected function __construct() {
         add_action( 'woocommerce_order_status_completed', [ $this, 'credit_order_commission' ] );
+        add_action( 'woocommerce_order_status_delivered', [ $this, 'credit_order_commission' ] );
         add_action( 'woocommerce_order_status_refunded', [ $this, 'debit_order_shipping' ] );
         add_action( 'wp_ajax_reseller_request_withdrawal', [ $this, 'handle_withdrawal_request' ] );
+        add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );
+        add_action( 'wp_ajax_reseller_delete_payment_method', [ $this, 'handle_delete_payment_method' ] );
+        add_action( 'wp_ajax_rm_admin_update_withdrawal_status', [ $this, 'handle_admin_update_withdrawal_status' ] );
+
+        // COD Deduction.
+        add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_cod_deduction' ] );
     }
 
     /**
@@ -43,21 +50,75 @@ class Reseller_Finance {
     }
 
     /**
-     * Get ledger rows for a reseller.
+     * Get ledger rows for a reseller with optional pagination.
      *
-     * @param int $user_id Reseller ID.
+     * @param int $user_id User ID.
+     * @param int $limit   Optional limit.
+     * @param int $offset  Optional offset.
      *
      * @return array<int, object>
      */
-    public static function get_transactions( $user_id ) {
+    public static function get_transactions( $user_id, $limit = 0, $offset = 0 ) {
+        global $wpdb;
+
+        $table = Reseller_Helper::get_ledger_table_name();
+        $query = "SELECT * FROM {$table} WHERE reseller_id = %d ORDER BY created_at DESC, id DESC";
+
+        if ( $limit > 0 ) {
+            $query .= $wpdb->prepare( " LIMIT %d OFFSET %d", $limit, $offset );
+        }
+
+        return (array) $wpdb->get_results( $wpdb->prepare( $query, $user_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+    }
+
+    /**
+     * Get total number of transactions for a reseller.
+     *
+     * @param int $user_id User ID.
+     *
+     * @return int
+     */
+    public static function get_total_transactions_count( $user_id ) {
         global $wpdb;
 
         $table = Reseller_Helper::get_ledger_table_name();
 
-        return (array) $wpdb->get_results(
+        return (int) $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT * FROM {$table} WHERE reseller_id = %d ORDER BY created_at DESC, id DESC",
+                "SELECT COUNT(id) FROM {$table} WHERE reseller_id = %d",
                 $user_id
+            )
+        );
+    }
+
+    /**
+     * Sum transaction amounts before a certain offset in DESC order.
+     * Used for calculating running balance correctly in paginated views.
+     *
+     * @param int $user_id User ID.
+     * @param int $offset  Offset.
+     *
+     * @return float
+     */
+    public static function get_transactions_sum_before_offset( $user_id, $offset ) {
+        if ( $offset <= 0 ) {
+            return 0.0;
+        }
+
+        global $wpdb;
+        $table = Reseller_Helper::get_ledger_table_name();
+
+        // Calculate sum of amounts for the first $offset rows in the DESC sort order.
+        return (float) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COALESCE(SUM(amount), 0) FROM (
+                    SELECT amount FROM {$table} 
+                    WHERE reseller_id = %d 
+                    ORDER BY created_at DESC, id DESC 
+                    LIMIT %d
+                ) as sub",
+                $user_id,
+                $offset
             )
         );
     }
@@ -195,6 +256,7 @@ class Reseller_Finance {
         $amount           = round( (float) wp_unslash( $_POST['amount'] ?? 0 ), 2 );
         $payment_method   = sanitize_text_field( wp_unslash( $_POST['payment_method'] ?? '' ) );
         $account_details  = sanitize_textarea_field( wp_unslash( $_POST['account_details'] ?? '' ) );
+        $note             = sanitize_textarea_field( wp_unslash( $_POST['note'] ?? '' ) );
         $current_balance  = Reseller_Helper::get_current_balance( $reseller_id );
 
         if ( $amount <= 0 || empty( $payment_method ) || empty( $account_details ) ) {
@@ -205,17 +267,21 @@ class Reseller_Finance {
             wp_send_json_error( __( 'Withdrawal amount exceeds your current balance.', 'reseller-management' ), 422 );
         }
 
+        $transaction_id = 'TXN-' . strtoupper( uniqid() );
+
         $inserted = $wpdb->insert(
             Reseller_Helper::get_withdrawals_table_name(),
             [
                 'reseller_id'     => $reseller_id,
+                'transaction_id'  => $transaction_id,
                 'amount'          => $amount,
                 'payment_method'  => $payment_method,
                 'account_details' => $account_details,
+                'note'            => $note,
                 'status'          => 'pending',
                 'created_at'      => current_time( 'mysql' ),
             ],
-            [ '%d', '%f', '%s', '%s', '%s', '%s' ]
+            [ '%d', '%s', '%f', '%s', '%s', '%s', '%s', '%s' ]
         );
 
         if ( ! $inserted ) {
@@ -232,5 +298,174 @@ class Reseller_Finance {
         );
 
         wp_send_json_success( __( 'Withdrawal request submitted successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle save (add or update) a payment method.
+     *
+     * @return void
+     */
+    public function handle_save_payment_method() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller_approved( get_current_user_id() ) ) {
+            wp_send_json_error( __( 'You are not allowed to manage payment methods.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $reseller_id = get_current_user_id();
+        $id          = (int) ( $_POST['id'] ?? 0 );
+        $method_name = sanitize_key( wp_unslash( $_POST['method_name'] ?? '' ) );
+        $number      = sanitize_text_field( wp_unslash( $_POST['number'] ?? '' ) );
+        $type        = sanitize_key( wp_unslash( $_POST['type'] ?? '' ) );
+
+        $allowed_methods = [ 'bkash', 'nagad', 'rocket' ];
+        $allowed_types   = [ 'agent', 'personal' ];
+
+        if ( ! in_array( $method_name, $allowed_methods, true ) || empty( $number ) || ! in_array( $type, $allowed_types, true ) ) {
+            wp_send_json_error( __( 'Please provide valid payment method details.', 'reseller-management' ), 422 );
+        }
+
+        $table = Reseller_Helper::get_payment_methods_table_name();
+        $data  = [
+            'reseller_id' => $reseller_id,
+            'method_name' => $method_name,
+            'number'      => $number,
+            'type'        => $type,
+        ];
+        $formats = [ '%d', '%s', '%s', '%s' ];
+
+        if ( $id > 0 ) {
+            // Ensure ownership.
+            $existing = $wpdb->get_var( $wpdb->prepare( "SELECT reseller_id FROM {$table} WHERE id = %d", $id ) );
+            if ( (int) $existing !== $reseller_id ) {
+                wp_send_json_error( __( 'You are not allowed to edit this payment method.', 'reseller-management' ), 403 );
+            }
+
+            $wpdb->update( $table, $data, [ 'id' => $id ], $formats, [ '%d' ] );
+            wp_send_json_success( __( 'Payment method updated successfully.', 'reseller-management' ) );
+        }
+
+        $wpdb->insert( $table, $data, $formats );
+        wp_send_json_success( __( 'Payment method added successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle delete a payment method.
+     *
+     * @return void
+     */
+    public function handle_delete_payment_method() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller_approved( get_current_user_id() ) ) {
+            wp_send_json_error( __( 'You are not allowed to delete payment methods.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $reseller_id = get_current_user_id();
+        $id          = (int) ( $_POST['id'] ?? 0 );
+
+        if ( $id <= 0 ) {
+            wp_send_json_error( __( 'Invalid payment method ID.', 'reseller-management' ), 422 );
+        }
+
+        $table    = Reseller_Helper::get_payment_methods_table_name();
+        $existing = $wpdb->get_var( $wpdb->prepare( "SELECT reseller_id FROM {$table} WHERE id = %d", $id ) );
+
+        if ( (int) $existing !== $reseller_id ) {
+            wp_send_json_error( __( 'You are not allowed to delete this payment method.', 'reseller-management' ), 403 );
+        }
+
+        $wpdb->delete( $table, [ 'id' => $id ], [ '%d' ] );
+        wp_send_json_success( __( 'Payment method deleted successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Handle updating withdrawal status from admin dashboard via AJAX.
+     *
+     * @return void
+     */
+    public function handle_admin_update_withdrawal_status() {
+        check_ajax_referer( 'rm_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'You are not allowed to update withdrawal statuses.', 'reseller-management' ), 403 );
+        }
+
+        global $wpdb;
+
+        $wd_id  = (int) ( $_POST['wd_id'] ?? 0 );
+        $status = sanitize_text_field( wp_unslash( $_POST['status'] ?? '' ) );
+
+        $allowed_statuses = [ 'pending', 'approved', 'rejected', 'completed' ];
+
+        if ( $wd_id <= 0 || ! in_array( $status, $allowed_statuses, true ) ) {
+            wp_send_json_error( __( 'Invalid request details.', 'reseller-management' ), 422 );
+        }
+
+        $table = Reseller_Helper::get_withdrawals_table_name();
+        
+        $updated = $wpdb->update(
+            $table,
+            [ 'status' => $status ],
+            [ 'id'     => $wd_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+
+        if ( false === $updated ) {
+            wp_send_json_error( __( 'Database update failed.', 'reseller-management' ), 500 );
+        }
+
+        wp_send_json_success( __( 'Withdrawal status updated successfully.', 'reseller-management' ) );
+    }
+
+    /**
+     * Apply COD deduction when an order is delivered.
+     *
+     * @param int $order_id Order ID.
+     *
+     * @return void
+     */
+    public function apply_cod_deduction( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return;
+        }
+
+        $reseller_id = (int) $order->get_meta( '_assigned_reseller_id', true );
+        if ( ! $reseller_id || self::ledger_entry_exists_for_order( $order_id, 'cod_deduction' ) ) {
+            return;
+        }
+
+        $settings = get_option( 'rm_settings', [] );
+        if ( ( $settings['cod_enabled'] ?? 'no' ) !== 'yes' ) {
+            return;
+        }
+
+        $percentage = (float) ( $settings['cod_input1'] ?? 0 );
+        if ( $percentage <= 0 ) {
+            return;
+        }
+
+        $total     = (float) $order->get_total();
+        $deduction = ( $total * $percentage ) / 100;
+
+        if ( $deduction <= 0 ) {
+            return;
+        }
+
+        Reseller_Helper::insert_ledger_entry(
+            [
+                'reseller_id' => $reseller_id,
+                'order_id'    => $order_id,
+                'type'        => 'cod_deduction',
+                'amount'      => -1 * abs( $deduction ),
+                'description' => sprintf( 'COD Deduction (%s%%) for Order #%d', $percentage, $order_id ),
+            ]
+        );
     }
 }
