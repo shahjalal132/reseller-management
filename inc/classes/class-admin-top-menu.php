@@ -584,12 +584,33 @@ class Admin_Top_Menu {
             wp_die( esc_html__( 'You are not allowed to manage settings.', 'reseller-management' ) );
         }
 
+        $title_inputs  = isset( $_POST['rm_shipping_preset_title'] ) ? wp_unslash( $_POST['rm_shipping_preset_title'] ) : [];
+        $charge_inputs = isset( $_POST['rm_shipping_preset_charge'] ) ? wp_unslash( $_POST['rm_shipping_preset_charge'] ) : [];
+        $title_inputs  = is_array( $title_inputs ) ? $title_inputs : [];
+        $charge_inputs = is_array( $charge_inputs ) ? $charge_inputs : [];
+
+        $shipping_presets = [];
+        $row_count        = max( count( $title_inputs ), count( $charge_inputs ) );
+        for ( $i = 0; $i < $row_count; $i++ ) {
+            $title = sanitize_text_field( $title_inputs[ $i ] ?? '' );
+            if ( '' === $title ) {
+                continue;
+            }
+            $charge_raw = $charge_inputs[ $i ] ?? '';
+            $charge     = max( 0, round( (float) wc_format_decimal( $charge_raw ), 2 ) );
+            $shipping_presets[] = [
+                'title'  => $title,
+                'charge' => $charge,
+            ];
+        }
+
         $settings = [
             'cod_enabled'            => isset( $_POST['cod_enabled'] ) ? 'yes' : 'no',
             'cod_input1'             => sanitize_text_field( wp_unslash( $_POST['cod_input1'] ?? '' ) ),
             'packaging_cost_enabled' => isset( $_POST['packaging_cost_enabled'] ) ? 'yes' : 'no',
             'packaging_cost_input1'  => sanitize_text_field( wp_unslash( $_POST['packaging_cost_input1'] ?? '' ) ),
             'minimum_balance'        => max( 0, round( (float) wp_unslash( $_POST['minimum_balance'] ?? 0 ), 2 ) ),
+            'shipping_presets'       => $shipping_presets,
             'steadfast_secret_token' => sanitize_text_field( wp_unslash( $_POST['steadfast_secret_token'] ?? '' ) ),
         ];
 

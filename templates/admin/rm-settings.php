@@ -6,7 +6,8 @@
  */
 defined( 'ABSPATH' ) || exit;
 
-$rm_settings = $rm_settings ?? get_option( 'rm_settings', [] );
+$rm_settings       = $rm_settings ?? get_option( 'rm_settings', [] );
+$shipping_presets  = \BOILERPLATE\Inc\Reseller_Helper::get_shipping_presets();
 
 // Notices.
 $notice       = $_GET['rm_notice'] ?? '';
@@ -88,6 +89,55 @@ if ( 'settings-updated' === $notice ) {
                     <p class="description"><?php esc_html_e( 'Resellers cannot withdraw an amount that would leave their balance below this value. Use 0 for no minimum.', 'reseller-management' ); ?></p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Shipping charge presets', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <p class="description" style="margin-top:0;"><?php esc_html_e( 'Resellers can pick these on Add New Order to fill the shipping charge (they may still edit the amount). Rows without a title are ignored when saving.', 'reseller-management' ); ?></p>
+            <table id="rm-shipping-presets-table" class="widefat striped rm-shipping-presets-table" style="max-width: 720px; margin-top: 12px;">
+                <thead>
+                    <tr>
+                        <th scope="col"><?php esc_html_e( 'Title', 'reseller-management' ); ?></th>
+                        <th scope="col" style="width: 140px;"><?php esc_html_e( 'Charge', 'reseller-management' ); ?></th>
+                        <th scope="col" style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="rm-shipping-presets-tbody">
+                    <?php foreach ( $shipping_presets as $preset ) : ?>
+                        <tr class="rm-shipping-preset-row">
+                            <td>
+                                <input type="text" name="rm_shipping_preset_title[]" class="regular-text" value="<?php echo esc_attr( $preset['title'] ); ?>">
+                            </td>
+                            <td>
+                                <input type="number" name="rm_shipping_preset_charge[]" step="0.01" min="0" style="width: 120px;" value="<?php echo esc_attr( (string) $preset['charge'] ); ?>">
+                            </td>
+                            <td>
+                                <button type="button" class="button rm-shipping-preset-remove"><?php esc_html_e( 'Remove', 'reseller-management' ); ?></button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p style="margin-top: 12px;">
+                <button type="button" class="button" id="rm-shipping-preset-add"><?php esc_html_e( 'Add preset', 'reseller-management' ); ?></button>
+            </p>
+            <template id="rm-shipping-preset-row-template">
+                <tr class="rm-shipping-preset-row">
+                    <td>
+                        <input type="text" name="rm_shipping_preset_title[]" class="regular-text" value="">
+                    </td>
+                    <td>
+                        <input type="number" name="rm_shipping_preset_charge[]" step="0.01" min="0" style="width: 120px;" value="">
+                    </td>
+                    <td>
+                        <button type="button" class="button rm-shipping-preset-remove"><?php esc_html_e( 'Remove', 'reseller-management' ); ?></button>
+                    </td>
+                </tr>
+            </template>
         </div>
     </div>
 

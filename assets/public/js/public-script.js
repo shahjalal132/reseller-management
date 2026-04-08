@@ -366,6 +366,14 @@
 
       $('#rm-shipping-charge, #rm-discount, #rm-paid-amount').on('input', calculateTotals);
 
+      $(document).on('change', 'input[name="rm_shipping_preset"]', function () {
+        var $checked = $('input[name="rm_shipping_preset"]:checked');
+        var charge = $checked.attr('data-charge');
+        if (charge !== undefined && charge !== '') {
+          $('#rm-shipping-charge').val(charge).trigger('input');
+        }
+      });
+
       // Submit Order
       $('#rm-submit-order-advanced').on('click', function () {
         if (orderItems.length === 0) {

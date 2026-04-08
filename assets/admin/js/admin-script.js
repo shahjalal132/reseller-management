@@ -294,5 +294,26 @@
       });
     });
     // save options end
+
+    // Shipping presets repeater (Reseller Hub → Settings).
+    var $shippingPresetsTable = $("#rm-shipping-presets-table");
+    if ($shippingPresetsTable.length) {
+      var $shippingTbody = $("#rm-shipping-presets-tbody");
+      var shippingRowTemplate = document.getElementById(
+        "rm-shipping-preset-row-template"
+      );
+
+      $("#rm-shipping-preset-add").on("click", function () {
+        if (shippingRowTemplate && shippingRowTemplate.content) {
+          $shippingTbody.append(
+            $(document.importNode(shippingRowTemplate.content, true))
+          );
+        }
+      });
+
+      $shippingPresetsTable.on("click", ".rm-shipping-preset-remove", function () {
+        $(this).closest("tr").remove();
+      });
+    }
   });
 })(jQuery);

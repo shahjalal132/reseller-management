@@ -296,6 +296,40 @@ class Reseller_Helper {
     }
 
     /**
+     * Admin-defined shipping charge presets for the reseller order form.
+     *
+     * @return array<int, array{title: string, charge: float}>
+     */
+    public static function get_shipping_presets() {
+        $settings = get_option( 'rm_settings', [] );
+        $raw      = $settings['shipping_presets'] ?? [];
+
+        if ( ! is_array( $raw ) ) {
+            return [];
+        }
+
+        $out = [];
+        foreach ( $raw as $row ) {
+            if ( ! is_array( $row ) ) {
+                continue;
+            }
+            $title = isset( $row['title'] ) ? sanitize_text_field( (string) $row['title'] ) : '';
+            if ( '' === $title ) {
+                continue;
+            }
+            $charge = isset( $row['charge'] ) && is_numeric( $row['charge'] )
+                ? max( 0.0, round( (float) $row['charge'], 2 ) )
+                : 0.0;
+            $out[]  = [
+                'title'  => $title,
+                'charge' => $charge,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Get reseller dashboard tabs.
      *
      * @return array<string, string>

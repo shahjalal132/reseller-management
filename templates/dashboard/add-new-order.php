@@ -7,7 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$dashboard = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
+$dashboard         = \BOILERPLATE\Inc\Reseller_Dashboard::get_instance();
+$shipping_presets  = \BOILERPLATE\Inc\Reseller_Helper::get_shipping_presets();
 
 $order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
 $is_edit  = ( 'edit' === ( $_GET['subtab'] ?? '' ) && $order_id > 0 );
@@ -124,6 +125,26 @@ if ( $is_edit ) {
                                 <?php endif; ?>
                             </select>
                         </div>
+                        <?php if ( ! empty( $shipping_presets ) ) : ?>
+                        <div class="rm-form-group rm-shipping-preset-group">
+                            <fieldset class="rm-shipping-preset-fieldset">
+                                <legend class="rm-shipping-preset-legend"><?php esc_html_e( 'Shipping option', 'reseller-management' ); ?></legend>
+                                <div class="rm-shipping-preset-radios">
+                                    <label class="rm-shipping-preset-label">
+                                        <input type="radio" name="rm_shipping_preset" value="" checked>
+                                        <span><?php esc_html_e( 'Custom', 'reseller-management' ); ?></span>
+                                    </label>
+                                    <?php foreach ( $shipping_presets as $idx => $preset ) : ?>
+                                        <label class="rm-shipping-preset-label">
+                                            <input type="radio" name="rm_shipping_preset" value="<?php echo esc_attr( (string) $idx ); ?>" data-charge="<?php echo esc_attr( (string) $preset['charge'] ); ?>">
+                                            <span><?php echo esc_html( $preset['title'] ); ?> — <?php echo esc_html( number_format( $preset['charge'], 2 ) ); ?> ৳</span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <p class="rm-shipping-preset-hint"><?php esc_html_e( 'Selecting a preset fills shipping charge; you can change the amount in the order summary.', 'reseller-management' ); ?></p>
+                            </fieldset>
+                        </div>
+                        <?php endif; ?>
                         <div class="rm-form-group">
                             <label><?php esc_html_e( 'Order Notes (Optional)', 'reseller-management' ); ?></label>
                             <textarea name="order_notes" rows="3" placeholder=""><?php echo esc_textarea( $order_notes ); ?></textarea>

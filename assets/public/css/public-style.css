@@ -1302,6 +1302,72 @@ body.rm-dashboard-body {
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
+/* Radios/checkboxes must not use full-width text-input styling */
+.rm-form-group input[type="radio"],
+.rm-form-group input[type="checkbox"] {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  accent-color: #0d9488;
+  flex-shrink: 0;
+}
+
+.rm-form-group input[type="radio"]:focus,
+.rm-form-group input[type="checkbox"]:focus {
+  outline: 2px solid rgba(13, 148, 136, 0.35);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.rm-shipping-preset-fieldset {
+  margin: 0 0 16px;
+  padding: 12px 14px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.rm-shipping-preset-legend {
+  padding: 0 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.rm-shipping-preset-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.rm-form-group .rm-shipping-preset-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 0;
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+.rm-shipping-preset-label input[type="radio"] {
+  margin-top: 3px;
+}
+
+.rm-shipping-preset-hint {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 /* Product Search */
 .rm-product-search-wrapper {
   margin-bottom: 24px;
