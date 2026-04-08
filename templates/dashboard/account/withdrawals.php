@@ -311,9 +311,6 @@ if ( $view_wd ) :
             <div class="rm-wdv-footer-id">
                 Withdrawal ID: <strong>#<?php echo esc_html( (string) $view_wd->id ); ?></strong>
             </div>
-            <button class="rm-wdv-print-btn" onclick="window.print()">
-                🖨 <?php esc_html_e( 'Print', 'reseller-management' ); ?>
-            </button>
         </div>
     </div>
 </div>
