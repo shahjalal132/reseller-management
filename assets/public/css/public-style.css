@@ -422,6 +422,20 @@ body.rm-dashboard-body {
   margin-bottom: 20px;
 }
 
+.rm-custom-logo-link {
+  display: block;
+  line-height: 0;
+}
+
+.rm-site-logo-img {
+  display: block;
+  max-height: 40px;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
 .rm-reseller-badge {
   display: flex;
   flex-direction: column;

@@ -73,6 +73,24 @@ if ( 'settings-updated' === $notice ) {
                     <input type="text" name="packaging_cost_input1" value="<?php echo esc_attr( $rm_settings['packaging_cost_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter value', 'reseller-management' ); ?>">
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Withdrawals', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <div class="rm-grid rm-grid-1 mt-20">
+                <div class="rm-field">
+                    <span><?php esc_html_e( 'Minimum balance to retain', 'reseller-management' ); ?></span>
+                    <input type="number" step="0.01" min="0" name="minimum_balance" value="<?php echo esc_attr( isset( $rm_settings['minimum_balance'] ) ? (string) $rm_settings['minimum_balance'] : '0' ); ?>" placeholder="<?php esc_attr_e( '0.00', 'reseller-management' ); ?>">
+                    <p class="description"><?php esc_html_e( 'Resellers cannot withdraw an amount that would leave their balance below this value. Use 0 for no minimum.', 'reseller-management' ); ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="rm-section-card mt-20">
         <div class="rm-card-header">
             <h3 class="rm-card-title"><?php esc_html_e( 'Steadfast Webhook Integration', 'reseller-management' ); ?></h3>

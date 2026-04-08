@@ -93,8 +93,28 @@ class Reseller_Dashboard {
             <aside class="rm-dashboard-sidebar">
                 <div class="rm-sidebar-brand">
                     <div class="rm-logo">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span><?php echo get_bloginfo( 'name' ); ?></span>
+                        <?php
+                        $custom_logo_id = (int) get_theme_mod( 'custom_logo' );
+                        if ( $custom_logo_id ) :
+                            ?>
+                            <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="rm-custom-logo-link">
+                                <?php
+                                echo wp_get_attachment_image(
+                                    $custom_logo_id,
+                                    'medium',
+                                    false,
+                                    [
+                                        'class'   => 'rm-site-logo-img',
+                                        'alt'     => esc_attr( get_bloginfo( 'name', 'display' ) ),
+                                        'loading' => 'lazy',
+                                    ]
+                                );
+                                ?>
+                            </a>
+                        <?php else : ?>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                            <span><?php echo esc_html( get_bloginfo( 'name', 'display' ) ); ?></span>
+                        <?php endif; ?>
                     </div>
                     <div class="rm-reseller-badge">
                         <span class="rm-badge-label"><?php echo $user->display_name; ?></span>
@@ -167,9 +187,11 @@ class Reseller_Dashboard {
                 </header>
 
                 <div class="rm-dashboard-body-inner">
-                    <?php if ( 'dashboard' === $tab ) : 
-                        $current_balance = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $user_id );
-                        $payment_methods = \BOILERPLATE\Inc\Reseller_Helper::get_payment_methods( $user_id );
+                    <?php if ( 'dashboard' === $tab ) :
+                        $current_balance   = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $user_id );
+                        $payment_methods   = \BOILERPLATE\Inc\Reseller_Helper::get_payment_methods( $user_id );
+                        $min_balance_reserve = \BOILERPLATE\Inc\Reseller_Helper::get_minimum_balance_reserve();
+                        $max_withdrawable    = \BOILERPLATE\Inc\Reseller_Helper::get_max_withdrawable_amount( $current_balance );
                     ?>
                     <div class="rm-balance-check-container" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
                         <button class="rm-button rm-button-balance-check" id="rm-btn-balance-check" style="margin-bottom: 10px;">
@@ -181,9 +203,25 @@ class Reseller_Dashboard {
                             <div class="rm-balance-amount" style="font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">
                                 ৳ <?php echo esc_html( number_format( $current_balance, 2 ) ); ?>
                             </div>
-                            <button class="rm-button rm-button-withdraw-request" id="rm-btn-open-withdraw-modal" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none;">
+                            <?php if ( $min_balance_reserve > 0 ) : ?>
+                                <p style="margin: 0 0 12px; font-size: 0.8rem; color: #64748b; max-width: 320px; line-height: 1.45;">
+                                    <?php
+                                    printf(
+                                        /* translators: %s: formatted minimum balance */
+                                        esc_html__( 'Minimum balance you must keep: %s', 'reseller-management' ),
+                                        esc_html( '৳ ' . number_format( $min_balance_reserve, 2 ) )
+                                    );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                            <button type="button" class="rm-button rm-button-withdraw-request" id="rm-btn-open-withdraw-modal" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none;" <?php disabled( $max_withdrawable <= 0 ); ?>>
                                 <?php esc_html_e( 'Request Withdrawal', 'reseller-management' ); ?>
                             </button>
+                            <?php if ( $max_withdrawable <= 0 && $current_balance > 0 ) : ?>
+                                <p style="margin: 10px 0 0; font-size: 0.8rem; color: #b45309; max-width: 320px;"><?php esc_html_e( 'Your balance is at or below the required minimum. You cannot submit a withdrawal until your available balance is above the minimum.', 'reseller-management' ); ?></p>
+                            <?php elseif ( $max_withdrawable <= 0 && $current_balance <= 0 ) : ?>
+                                <p style="margin: 10px 0 0; font-size: 0.8rem; color: #64748b;"><?php esc_html_e( 'No balance available to withdraw.', 'reseller-management' ); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -196,7 +234,18 @@ class Reseller_Dashboard {
                             <form id="rm-form-withdraw" class="rm-form row">
                                 <div class="col-12" style="margin-bottom: 16px;">
                                     <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Amount', 'reseller-management' ); ?> (৳)</label>
-                                    <input type="number" name="amount" class="rm-input" min="1" max="<?php echo esc_attr( $current_balance ); ?>" required placeholder="0.00" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600;">
+                                    <input type="number" name="amount" class="rm-input" id="rm-withdraw-amount-input" min="0.01" step="0.01" max="<?php echo esc_attr( $max_withdrawable ); ?>"<?php echo $max_withdrawable <= 0 ? ' disabled' : ''; ?><?php echo $max_withdrawable > 0 ? ' required' : ''; ?> placeholder="0.00" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600;">
+                                    <?php if ( $max_withdrawable > 0 ) : ?>
+                                        <p style="margin: 8px 0 0; font-size: 0.75rem; color: #64748b;">
+                                            <?php
+                                            printf(
+                                                /* translators: %s: maximum withdrawable amount (৳) */
+                                                esc_html__( 'Maximum withdrawable: %s', 'reseller-management' ),
+                                                esc_html( '৳ ' . number_format( $max_withdrawable, 2 ) )
+                                            );
+                                            ?>
+                                        </p>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="col-12" style="margin-bottom: 16px;">
                                     <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Payment Method', 'reseller-management' ); ?></label>

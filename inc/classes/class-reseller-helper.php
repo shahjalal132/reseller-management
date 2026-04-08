@@ -270,6 +270,32 @@ class Reseller_Helper {
     }
 
     /**
+     * Minimum account balance resellers must keep after a withdrawal (from admin settings).
+     *
+     * @return float
+     */
+    public static function get_minimum_balance_reserve() {
+        $settings = get_option( 'rm_settings', [] );
+        $raw      = $settings['minimum_balance'] ?? 0;
+        $val      = is_numeric( $raw ) ? (float) $raw : 0.0;
+
+        return max( 0.0, round( $val, 2 ) );
+    }
+
+    /**
+     * Maximum amount a reseller may request to withdraw given current balance and minimum reserve.
+     *
+     * @param float $current_balance Current ledger balance.
+     *
+     * @return float
+     */
+    public static function get_max_withdrawable_amount( $current_balance ) {
+        $reserve = self::get_minimum_balance_reserve();
+
+        return max( 0.0, round( (float) $current_balance - $reserve, 2 ) );
+    }
+
+    /**
      * Get reseller dashboard tabs.
      *
      * @return array<string, string>

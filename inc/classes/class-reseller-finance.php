@@ -267,6 +267,21 @@ class Reseller_Finance {
             wp_send_json_error( __( 'Withdrawal amount exceeds your current balance.', 'reseller-management' ), 422 );
         }
 
+        $min_reserve      = Reseller_Helper::get_minimum_balance_reserve();
+        $max_withdrawable = Reseller_Helper::get_max_withdrawable_amount( $current_balance );
+
+        if ( round( $amount, 2 ) > round( $max_withdrawable, 2 ) ) {
+            wp_send_json_error(
+                sprintf(
+                    /* translators: 1: formatted maximum withdrawable amount, 2: formatted minimum balance that must remain */
+                    __( 'The maximum you can withdraw is %1$s (your balance must stay at or above %2$s).', 'reseller-management' ),
+                    wp_strip_all_tags( wc_price( $max_withdrawable ) ),
+                    wp_strip_all_tags( wc_price( $min_reserve ) )
+                ),
+                422
+            );
+        }
+
         $transaction_id = 'TXN-' . strtoupper( uniqid() );
 
         $inserted = $wpdb->insert(
