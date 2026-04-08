@@ -181,7 +181,7 @@ class Reseller_Dashboard {
                     <div class="rm-header-right">
                         <div class="rm-user-profile-header">
                             <?php echo get_avatar( $user_id, 32 ); ?>
-                            <span class="rm-user-name-header"><?php echo esc_html( $user->display_name ); ?></span>
+                            <span class="rm-user-name-header"><?php echo esc_html( $user->_reseller_business_name ); ?></span>
                         </div>
                     </div>
                 </header>
