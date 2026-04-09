@@ -67,10 +67,10 @@ $current_total = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $reselle
             <?php else : ?>
                 <?php foreach ( $transactions as $row ) : ?>
                     <tr>
-                        <td><?php echo esc_html( (string) $row->created_at ); ?></td>
-                        <td><?php echo esc_html( ucfirst( str_replace( '_', ' ', (string) $row->type ) ) ); ?></td>
-                        <td><?php echo esc_html( (string) $row->description ); ?></td>
-                        <td><?php echo wp_kses_post( wc_price( (float) $row->amount ) ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Date', 'reseller-management' ); ?>"><?php echo esc_html( (string) $row->created_at ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Type', 'reseller-management' ); ?>"><?php echo esc_html( ucfirst( str_replace( '_', ' ', (string) $row->type ) ) ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Description', 'reseller-management' ); ?>"><?php echo esc_html( (string) $row->description ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Amount', 'reseller-management' ); ?>"><?php echo wp_kses_post( wc_price( (float) $row->amount ) ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -97,10 +97,10 @@ $current_total = \BOILERPLATE\Inc\Reseller_Helper::get_current_balance( $reselle
             <?php else : ?>
                 <?php foreach ( $withdrawals as $withdrawal ) : ?>
                     <tr>
-                        <td><?php echo esc_html( (string) $withdrawal->created_at ); ?></td>
-                        <td><?php echo wp_kses_post( wc_price( (float) $withdrawal->amount ) ); ?></td>
-                        <td><?php echo esc_html( (string) $withdrawal->payment_method ); ?></td>
-                        <td><?php echo esc_html( ucfirst( (string) $withdrawal->status ) ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Requested At', 'reseller-management' ); ?>"><?php echo esc_html( (string) $withdrawal->created_at ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Amount', 'reseller-management' ); ?>"><?php echo wp_kses_post( wc_price( (float) $withdrawal->amount ) ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Method', 'reseller-management' ); ?>"><?php echo esc_html( (string) $withdrawal->payment_method ); ?></td>
+                        <td data-label="<?php esc_attr_e( 'Status', 'reseller-management' ); ?>"><?php echo esc_html( ucfirst( (string) $withdrawal->status ) ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>

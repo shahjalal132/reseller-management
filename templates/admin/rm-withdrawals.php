@@ -286,7 +286,8 @@ foreach ( $rm_withdrawals as $i => $wd ) {
     </div>
 
     <!-- Table -->
-    <div class="rm-wd-table-wrap">
+    <div class="rm-table-responsive">
+        <div class="rm-wd-table-wrap">
         <table class="wp-list-table widefat fixed striped" id="rm-wd-table">
             <thead>
                 <tr>
@@ -299,13 +300,13 @@ foreach ( $rm_withdrawals as $i => $wd ) {
                     <th style="width:13%;">Status</th>
                     <th style="width:15%;">Actions</th>
                 </tr>
-            </thead>
             <tbody id="rm-wd-tbody"></tbody>
         </table>
         <div class="rm-wd-no-results" id="rm-wd-no-results">
             No withdrawals match your filters.
         </div>
     </div>
+</div>
 
     <!-- Pagination -->
     <div class="rm-wd-pagination" id="rm-wd-pagination">
@@ -373,6 +374,21 @@ foreach ( $rm_withdrawals as $i => $wd ) {
 .rm-wd-page-btn.is-active { background: #2271b1; border-color: #2271b1; color: #fff; }
 .rm-wd-page-btn:disabled { opacity: 0.4; cursor: default; }
 .rm-wd-page-btn:disabled:hover { background: #f0f0f1; border-color: #8c8f94; }
+
+@media (max-width: 782px) {
+  .rm-wd-filters { flex-direction: column; align-items: stretch; }
+  .rm-wd-filter-group { width: 100%; }
+  .rm-wd-filter-reset { width: 100%; justify-content: center; }
+  
+  .rm-wdv-card-header { flex-direction: column; padding: 20px; }
+  .rm-wdv-amount-hero .amount { font-size: 2rem; }
+  .rm-wdv-details { padding: 8px 20px 20px; }
+  .rm-wdv-footer { padding: 16px 20px; flex-direction: column; gap: 10px; text-align: center; }
+  
+  .rm-form-wrap { padding: 20px; margin: 10px; }
+  .rm-form-btn-group { flex-direction: column; }
+  .rm-btn { width: 100%; justify-content: center; }
+}
 </style>
 
 <script>

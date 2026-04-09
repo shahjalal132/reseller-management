@@ -154,9 +154,18 @@ $fmt = function ( $amount ) {
 	border: 1px solid #e8edf3;
 	overflow: hidden;
 }
+.rm-tx-table-container {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	width: 100%;
+	max-width: 100%;
+	display: block;
+	box-sizing: border-box;
+}
 .rm-tx-table {
 	width: 100%;
 	border-collapse: collapse;
+	min-width: 600px;
 }
 .rm-tx-table thead th {
 	background: #f8fafc;
@@ -183,7 +192,7 @@ $fmt = function ( $amount ) {
 	vertical-align: middle;
 }
 .rm-tx-id { font-weight: 700; color: #cbd5e1; font-size: 0.78rem; }
-.rm-tx-amount { font-weight: 800; font-size: 0.97rem; }
+.rm-tx-amount { font-weight: 800; font-size: 0.97rem; white-space: nowrap; }
 .rm-tx-amount.is-credit { color: #15803d; }
 .rm-tx-amount.is-debit { color: #be123c; }
 .rm-tx-date { font-size: 0.8rem; color: #64748b; white-space: nowrap; }
@@ -289,9 +298,37 @@ $fmt = function ( $amount ) {
 
 .rm-tx-card-info { display: flex; flex-direction: column; }
 .rm-tx-card-info label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
-.rm-tx-card-info span { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
+.rm-tx-card-info span { font-size: 1.1rem; font-weight: 800; color: #1e293b; white-space: nowrap; }
 
-.rm-tx-amount-bal { font-weight: 600; color: #1e293b; }
+.rm-tx-amount-bal { font-weight: 600; color: #1e293b; white-space: nowrap; }
+
+@media (max-width: 768px) {
+    .rm-tx-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .rm-tx-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .rm-tx-filter-group {
+        min-width: 100%;
+    }
+    .rm-tx-filter-reset {
+        margin-top: 8px;
+        width: 100%;
+        justify-content: center;
+        display: flex;
+    }
+    .rm-tx-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 480px) {
+    .rm-tx-summary {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 <!-- Page header -->
@@ -363,19 +400,21 @@ $fmt = function ( $amount ) {
 
 <!-- Table -->
 <div class="rm-tx-table-wrap">
-	<table class="rm-tx-table" id="rm-tx-table">
-		<thead>
-			<tr>
-				<th>ID</th>
-				<th><?php esc_html_e( 'Type', 'reseller-management' ); ?></th>
-				<th><?php esc_html_e( 'Description', 'reseller-management' ); ?></th>
-				<th><?php esc_html_e( 'Amount', 'reseller-management' ); ?></th>
-				<th><?php esc_html_e( 'Balance', 'reseller-management' ); ?></th>
-				<th><?php esc_html_e( 'Date', 'reseller-management' ); ?></th>
-			</tr>
-		</thead>
-		<tbody id="rm-tx-tbody"></tbody>
-	</table>
+	<div class="rm-tx-table-container">
+		<table class="rm-tx-table" id="rm-tx-table">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th><?php esc_html_e( 'Type', 'reseller-management' ); ?></th>
+					<th><?php esc_html_e( 'Description', 'reseller-management' ); ?></th>
+					<th><?php esc_html_e( 'Amount', 'reseller-management' ); ?></th>
+					<th><?php esc_html_e( 'Balance', 'reseller-management' ); ?></th>
+					<th><?php esc_html_e( 'Date', 'reseller-management' ); ?></th>
+				</tr>
+			</thead>
+			<tbody id="rm-tx-tbody"></tbody>
+		</table>
+	</div>
 	<div class="rm-tx-no-results" id="rm-tx-no-results">
 		<?php esc_html_e( 'No transactions match your filters.', 'reseller-management' ); ?>
 	</div>
@@ -422,7 +461,7 @@ $fmt = function ( $amount ) {
 			html += '<td class="rm-tx-id">#' + row.id + '</td>';
 			html += '<td><span class="rm-tx-type-badge" style="background:' + row.type_bg + ';color:' + row.type_txt + ';">' + row.type + '</span></td>';
 			html += '<td class="rm-tx-desc">' + row.desc + (row.order_id ? ' (Order #' + row.order_id + ')' : '') + '</td>';
-			html += '<td class="rm-tx-amount ' + amtClass + '">' + amtPrefix + ' ৳' + row.amount + '</td>';
+			html += '<td class="rm-tx-amount ' + amtClass + '">' + amtPrefix + '৳' + row.amount + '</td>';
 			html += '<td class="rm-tx-amount-bal">৳' + row.running_balance + '</td>';
 			html += '<td class="rm-tx-date">' + row.date + '</td>';
 			html += '</tr>';

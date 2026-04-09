@@ -19,6 +19,7 @@ class Reseller_Dashboard {
         add_filter( 'get_avatar_url', [ $this, 'filter_reseller_avatar_url' ], 10, 3 );
         add_action( 'wp_ajax_reseller_update_profile', [ $this, 'handle_profile_update' ] );
         add_action( 'wp_ajax_reseller_change_password', [ $this, 'handle_password_change' ] );
+        add_action( 'wp_ajax_reseller_get_order_stats', [ $this, 'handle_get_order_stats' ] );
     }
 
     /**
@@ -90,6 +91,7 @@ class Reseller_Dashboard {
         }
         ?>
         <div class="rm-dashboard-app">
+            <div class="rm-sidebar-overlay"></div>
             <aside class="rm-dashboard-sidebar">
                 <div class="rm-sidebar-brand">
                     <div class="rm-logo">
@@ -173,8 +175,12 @@ class Reseller_Dashboard {
             <main class="rm-dashboard-content">
                 <header class="rm-dashboard-header">
                     <div class="rm-header-left">
-                        <button class="rm-sidebar-toggle">
-                            <span class="dashicons dashicons-menu"></span>
+                        <button class="rm-sidebar-toggle" id="rm-sidebar-toggle-btn" aria-label="<?php esc_attr_e( 'Toggle Menu', 'reseller-management' ); ?>">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
                         </button>
                         <h2 class="rm-page-title"><?php echo esc_html( $page_title ); ?></h2>
                     </div>
@@ -498,6 +504,25 @@ class Reseller_Dashboard {
 
         wp_set_password( $password, get_current_user_id() );
         wp_send_json_success( __( 'Password updated successfully. Please log in again.', 'reseller-management' ) );
+    }
+
+    /**
+     * AJAX handler to fetch order stats by days.
+     *
+     * @return void
+     */
+    public function handle_get_order_stats() {
+        check_ajax_referer( 'rm_public_nonce', 'nonce' );
+
+        $user_id = get_current_user_id();
+        if ( ! is_user_logged_in() || ! Reseller_Helper::is_reseller( $user_id ) ) {
+            wp_send_json_error( __( 'Unauthorized.', 'reseller-management' ), 403 );
+        }
+
+        $days = isset( $_GET['days'] ) ? (int) $_GET['days'] : 7;
+        $stats = Reseller_Orders::get_order_stats_by_days( $user_id, $days );
+
+        wp_send_json_success( $stats );
     }
 
     /**

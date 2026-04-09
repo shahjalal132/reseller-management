@@ -408,9 +408,18 @@ endif;
     border: 1px solid #e8edf3;
     overflow: hidden;
 }
+.rm-wd-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    display: block;
+    box-sizing: border-box;
+}
 .rm-wd-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 650px;
 }
 .rm-wd-table thead th {
     background: #f8fafc;
@@ -439,7 +448,7 @@ endif;
 }
 .rm-wd-serial { font-weight: 700; color: #cbd5e1; font-size: 0.78rem; }
 .rm-wd-txn    { font-family: monospace; font-size: 0.82rem; color: #6366f1; font-weight: 700; letter-spacing: 0.5px; }
-.rm-wd-amount { font-weight: 800; color: #0f172a; font-size: 0.97rem; }
+.rm-wd-amount { font-weight: 800; color: #0f172a; font-size: 0.97rem; white-space: nowrap; }
 .rm-wd-date   { font-size: 0.8rem; color: #64748b; white-space: nowrap; }
 
 .rm-wd-method-badge {
@@ -596,19 +605,21 @@ foreach ( $all_withdrawals as $i => $wd ) {
 
 <!-- Table -->
 <div class="rm-wd-table-wrap">
-    <table class="rm-wd-table" id="rm-wd-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th><?php esc_html_e( 'Transaction ID', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Amount', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Requested At', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Status', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Action', 'reseller-management' ); ?></th>
-            </tr>
-        </thead>
-        <tbody id="rm-wd-tbody"></tbody>
-    </table>
+    <div class="rm-wd-table-container">
+        <table class="rm-wd-table" id="rm-wd-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th><?php esc_html_e( 'Transaction ID', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Amount', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Requested At', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Status', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Action', 'reseller-management' ); ?></th>
+                </tr>
+            </thead>
+            <tbody id="rm-wd-tbody"></tbody>
+        </table>
+    </div>
     <div class="rm-wd-no-results" id="rm-wd-no-results">
         <?php esc_html_e( 'No withdrawals match your filters.', 'reseller-management' ); ?>
     </div>

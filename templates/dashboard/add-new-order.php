@@ -206,7 +206,7 @@ if ( $is_edit ) {
                     <div class="rm-form-group">
                         <label><?php esc_html_e( 'Search product or enter Product SKU', 'reseller-management' ); ?></label>
                         <div class="rm-search-input-container">
-                            <input type="text" style="width: 50%" id="rm-product-search-input" placeholder="<?php esc_attr_e( 'Type product code or name', 'reseller-management' ); ?>">
+                            <input type="text" style="width: 100%" id="rm-product-search-input" placeholder="<?php esc_attr_e( 'Type product code or name', 'reseller-management' ); ?>">
                             <div id="rm-product-search-results" class="rm-search-results-dropdown"></div>
                         </div>
                     </div>

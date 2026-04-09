@@ -256,17 +256,35 @@ class Reseller_Helper {
 
         $table = self::get_ledger_table_name();
 
-        return (array) $wpdb->get_results(
+        // Get actual data from DB (limit to 12 record-holding months for efficiency, though we generate 12 calendar months)
+        $results = (array) $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT DATE_FORMAT(created_at, '%%Y-%%m') AS month_key, COALESCE(SUM(amount), 0) AS total
                 FROM {$table}
                 WHERE reseller_id = %d
                 GROUP BY DATE_FORMAT(created_at, '%%Y-%%m')
                 ORDER BY month_key DESC
-                LIMIT 6",
+                LIMIT 12",
                 $user_id
             )
         );
+
+        $mapped_data = [];
+        foreach ( $results as $row ) {
+            $mapped_data[ $row->month_key ] = (float) $row->total;
+        }
+
+        // Generate last 12 months including current
+        $final_data = [];
+        for ( $i = 0; $i < 12; $i++ ) {
+            $month_key = date( 'Y-m', strtotime( "-$i months" ) );
+            $final_data[] = (object) [
+                'month_key' => $month_key,
+                'total'     => $mapped_data[ $month_key ] ?? 0.0,
+            ];
+        }
+
+        return $final_data;
     }
 
     /**

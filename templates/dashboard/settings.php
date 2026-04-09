@@ -13,7 +13,7 @@ $user    = get_userdata( $user_id );
 <div class="rm-card">
     <h3><?php esc_html_e( 'Profile Settings', 'reseller-management' ); ?></h3>
     <form id="rm-profile-form" class="rm-form" method="post" enctype="multipart/form-data">
-        <div class="rm-grid rm-grid-2" style="padding-left: 25px; padding-bottom: 25px;">
+        <div class="rm-grid rm-grid-2" style="padding-bottom: 25px;">
             <div class="rm-field rm-field-full rm-profile-avatar-field">
                 <span><?php esc_html_e( 'Profile photo', 'reseller-management' ); ?></span>
                 <div class="rm-profile-avatar-row">
@@ -58,7 +58,7 @@ $user    = get_userdata( $user_id );
 <div class="rm-card">
     <h3><?php esc_html_e( 'Change Password', 'reseller-management' ); ?></h3>
     <form id="rm-password-form" class="rm-form">
-        <div class="rm-grid rm-grid-2" style="padding-left: 25px; padding-bottom: 25px;">
+        <div class="rm-grid rm-grid-2" style="padding-bottom: 25px;">
             <label class="rm-field">
                 <span><?php esc_html_e( 'New Password', 'reseller-management' ); ?></span>
                 <input type="password" name="password" minlength="8" placeholder="Password" required>

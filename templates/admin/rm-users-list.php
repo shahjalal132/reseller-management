@@ -43,6 +43,7 @@ $rm_search = sanitize_text_field( wp_unslash( $_GET['rm_search'] ?? '' ) ); // p
     </div>
 
     <!-- Table -->
+    <div class="rm-table-responsive">
     <table class="rm-users-table">
         <thead>
             <tr>
@@ -162,4 +163,5 @@ $rm_search = sanitize_text_field( wp_unslash( $_GET['rm_search'] ?? '' ) ); // p
 
         </tbody>
     </table>
+    </div>
 </div>

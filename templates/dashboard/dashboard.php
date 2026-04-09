@@ -96,7 +96,9 @@ $max_in_stock_count = count( wc_get_products( [ 'status' => 'publish', 'limit' =
         <div class="rm-chart-header">
             <h3><?php esc_html_e( 'Order Count:', 'reseller-management' ); ?></h3>
             <select class="rm-chart-filter">
-                <option value="7"><?php esc_html_e( 'Filter By Days', 'reseller-management' ); ?></option>
+                <option value="0"><?php esc_html_e( 'Today', 'reseller-management' ); ?></option>
+                <option value="7" selected><?php esc_html_e( 'Last 7 Days', 'reseller-management' ); ?></option>
+                <option value="15"><?php esc_html_e( 'Last 15 Days', 'reseller-management' ); ?></option>
                 <option value="30"><?php esc_html_e( 'Last 30 Days', 'reseller-management' ); ?></option>
             </select>
         </div>
