@@ -109,14 +109,20 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
                 ?>
                 <article class="rm-product-card" data-categories="<?php echo esc_attr( implode( ',', $product_cat_ids ) ); ?>">
                     <div class="rm-product-image">
-                        <?php if ( $image_url ) : ?>
-                            <img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $product_post->post_title ); ?>">
-                        <?php else : ?>
-                            <div class="rm-product-img-placeholder"></div>
-                        <?php endif; ?>
+                        <a href="<?php echo esc_url( add_query_arg( 'product_id', $product_post->ID ) ); ?>">
+                            <?php if ( $image_url ) : ?>
+                                <img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $product_post->post_title ); ?>">
+                            <?php else : ?>
+                                <div class="rm-product-img-placeholder"></div>
+                            <?php endif; ?>
+                        </a>
                     </div>
                     <div class="rm-product-info">
-                        <h4 class="rm-product-title" title="<?php echo esc_attr( $product_post->post_title ); ?>"><?php echo esc_html( $product_post->post_title ); ?></h4>
+                        <h4 class="rm-product-title" title="<?php echo esc_attr( $product_post->post_title ); ?>">
+                            <a href="<?php echo esc_url( add_query_arg( 'product_id', $product_post->ID ) ); ?>">
+                                <?php echo esc_html( $product_post->post_title ); ?>
+                            </a>
+                        </h4>
                         <div class="rm-product-price-details">
                             <span class="rm-price-reg">Price: <?php echo esc_html( $regular ? $regular : '0' ); ?> TK</span>
                             <span class="rm-price-ret"><b>Customer / Retail Price : <?php echo esc_html( $recommended ? $recommended : '0' ); ?></b></span>

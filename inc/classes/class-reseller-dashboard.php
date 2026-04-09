@@ -310,6 +310,15 @@ class Reseller_Dashboard {
             }
         }
 
+        // Single product view routing.
+        if ( 'products' === $tab && ! empty( $_GET['product_id'] ) ) {
+            $template = PLUGIN_BASE_PATH . '/templates/dashboard/single-product.php';
+            if ( file_exists( $template ) ) {
+                include $template;
+                return;
+            }
+        }
+
         $template = PLUGIN_BASE_PATH . '/templates/dashboard/' . $tab . '.php';
 
         if ( file_exists( $template ) ) {
@@ -319,6 +328,7 @@ class Reseller_Dashboard {
 
         echo '<p>' . esc_html__( 'Dashboard section is not available yet.', 'reseller-management' ) . '</p>';
     }
+
 
     /**
      * Generate a tab URL for the current page.
