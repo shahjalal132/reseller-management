@@ -38,7 +38,11 @@ defined( 'ABSPATH' ) || exit;
                     <li class="rmhp-nav-cta-item"><a href="<?php echo esc_url( wp_login_url() ); ?>" class="rmhp-nav-link"><?php esc_html_e( 'Login', 'reseller-management' ); ?></a></li>
                     <li class="rmhp-nav-cta-item"><a href="<?php echo esc_url( home_url( '/reseller-registration/' ) ); ?>" class="rmhp-nav-link rmhp-nav-link-primary"><?php esc_html_e( 'Register', 'reseller-management' ); ?></a></li>
                 <?php else : ?>
-                    <li class="rmhp-nav-cta-item"><a href="<?php echo esc_url( home_url( '/reseller-dashboard/' ) ); ?>" class="rmhp-nav-link"><?php esc_html_e( 'Dashboard', 'reseller-management' ); ?></a></li>
+                    <?php if ( current_user_can( 'manage_options' ) ) : ?>
+                        <li class="rmhp-nav-cta-item"><a href="<?php echo esc_url( admin_url() ); ?>" class="rmhp-nav-link"><?php esc_html_e( 'Admin Dashboard', 'reseller-management' ); ?></a></li>
+                    <?php else : ?>
+                        <li class="rmhp-nav-cta-item"><a href="<?php echo esc_url( home_url( '/reseller-dashboard/' ) ); ?>" class="rmhp-nav-link"><?php esc_html_e( 'Dashboard', 'reseller-management' ); ?></a></li>
+                    <?php endif; ?>
                 <?php endif; ?>
             </ul>
         </nav>
@@ -53,9 +57,15 @@ defined( 'ABSPATH' ) || exit;
                     <?php esc_html_e( 'Register', 'reseller-management' ); ?>
                 </a>
             <?php else : ?>
-                <a href="<?php echo esc_url( home_url( '/reseller-dashboard/' ) ); ?>" class="rmhp-btn rmhp-btn-ghost">
-                    <?php esc_html_e( 'Dashboard', 'reseller-management' ); ?>
-                </a>
+                <?php if ( current_user_can( 'manage_options' ) ) : ?>
+                    <a href="<?php echo esc_url( admin_url() ); ?>" class="rmhp-btn rmhp-btn-ghost">
+                        <?php esc_html_e( 'Admin Dashboard', 'reseller-management' ); ?>
+                    </a>
+                <?php else : ?>
+                    <a href="<?php echo esc_url( home_url( '/reseller-dashboard/' ) ); ?>" class="rmhp-btn rmhp-btn-ghost">
+                        <?php esc_html_e( 'Dashboard', 'reseller-management' ); ?>
+                    </a>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 

@@ -410,6 +410,10 @@ class Reseller_Auth {
         }
 
         if ( Reseller_Helper::is_reseller( $current_user ) ) {
+            if ( user_can( $current_user, 'manage_options' ) ) {
+                return admin_url();
+            }
+
             $dashboard_page = get_page_by_path( 'reseller-dashboard' );
             if ( $dashboard_page ) {
                 return get_permalink( $dashboard_page->ID );
