@@ -2112,6 +2112,15 @@ body.rm-dashboard-body {
   text-decoration: underline;
 }
 
+@media (max-width: 900px) {
+  .rm-registration-wrapper {
+    margin: 20px auto;
+  }
+  .rm-reg-left {
+    flex: 0 0 350px;
+  }
+}
+
 @media (max-width: 768px) {
   .rm-registration-card {
     flex-direction: column;
@@ -2119,15 +2128,54 @@ body.rm-dashboard-body {
 
   .rm-reg-left {
     flex: none;
-    padding: 30px 20px;
+    padding: 40px 30px;
+  }
+
+  .rm-reg-left-content p {
+    margin-bottom: 20px;
+  }
+
+  .rm-reg-features {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
   }
 
   .rm-reg-right {
-    padding: 30px 20px;
+    padding: 40px 30px;
   }
 
   .rm-form-modern .rm-grid-2 {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .rm-registration-wrapper {
+    padding: 0 15px;
+    margin: 15px auto;
+  }
+
+  .rm-reg-left, .rm-reg-right {
+    padding: 30px 20px;
+  }
+
+  .rm-reg-left-content h3 {
+    font-size: 24px;
+  }
+
+  .rm-auth-header-modern h2 {
+    font-size: 20px;
+  }
+
+  .rm-reg-features {
+    grid-template-columns: 1fr;
+  }
+
+  .rm-button-modern {
+    padding: 12px;
+    font-size: 14px;
   }
 }
 
@@ -2417,6 +2465,10 @@ body.rm-dashboard-body {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.rmhp-nav-cta-item {
+  display: none;
 }
 
 .rmhp-nav-link {
@@ -3433,6 +3485,25 @@ body.rm-dashboard-body {
   .rmhp-nav-list {
     flex-direction: column;
     gap: 4px;
+  }
+
+  .rmhp-nav-cta-item {
+    display: block;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rm-border, #e2e8f0);
+  }
+
+  .rmhp-nav-cta-item:first-of-type {
+    margin-top: 12px;
+  }
+
+  .rmhp-nav-link-primary {
+    background: var(--rm-primary, #005b4e);
+    color: #fff !important;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 4px;
   }
 
   .rmhp-header-cta {

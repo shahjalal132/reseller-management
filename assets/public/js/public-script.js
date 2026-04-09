@@ -904,7 +904,7 @@
 
     /* ── Hamburger menu toggle ── */
     var hamburger = document.getElementById('rmhp-hamburger');
-    var nav       = document.getElementById('rmhp-nav');
+    var nav = document.getElementById('rmhp-nav');
     if (hamburger && nav) {
       hamburger.addEventListener('click', function () {
         nav.classList.toggle('rmhp-nav-open');
@@ -927,7 +927,7 @@
       var header = document.getElementById('rmhp-header');
       var offset = header ? header.offsetHeight + 20 : 90;
       var scrollY = window.pageYOffset;
-      var active  = null;
+      var active = null;
       sections.forEach(function (s) {
         if (s.el.offsetTop - offset <= scrollY) { active = s; }
       });
@@ -951,7 +951,7 @@
     /* ── FAQ accordion ── */
     document.querySelectorAll('.rmhp-faq-question').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var item   = btn.closest('.rmhp-faq-item');
+        var item = btn.closest('.rmhp-faq-item');
         var answer = document.getElementById(btn.getAttribute('aria-controls'));
         var isOpen = !answer.hidden;
 
