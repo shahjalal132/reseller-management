@@ -28,6 +28,8 @@ $fmt_balance = static function ( $amount ) {
 $default_local_dt = wp_date( 'Y-m-d\TH:i' );
 ?>
 
+<div class="rm-balance-adjust-page">
+
 <a href="<?php echo esc_url( $back_view_url ); ?>" class="rm-back-btn">
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
 		<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
@@ -35,39 +37,20 @@ $default_local_dt = wp_date( 'Y-m-d\TH:i' );
 	<?php esc_html_e( 'Back to profile', 'reseller-management' ); ?>
 </a>
 
-<div class="rm-balance-adjust-header" style="margin:20px 0 8px;">
-	<h1 class="rm-page-title" style="margin:0 0 8px;">
+<div class="rm-balance-adjust-header">
+	<h1 class="rm-page-title rm-balance-adjust-title">
 		<?php esc_html_e( 'Adjust balance', 'reseller-management' ); ?>
 	</h1>
-	<p style="margin:0;color:#64748b;font-size:0.95rem;">
+	<p class="rm-balance-adjust-meta">
 		<?php echo esc_html( $rm_user->display_name ); ?>
-		<span style="opacity:0.6;"> · </span>
+		<span class="rm-balance-adjust-meta-sep"> · </span>
 		<?php echo esc_html( $rm_user->user_email ); ?>
 	</p>
-	<p style="margin:12px 0 0;font-size:1.05rem;font-weight:600;color:#0f766e;">
+	<p class="rm-balance-adjust-balance">
 		<?php esc_html_e( 'Current balance:', 'reseller-management' ); ?>
 		<?php echo esc_html( $fmt_balance( $rm_balance ) ); ?>
 	</p>
 </div>
-
-<style>
-	.rm-balance-form-wrap { max-width: 560px; margin-top: 20px; background: #fff; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e8edf3; }
-	.rm-balance-form-wrap .rm-form-group { margin-bottom: 18px; }
-	.rm-balance-form-wrap .rm-form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: #475569; }
-	.rm-balance-form-wrap .rm-form-group input,
-	.rm-balance-form-wrap .rm-form-group select,
-	.rm-balance-form-wrap .rm-form-group textarea { width: 100%; max-width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; }
-	.rm-balance-form-wrap .rm-form-group textarea { min-height: 88px; resize: vertical; }
-	.rm-balance-form-wrap .rm-form-group input:focus,
-	.rm-balance-form-wrap .rm-form-group select:focus,
-	.rm-balance-form-wrap .rm-form-group textarea:focus { border-color: #0d9488; outline: none; }
-	.rm-balance-form-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; align-items: center; }
-	.rm-balance-form-actions .button-primary { background: #0d9488; border-color: #0f766e; }
-	.rm-balance-form-actions .button-primary:hover { background: #0f766e; border-color: #115e59; }
-	.rm-balance-secondary-links { margin-top: 20px; font-size: 0.9rem; }
-	.rm-balance-secondary-links a { color: #0d9488; text-decoration: none; }
-	.rm-balance-secondary-links a:hover { text-decoration: underline; }
-</style>
 
 <div class="rm-balance-form-wrap">
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -112,3 +95,5 @@ $default_local_dt = wp_date( 'Y-m-d\TH:i' );
 		<a href="<?php echo esc_url( $back_statements_url ); ?>"><?php esc_html_e( 'View statements', 'reseller-management' ); ?></a>
 	</div>
 </div>
+
+</div><!-- .rm-balance-adjust-page -->

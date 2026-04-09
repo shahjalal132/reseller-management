@@ -701,6 +701,132 @@
   background: #f0fdfa;
 }
 
+/* ── Adjust balance page (centered column) ── */
+.rm-balance-adjust-page {
+  max-width: 560px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  padding: 12px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  min-height: min(72vh, 640px);
+}
+
+.rm-balance-adjust-page .rm-back-btn {
+  align-self: center;
+}
+
+.rm-balance-adjust-header {
+  margin: 20px 0 8px;
+  text-align: center;
+}
+
+.rm-balance-adjust-title {
+  margin: 0 0 8px;
+}
+
+.rm-balance-adjust-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.rm-balance-adjust-meta-sep {
+  opacity: 0.6;
+}
+
+.rm-balance-adjust-balance {
+  margin: 12px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.rm-balance-form-wrap {
+  width: 100%;
+  margin-top: 20px;
+  background: #fff;
+  padding: 28px 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e8edf3;
+}
+
+.rm-balance-form-wrap .rm-form-group {
+  margin-bottom: 18px;
+}
+
+.rm-balance-form-wrap .rm-form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.rm-balance-form-wrap .rm-form-group input,
+.rm-balance-form-wrap .rm-form-group select,
+.rm-balance-form-wrap .rm-form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.rm-balance-form-wrap .rm-form-group textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.rm-balance-form-wrap .rm-form-group input:focus,
+.rm-balance-form-wrap .rm-form-group select:focus,
+.rm-balance-form-wrap .rm-form-group textarea:focus {
+  border-color: #0d9488;
+  outline: none;
+}
+
+.rm-balance-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rm-balance-form-actions .button-primary {
+  background: #0d9488;
+  border-color: #0f766e;
+}
+
+.rm-balance-form-actions .button-primary:hover {
+  background: #0f766e;
+  border-color: #115e59;
+}
+
+.rm-balance-secondary-links {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.rm-balance-secondary-links a {
+  color: #0d9488;
+  text-decoration: none;
+}
+
+.rm-balance-secondary-links a:hover {
+  text-decoration: underline;
+}
+
 /* ── Empty state ── */
 .rm-empty-state {
   text-align: center;
