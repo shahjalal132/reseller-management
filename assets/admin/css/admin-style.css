@@ -695,6 +695,12 @@
   background: #fef2f2;
 }
 
+.rm-action-btn.balance:hover {
+  border-color: #0d9488;
+  color: #0d9488;
+  background: #f0fdfa;
+}
+
 /* ── Empty state ── */
 .rm-empty-state {
   text-align: center;

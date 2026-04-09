@@ -40,6 +40,9 @@ class Admin_Top_Menu {
 
         // Settings handler.
         add_action( 'admin_post_rm_save_settings', [ $this, 'handle_settings_save' ] );
+
+        // Manual balance adjustment (ledger).
+        add_action( 'admin_post_rm_adjust_reseller_balance', [ $this, 'handle_adjust_reseller_balance' ] );
     }
 
     /**
@@ -141,6 +144,16 @@ class Admin_Top_Menu {
             'manage_options',
             'reseller-hub-user-statements',
             [ $this, 'render_user_statements_page' ]
+        );
+
+        // Hidden: add/deduct balance (manual ledger entry).
+        add_submenu_page(
+            null,
+            __( 'Adjust Reseller Balance', 'reseller-management' ),
+            __( 'Adjust Reseller Balance', 'reseller-management' ),
+            'manage_options',
+            'reseller-hub-user-balance',
+            [ $this, 'render_user_balance_adjust_page' ]
         );
     }
 
@@ -365,6 +378,30 @@ class Admin_Top_Menu {
         $this->render_page(
             'users',
             PLUGIN_BASE_PATH . '/templates/admin/rm-user-statements.php',
+            [
+                'rm_reseller_id' => $reseller_id,
+                'rm_user'        => $user,
+                'rm_balance'     => Reseller_Helper::get_current_balance( $reseller_id ),
+            ]
+        );
+    }
+
+    /**
+     * Render admin form to add or deduct ledger balance for a reseller.
+     *
+     * @return void
+     */
+    public function render_user_balance_adjust_page() {
+        $reseller_id = absint( $_GET['reseller_id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $user        = $reseller_id ? get_user_by( 'id', $reseller_id ) : false;
+
+        if ( ! $user || ! Reseller_Helper::is_reseller( $user ) ) {
+            wp_die( esc_html__( 'Invalid reseller profile.', 'reseller-management' ) );
+        }
+
+        $this->render_page(
+            'users',
+            PLUGIN_BASE_PATH . '/templates/admin/rm-user-balance-adjust.php',
             [
                 'rm_reseller_id' => $reseller_id,
                 'rm_user'        => $user,
@@ -617,6 +654,79 @@ class Admin_Top_Menu {
         update_option( 'rm_settings', $settings );
 
         $this->redirect_with_notice( admin_url( 'admin.php?page=reseller-hub-settings' ), 'settings-updated' );
+    }
+
+    /**
+     * Handle manual balance add/deduct via ledger entry.
+     *
+     * @return void
+     */
+    public function handle_adjust_reseller_balance() {
+        $reseller_id = absint( wp_unslash( $_POST['reseller_id'] ?? 0 ) );
+
+        check_admin_referer( 'rm_adjust_reseller_balance_' . $reseller_id );
+
+        $redirect_here = admin_url( 'admin.php?page=reseller-hub-user-balance&reseller_id=' . $reseller_id );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to perform this action.', 'reseller-management' ) );
+        }
+
+        $user = get_user_by( 'id', $reseller_id );
+        if ( ! $user || ! Reseller_Helper::is_reseller( $user ) ) {
+            $this->redirect_with_notice( admin_url( 'admin.php?page=reseller-hub-users' ), 'balance-adjust-error' );
+            return;
+        }
+
+        $description = sanitize_textarea_field( wp_unslash( $_POST['description'] ?? '' ) );
+        if ( '' === trim( $description ) ) {
+            $this->redirect_with_notice( $redirect_here, 'balance-adjust-error' );
+            return;
+        }
+
+        $reference = sanitize_text_field( wp_unslash( $_POST['reference'] ?? '' ) );
+
+        $type_raw = sanitize_key( wp_unslash( $_POST['adjustment_type'] ?? '' ) );
+        if ( ! in_array( $type_raw, [ 'add', 'deduct' ], true ) ) {
+            $this->redirect_with_notice( $redirect_here, 'balance-adjust-error' );
+            return;
+        }
+
+        $amount_abs = round( (float) wp_unslash( $_POST['amount'] ?? 0 ), 2 );
+        if ( $amount_abs <= 0 ) {
+            $this->redirect_with_notice( $redirect_here, 'balance-adjust-error' );
+            return;
+        }
+
+        $amount      = 'add' === $type_raw ? $amount_abs : -1 * $amount_abs;
+        $ledger_type = 'add' === $type_raw ? 'balance_adjustment_credit' : 'balance_adjustment_debit';
+
+        $entry = [
+            'reseller_id' => $reseller_id,
+            'order_id'    => 0,
+            'type'        => $ledger_type,
+            'amount'      => $amount,
+            'description' => $description,
+            'reference'   => $reference,
+        ];
+
+        $datetime_raw = sanitize_text_field( wp_unslash( $_POST['rm_adjusted_at'] ?? '' ) );
+        if ( '' !== $datetime_raw ) {
+            $parsed = Reseller_Helper::parse_ledger_datetime_input( $datetime_raw );
+            if ( null === $parsed ) {
+                $this->redirect_with_notice( $redirect_here, 'balance-adjust-error' );
+                return;
+            }
+            $entry['created_at'] = $parsed;
+        }
+
+        $inserted = Reseller_Helper::insert_ledger_entry( $entry );
+        if ( ! $inserted ) {
+            $this->redirect_with_notice( $redirect_here, 'balance-adjust-error' );
+            return;
+        }
+
+        $this->redirect_with_notice( $redirect_here, 'balance-adjusted' );
     }
 
     /**

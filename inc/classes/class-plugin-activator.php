@@ -82,6 +82,7 @@ class Plugin_Activator {
             type varchar(50) NOT NULL,
             amount decimal(10,2) NOT NULL,
             description text DEFAULT NULL,
+            reference varchar(191) NOT NULL DEFAULT '',
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY reseller_id (reseller_id),

@@ -21,7 +21,9 @@ $type_styles = [
 	'commission_credit' => [ 'bg' => '#f5f3ff', 'text' => '#6d28d9', 'label' => 'Commission' ],
 	'withdrawal_debit'  => [ 'bg' => '#fff7ed', 'text' => '#c2410c', 'label' => 'Withdrawal' ],
 	'shipping_debit'    => [ 'bg' => '#fef2f2', 'text' => '#b91c1c', 'label' => 'Shipping Cost' ],
-	'cod_deduction'     => [ 'bg' => '#f0f9ff', 'text' => '#0369a1', 'label' => 'COD Fee' ],
+	'cod_deduction'             => [ 'bg' => '#f0f9ff', 'text' => '#0369a1', 'label' => 'COD Fee' ],
+	'balance_adjustment_credit' => [ 'bg' => '#ecfdf5', 'text' => '#047857', 'label' => 'Balance credit' ],
+	'balance_adjustment_debit'  => [ 'bg' => '#fff1f2', 'text' => '#be123c', 'label' => 'Balance debit' ],
 ];
 
 /* Current page URL builder */

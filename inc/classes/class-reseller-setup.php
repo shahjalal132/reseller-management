@@ -15,7 +15,17 @@ class Reseller_Setup {
      */
     protected function __construct() {
         add_action( 'init', [ $this, 'register_reseller_role' ] );
+        add_action( 'admin_init', [ $this, 'maybe_upgrade_ledger_schema' ] );
         add_action( 'admin_notices', [ $this, 'maybe_show_woocommerce_notice' ] );
+    }
+
+    /**
+     * Ensure ledger table has columns expected by current plugin version.
+     *
+     * @return void
+     */
+    public function maybe_upgrade_ledger_schema() {
+        Reseller_Helper::maybe_upgrade_ledger_reference_column();
     }
 
     /**

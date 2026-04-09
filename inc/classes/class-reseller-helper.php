@@ -77,6 +77,70 @@ class Reseller_Helper {
     }
 
     /**
+     * Add ledger.reference column on existing installs (dbDelta only runs on activation).
+     *
+     * @return void
+     */
+    public static function maybe_upgrade_ledger_reference_column() {
+        if ( '1' === get_option( 'rm_ledger_has_reference_column', '' ) ) {
+            return;
+        }
+
+        global $wpdb;
+
+        $table = self::get_ledger_table_name();
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+        $exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$table}` LIKE 'reference'" );
+
+        if ( empty( $exists ) ) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+            $wpdb->query( "ALTER TABLE `{$table}` ADD COLUMN reference varchar(191) NOT NULL DEFAULT '' AFTER description" );
+        }
+
+        update_option( 'rm_ledger_has_reference_column', '1', true );
+    }
+
+    /**
+     * Parse admin datetime input into MySQL datetime (site timezone).
+     *
+     * @param string $raw Empty string uses current time. Accepts HTML datetime-local (Y-m-d\TH:i) or Y-m-d H:i:s.
+     *
+     * @return string|null MySQL datetime or null if invalid.
+     */
+    public static function parse_ledger_datetime_input( $raw ) {
+        $raw = trim( (string) $raw );
+
+        if ( '' === $raw ) {
+            return current_time( 'mysql' );
+        }
+
+        $tz = wp_timezone();
+
+        try {
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $raw ) ) {
+                $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i', $raw, $tz );
+            } elseif ( preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $raw ) ) {
+                $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $raw, $tz );
+            } else {
+                return null;
+            }
+
+            if ( false === $dt ) {
+                return null;
+            }
+
+            $errors = \DateTime::getLastErrors();
+            if ( is_array( $errors ) && ( $errors['warning_count'] > 0 || $errors['error_count'] > 0 ) ) {
+                return null;
+            }
+
+            return $dt->format( 'Y-m-d H:i:s' );
+        } catch ( \Exception $e ) {
+            return null;
+        }
+    }
+
+    /**
      * Get saved payment methods for a reseller.
      *
      * @param int $user_id Reseller ID.
@@ -228,6 +292,22 @@ class Reseller_Helper {
         global $wpdb;
 
         $amount = isset( $data['amount'] ) ? round( (float) $data['amount'], 2 ) : 0;
+        $created = current_time( 'mysql' );
+        if ( ! empty( $data['created_at'] ) && is_string( $data['created_at'] ) ) {
+            $parsed = self::parse_ledger_datetime_input( $data['created_at'] );
+            if ( null !== $parsed ) {
+                $created = $parsed;
+            }
+        }
+
+        $reference = '';
+        if ( isset( $data['reference'] ) ) {
+            $reference = sanitize_text_field( (string) $data['reference'] );
+            if ( strlen( $reference ) > 191 ) {
+                $reference = substr( $reference, 0, 191 );
+            }
+        }
+
         $inserted = $wpdb->insert(
             self::get_ledger_table_name(),
             [
@@ -236,9 +316,10 @@ class Reseller_Helper {
                 'type'        => sanitize_key( $data['type'] ),
                 'amount'      => $amount,
                 'description' => isset( $data['description'] ) ? sanitize_textarea_field( $data['description'] ) : '',
-                'created_at'  => current_time( 'mysql' ),
+                'reference'   => $reference,
+                'created_at'  => $created,
             ],
-            [ '%d', '%d', '%s', '%f', '%s', '%s' ]
+            [ '%d', '%d', '%s', '%f', '%s', '%s', '%s' ]
         );
 
         return $inserted ? (int) $wpdb->insert_id : false;

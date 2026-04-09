@@ -65,13 +65,22 @@ $processed_statements = [];
 foreach ( $all_transactions as $tx ) {
     $amount = (float) $tx->amount;
 
+    $ref_display = '';
+    if ( isset( $tx->reference ) && '' !== trim( (string) $tx->reference ) ) {
+        $ref_display = (string) $tx->reference;
+    } elseif ( ! empty( $tx->order_id ) ) {
+        $ref_display = 'ORD-' . $tx->order_id;
+    } else {
+        $ref_display = 'TXN-' . $tx->id;
+    }
+
     $processed_statements[] = [
         'date'            => $tx->created_at,
         'type'            => $amount >= 0 ? 'credit' : 'debit',
         'description'     => $tx->description,
         'amount'          => $amount,
         'running_balance' => $current_temp_balance,
-        'ref'             => $tx->order_id ? 'ORD-' . $tx->order_id : 'TXN-' . $tx->id,
+        'ref'             => $ref_display,
     ];
 
     // Subtract the amount to get the balance before this transaction.

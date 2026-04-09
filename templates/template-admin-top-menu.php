@@ -43,6 +43,8 @@ $rm_notice_map = [
     'withdrawal-marked-paid'  => [ 'type' => 'success', 'msg' => __( 'Withdrawal marked as completed.', 'reseller-management' ) ],
     'reseller-deleted'        => [ 'type' => 'success', 'msg' => __( 'Reseller deleted successfully.', 'reseller-management' ) ],
     'reseller-delete-error'   => [ 'type' => 'error',   'msg' => __( 'Could not delete the reseller. Please try again.', 'reseller-management' ) ],
+    'balance-adjusted'        => [ 'type' => 'success', 'msg' => __( 'Balance updated and statement entry created.', 'reseller-management' ) ],
+    'balance-adjust-error'    => [ 'type' => 'error',   'msg' => __( 'Could not update balance. Check all fields and try again.', 'reseller-management' ) ],
 ];
 
 $rm_notice_key = sanitize_key( wp_unslash( $_GET['rm_notice'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
