@@ -302,12 +302,20 @@ class Reseller_Orders {
         $thana            = sanitize_text_field( wp_unslash( $_POST['thana'] ?? '' ) );
         $order_notes      = sanitize_textarea_field( wp_unslash( $_POST['order_notes'] ?? '' ) );
         $shipping_charge  = floatval( wp_unslash( $_POST['shipping_charge'] ?? 0 ) );
+        $preset_shipping_raw = wp_unslash( $_POST['preset_shipping_charge'] ?? '' );
         $discount         = floatval( wp_unslash( $_POST['discount'] ?? 0 ) );
         $paid_amount      = floatval( wp_unslash( $_POST['paid_amount'] ?? 0 ) );
         
-        $items = isset( $_POST['items'] ) && is_array( $_POST['items'] ) ? $_POST['items'] : [];
+        $raw_items = $_POST['items'] ?? [];
+        if ( is_string( $raw_items ) ) {
+            $decoded_items = json_decode( wp_unslash( $raw_items ), true );
+            if ( is_array( $decoded_items ) ) {
+                $raw_items = $decoded_items;
+            }
+        }
+        $items = is_array( $raw_items ) ? $raw_items : [];
 
-        if ( empty( $customer_name ) || empty( $customer_phone ) || empty( $customer_address ) || empty( $items ) ) {
+        if ( '' === trim( $customer_name ) || '' === trim( $customer_phone ) || '' === trim( $customer_address ) || empty( $items ) ) {
             wp_send_json_error( __( 'Please complete all order fields.', 'reseller-management' ), 422 );
         }
 
@@ -426,6 +434,9 @@ class Reseller_Orders {
         $order->update_meta_data( '_order_district', $district );
         $order->update_meta_data( '_order_thana', $thana );
         $order->update_meta_data( '_paid_amount', $paid_amount );
+        if ( '' !== (string) $preset_shipping_raw && is_numeric( $preset_shipping_raw ) ) {
+            $order->update_meta_data( '_shipping_base_charge', max( 0.0, round( (float) $preset_shipping_raw, 2 ) ) );
+        }
         
         $order->calculate_totals();
         $order->set_status( 'processing' );
@@ -469,11 +480,19 @@ class Reseller_Orders {
         $thana            = sanitize_text_field( wp_unslash( $_POST['thana'] ?? '' ) );
         $order_notes      = sanitize_textarea_field( wp_unslash( $_POST['order_notes'] ?? '' ) );
         $shipping_charge  = floatval( wp_unslash( $_POST['shipping_charge'] ?? 0 ) );
+        $preset_shipping_raw = wp_unslash( $_POST['preset_shipping_charge'] ?? '' );
         $discount         = floatval( wp_unslash( $_POST['discount'] ?? 0 ) );
         $paid_amount      = floatval( wp_unslash( $_POST['paid_amount'] ?? 0 ) );
-        $items            = isset( $_POST['items'] ) && is_array( $_POST['items'] ) ? $_POST['items'] : [];
+        $raw_items = $_POST['items'] ?? [];
+        if ( is_string( $raw_items ) ) {
+            $decoded_items = json_decode( wp_unslash( $raw_items ), true );
+            if ( is_array( $decoded_items ) ) {
+                $raw_items = $decoded_items;
+            }
+        }
+        $items = is_array( $raw_items ) ? $raw_items : [];
 
-        if ( empty( $customer_name ) || empty( $customer_phone ) || empty( $customer_address ) || empty( $items ) ) {
+        if ( '' === trim( $customer_name ) || '' === trim( $customer_phone ) || '' === trim( $customer_address ) || empty( $items ) ) {
             wp_send_json_error( __( 'Please complete all order fields.', 'reseller-management' ), 422 );
         }
 
@@ -542,6 +561,9 @@ class Reseller_Orders {
         $order->set_discount_total( $discount );
         $order->update_meta_data( '_order_district', $district );
         $order->update_meta_data( '_order_thana', $thana );
+        if ( '' !== (string) $preset_shipping_raw && is_numeric( $preset_shipping_raw ) ) {
+            $order->update_meta_data( '_shipping_base_charge', max( 0.0, round( (float) $preset_shipping_raw, 2 ) ) );
+        }
 
         // Handle advance payment adjustment.
         $old_paid_amount = (float) $order->get_meta( '_paid_amount' );

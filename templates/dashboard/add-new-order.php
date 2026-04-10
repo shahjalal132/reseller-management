@@ -33,6 +33,13 @@ $paid_amount     = $is_edit ? $order->get_meta( '_paid_amount' ) : ''; // Using 
 if ( $paid_amount === '' && $is_edit ) {
     $paid_amount = 0; // Fallback to 0
 }
+$selected_shipping_preset_index = null;
+$selected_shipping_base_charge  = '';
+if ( ! $is_edit && ! empty( $shipping_presets ) ) {
+    $selected_shipping_preset_index = 0;
+    $selected_shipping_base_charge  = (float) $shipping_presets[0]['charge'];
+    $shipping_charge                = $selected_shipping_base_charge;
+}
 
 // Prepare items for JS
 $prefilled_items = [];
@@ -137,6 +144,7 @@ if ( $is_edit ) {
                             <input type="hidden" name="order_id" value="<?php echo esc_attr( $order_id ); ?>">
                             <input type="hidden" name="is_edit" value="1">
                         <?php endif; ?>
+                        <input type="hidden" id="rm-preset-shipping-charge" value="<?php echo esc_attr( (string) $selected_shipping_base_charge ); ?>">
                         <div class="rm-form-group">
                             <label><?php esc_html_e( 'Customer Phone', 'reseller-management' ); ?></label>
                             <input type="text" name="customer_phone" placeholder="Enter Customar Phone" value="<?php echo esc_attr( $customer_phone ); ?>" required>
@@ -172,13 +180,9 @@ if ( $is_edit ) {
                             <fieldset class="rm-shipping-preset-fieldset">
                                 <legend class="rm-shipping-preset-legend"><?php esc_html_e( 'Shipping option', 'reseller-management' ); ?></legend>
                                 <div class="rm-shipping-preset-radios">
-                                    <label class="rm-shipping-preset-label">
-                                        <input type="radio" name="rm_shipping_preset" value="" checked>
-                                        <span><?php esc_html_e( 'Custom', 'reseller-management' ); ?></span>
-                                    </label>
                                     <?php foreach ( $shipping_presets as $idx => $preset ) : ?>
                                         <label class="rm-shipping-preset-label">
-                                            <input type="radio" name="rm_shipping_preset" value="<?php echo esc_attr( (string) $idx ); ?>" data-charge="<?php echo esc_attr( (string) $preset['charge'] ); ?>">
+                                            <input type="radio" name="rm_shipping_preset" value="<?php echo esc_attr( (string) $idx ); ?>" data-charge="<?php echo esc_attr( (string) $preset['charge'] ); ?>" <?php checked( (string) $selected_shipping_preset_index, (string) $idx ); ?>>
                                             <span><?php echo esc_html( $preset['title'] ); ?> — <?php echo esc_html( number_format( $preset['charge'], 2 ) ); ?> ৳</span>
                                         </label>
                                     <?php endforeach; ?>

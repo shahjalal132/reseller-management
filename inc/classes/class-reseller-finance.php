@@ -167,7 +167,15 @@ class Reseller_Finance {
             }
         }
 
-        return round( $total, 2 );
+        $shipping_adjustment = 0.0;
+        $shipping_base_raw   = $order->get_meta( '_shipping_base_charge', true );
+        if ( '' !== (string) $shipping_base_raw && is_numeric( $shipping_base_raw ) ) {
+            $shipping_total      = (float) $order->get_shipping_total();
+            $shipping_base       = (float) $shipping_base_raw;
+            $shipping_adjustment = $shipping_total - $shipping_base;
+        }
+
+        return round( $total + $shipping_adjustment, 2 );
     }
 
     /**
@@ -200,6 +208,7 @@ class Reseller_Finance {
                 'type'        => 'commission_credit',
                 'amount'      => $commission,
                 'description' => sprintf( 'Commission for Order #%d', $order_id ),
+                'reference'   => 'ORD-' . $order_id,
             ]
         );
     }

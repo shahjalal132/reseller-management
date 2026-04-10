@@ -383,6 +383,21 @@
         renderOrderItems();
       });
 
+      // Tracks selected preset shipping so manual edits can affect profit by delta.
+      var presetShippingCharge = null;
+      var $presetShippingInput = $('#rm-preset-shipping-charge');
+
+      (function initPresetShippingBaseline() {
+        var $checked = $('input[name="rm_shipping_preset"]:checked');
+        var charge = $checked.attr('data-charge');
+        if (charge !== undefined && charge !== '') {
+          presetShippingCharge = parseFloat(charge) || 0;
+          $presetShippingInput.val(presetShippingCharge);
+        } else {
+          $presetShippingInput.val('');
+        }
+      }());
+
       function calculateTotals() {
         var itemsSubtotal = 0;
         var baseTotal = 0;
@@ -398,7 +413,9 @@
         var total = itemsSubtotal + shipping - discount;
         var due = total - paid;
         var orderTotal = due; // Order total is now due amount
-        var profit = (itemsSubtotal - baseTotal) - discount;
+        var shippingProfitAdjustment =
+          presetShippingCharge === null ? 0 : (shipping - presetShippingCharge);
+        var profit = (itemsSubtotal - baseTotal) - discount + shippingProfitAdjustment;
 
         $('#rm-summary-items-subtotal').text(itemsSubtotal.toFixed(2));
         $('#rm-summary-total').text(total.toFixed(2));
@@ -413,7 +430,14 @@
         var $checked = $('input[name="rm_shipping_preset"]:checked');
         var charge = $checked.attr('data-charge');
         if (charge !== undefined && charge !== '') {
+          presetShippingCharge = parseFloat(charge) || 0;
+          $presetShippingInput.val(presetShippingCharge);
           $('#rm-shipping-charge').val(charge).trigger('input');
+        } else {
+          // Custom shipping has no preset baseline, so do not affect profit.
+          presetShippingCharge = null;
+          $presetShippingInput.val('');
+          calculateTotals();
         }
       });
 
@@ -438,6 +462,7 @@
           thana: $('#rm-order-thana').val(),
           order_notes: $('textarea[name="order_notes"]').val(),
           shipping_charge: $('#rm-shipping-charge').val(),
+          preset_shipping_charge: ($presetShippingInput.val() !== '' ? $presetShippingInput.val() : ''),
           discount: $('#rm-discount').val(),
           paid_amount: $('#rm-paid-amount').val(),
           items: orderItems.map(item => ({
