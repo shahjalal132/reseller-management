@@ -252,43 +252,45 @@ foreach ( $rm_withdrawals as $i => $wd ) {
 }
 ?>
 
-<div class="wrap rm-admin-wd">
-    <div class="rm-wd-header">
-        <h1 class="wp-heading-inline">Withdrawal Requests</h1>
-        <hr class="wp-header-end">
+<div class="rm-admin-wd">
+    <div class="rm-page-header">
+        <h1 class="rm-page-title"><?php esc_html_e( 'Withdrawal Requests', 'reseller-management' ); ?></h1>
     </div>
 
-    <!-- Filter bar -->
-    <div class="rm-wd-filters">
-        <div class="rm-wd-filter-group" style="flex:2;">
-            <label>Search (TXN, Name, Phone, Username)</label>
-            <input type="text" id="rm-wd-f-search" placeholder="Search...">
+    <div class="rm-users-table-wrap">
+        <!-- Filter bar -->
+        <div class="rm-search-bar-row">
+            <div class="rm-wd-filters">
+                <div class="rm-wd-filter-group rm-wd-filter-group--search">
+                    <label><?php esc_html_e( 'Search', 'reseller-management' ); ?></label>
+                    <input type="text" id="rm-wd-f-search" placeholder="<?php esc_attr_e( 'TXN, name, phone, username', 'reseller-management' ); ?>">
+                </div>
+                <div class="rm-wd-filter-group">
+                    <label><?php esc_html_e( 'Date From', 'reseller-management' ); ?></label>
+                    <input type="date" id="rm-wd-f-from">
+                </div>
+                <div class="rm-wd-filter-group">
+                    <label><?php esc_html_e( 'Date To', 'reseller-management' ); ?></label>
+                    <input type="date" id="rm-wd-f-to">
+                </div>
+                <div class="rm-wd-filter-group">
+                    <label><?php esc_html_e( 'Status', 'reseller-management' ); ?></label>
+                    <select id="rm-wd-f-status">
+                        <option value=""><?php esc_html_e( 'All Statuses', 'reseller-management' ); ?></option>
+                        <option value="pending"><?php esc_html_e( 'Pending', 'reseller-management' ); ?></option>
+                        <option value="approved"><?php esc_html_e( 'Approved', 'reseller-management' ); ?></option>
+                        <option value="completed"><?php esc_html_e( 'Completed', 'reseller-management' ); ?></option>
+                        <option value="rejected"><?php esc_html_e( 'Rejected', 'reseller-management' ); ?></option>
+                    </select>
+                </div>
+                <button class="rm-wd-filter-reset" id="rm-wd-reset"><?php esc_html_e( 'Reset', 'reseller-management' ); ?></button>
+            </div>
         </div>
-        <div class="rm-wd-filter-group">
-            <label>Date From</label>
-            <input type="date" id="rm-wd-f-from">
-        </div>
-        <div class="rm-wd-filter-group">
-            <label>Date To</label>
-            <input type="date" id="rm-wd-f-to">
-        </div>
-        <div class="rm-wd-filter-group">
-            <label>Status</label>
-            <select id="rm-wd-f-status">
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="completed">Completed</option>
-                <option value="rejected">Rejected</option>
-            </select>
-        </div>
-        <button class="rm-wd-filter-reset" id="rm-wd-reset">↺ Reset</button>
-    </div>
 
-    <!-- Table -->
-    <div class="rm-table-responsive">
-        <div class="rm-wd-table-wrap">
-        <table class="wp-list-table widefat fixed striped" id="rm-wd-table">
+        <!-- Table -->
+        <div class="rm-table-responsive">
+            <div class="rm-wd-table-wrap">
+                <table class="rm-users-table rm-withdrawals-table" id="rm-wd-table">
             <thead>
                 <tr>
                     <th style="width:5%;">#</th>
@@ -300,53 +302,56 @@ foreach ( $rm_withdrawals as $i => $wd ) {
                     <th style="width:13%;">Status</th>
                     <th style="width:15%;">Actions</th>
                 </tr>
+            </thead>
             <tbody id="rm-wd-tbody"></tbody>
         </table>
         <div class="rm-wd-no-results" id="rm-wd-no-results">
-            No withdrawals match your filters.
+            <p><?php esc_html_e( 'No withdrawals match your filters.', 'reseller-management' ); ?></p>
         </div>
     </div>
 </div>
 
-    <!-- Pagination -->
-    <div class="rm-wd-pagination" id="rm-wd-pagination">
-        <span class="rm-wd-page-info" id="rm-wd-page-info"></span>
-        <div class="rm-wd-page-btns" id="rm-wd-page-btns"></div>
+        <!-- Pagination -->
+        <div class="rm-pagination rm-wd-pagination" id="rm-wd-pagination">
+            <span class="rm-pagination-info rm-wd-page-info" id="rm-wd-page-info"></span>
+            <div class="rm-pagination-links rm-wd-page-btns" id="rm-wd-page-btns"></div>
+        </div>
     </div>
 </div>
 
 <style>
 /* Base UI */
 .rm-admin-wd { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.rm-wd-header { margin-bottom: 20px; }
 
 /* Filter Bar */
-.rm-wd-filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; background: #fff; border: 1px solid #ccd0d4; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-.rm-wd-filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
-.rm-wd-filter-group label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #50575e; }
-.rm-wd-filter-group input, .rm-wd-filter-group select { border: 1px solid #8c8f94; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; color: #2c3338; outline: none; background: #fff; }
-.rm-wd-filter-group input:focus, .rm-wd-filter-group select:focus { border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; }
-.rm-wd-filter-reset { align-self: flex-end; background: #f0f0f1; border: 1px solid #8c8f94; border-radius: 4px; padding: 6px 14px; font-size: 0.85rem; font-weight: 500; color: #2c3338; cursor: pointer; transition: all 0.2s; white-space: nowrap; height: 32px; }
-.rm-wd-filter-reset:hover { background: #dcdcde; border-color: #8c8f94; }
+.rm-wd-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; width: 100%; }
+.rm-wd-filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+.rm-wd-filter-group--search { flex: 2; min-width: 260px; }
+.rm-wd-filter-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #9ca3af; }
+.rm-wd-filter-group input, .rm-wd-filter-group select { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #374151; outline: none; background: #fff; min-height: 38px; box-shadow: none; }
+.rm-wd-filter-group input:focus, .rm-wd-filter-group select:focus { border-color: #005f5a; box-shadow: 0 0 0 3px rgba(0,95,90,.09); }
+.rm-wd-filter-reset { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; transition: all .18s; white-space: nowrap; min-height: 38px; }
+.rm-wd-filter-reset:hover { border-color: #9ca3af; color: #374151; }
 
 /* Table enhancements */
-.rm-wd-table-wrap { background: #fff; border: 1px solid #ccd0d4; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 15px; }
-#rm-wd-table { border: none; box-shadow: none; }
-#rm-wd-table th { font-weight: 600; color: #1e293b; }
-#rm-wd-table td { padding: 12px 10px; vertical-align: middle; border-bottom: 1px solid #f0f0f1; font-size: 0.85rem; color: #3c434a; }
-.rm-wd-no-results { display: none; text-align: center; padding: 40px; color: #646970; font-size: 0.95rem; font-weight: 500; background: #fff; }
+.rm-wd-table-wrap { background: #fff; margin-bottom: 0; }
+#rm-wd-table { border: none; box-shadow: none; table-layout: auto; min-width: 980px; }
+#rm-wd-table th { white-space: nowrap; }
+#rm-wd-table td { vertical-align: middle; }
+.rm-wd-no-results { display: none; text-align: center; padding: 38px 20px; color: #9ca3af; font-size: 14px; font-weight: 500; background: #fff; }
+.rm-wd-no-results p { margin: 0; }
 
 /* Cell Content */
-.rm-wd-user-name { font-weight: 600; color: #2271b1; font-size: 0.9rem; }
-.rm-wd-user-meta { font-size: 0.75rem; color: #646970; display: block; }
-.rm-wd-txn { font-family: monospace; font-size: 0.85rem; color: #3c434a; font-weight: 600; }
-.rm-wd-amount { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
-.rm-wd-method { font-size: 0.8rem; font-weight: 600; color: #1e293b; display: block; }
-.rm-wd-method-details { font-family: monospace; font-size: 0.78rem; color: #646970; }
+.rm-wd-user-name { font-weight: 600; color: #111827; font-size: 14px; }
+.rm-wd-user-meta { font-size: 12px; color: #6b7280; display: block; margin-top: 2px; }
+.rm-wd-txn { font-family: monospace; font-size: 12px; color: #374151; font-weight: 600; }
+.rm-wd-amount { font-weight: 700; color: #005f5a; font-size: 14px; }
+.rm-wd-method { font-size: 12.5px; font-weight: 600; color: #111827; display: block; }
+.rm-wd-method-details { font-family: monospace; font-size: 12px; color: #6b7280; }
 
 /* Select Dropdown for Status */
-.rm-wd-status-select { font-size: 0.8rem; padding: 4px 6px; border-radius: 4px; border: 1px solid #8c8f94; color: #2c3338; font-weight: 600; outline: none; background: #fff; cursor: pointer; transition: all 0.2s; }
-.rm-wd-status-select:focus { border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; }
+.rm-wd-status-select { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #e5e7eb; color: #374151; font-weight: 600; outline: none; background: #fff; cursor: pointer; transition: all .18s; min-height: 34px; }
+.rm-wd-status-select:focus { border-color: #005f5a; box-shadow: 0 0 0 3px rgba(0,95,90,.08); }
 .rm-wd-status-select.is-pending { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
 .rm-wd-status-select.is-approved { background: #f0fdf4; color: #15803d; border-color: #86efac; }
 .rm-wd-status-select.is-completed { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
@@ -354,40 +359,51 @@ foreach ( $rm_withdrawals as $i => $wd ) {
 
 /* Action Buttons */
 .rm-wd-acts { display: flex; gap: 6px; align-items: center; }
-.rm-wd-btn { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.rm-wd-btn-view { color: #2271b1; border-color: #2271b1; background: #f6f7f7; }
-.rm-wd-btn-view:hover { background: #2271b1; color: #fff; }
-.rm-wd-btn-edit { color: #d63638; border-color: #d63638; background: #f6f7f7; }
-.rm-wd-btn-edit.is-edit { color: #008a20; border-color: #008a20; }
-.rm-wd-btn-edit.is-edit:hover { background: #008a20; color: #fff; }
-.rm-wd-btn-del { color: #d63638; border-color: #d63638; background: transparent; }
-.rm-wd-btn-del:hover { background: #d63638; color: #fff; }
+.rm-wd-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; font-size: 0; text-decoration: none; border: 1.5px solid #e5e7eb; cursor: pointer; transition: all .18s; color: #9ca3af; background: #fff; }
+.rm-wd-btn-view:hover { border-color: #005f5a; color: #005f5a; background: #f0faf9; }
+.rm-wd-btn-edit.is-edit:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.rm-wd-btn-del:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 .spinner { margin: 0; float: none; display: none; vertical-align: middle; }
 .spinner.is-active { display: inline-block; }
 
 /* Pagination */
-.rm-wd-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
-.rm-wd-page-info { font-size: 0.85rem; color: #646970; font-weight: 500; }
+.rm-wd-pagination { margin-top: 0; }
+.rm-wd-page-info { font-size: 13px; color: #6b7280; font-weight: 500; }
 .rm-wd-page-btns { display: flex; gap: 4px; }
-.rm-wd-page-btn { min-width: 32px; height: 32px; border-radius: 4px; border: 1px solid #8c8f94; background: #f0f0f1; color: #2c3338; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0 8px; }
-.rm-wd-page-btn:hover { background: #dcdcde; border-color: #2c3338; }
-.rm-wd-page-btn.is-active { background: #2271b1; border-color: #2271b1; color: #fff; }
+.rm-wd-page-btn { min-width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid #e5e7eb; background: #fff; color: #374151; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .18s; display: inline-flex; align-items: center; justify-content: center; padding: 0 8px; }
+.rm-wd-page-btn:hover { border-color: #005f5a; color: #005f5a; background: #f0faf9; }
+.rm-wd-page-btn.is-active { background: #005f5a; border-color: #005f5a; color: #fff; font-weight: 700; }
 .rm-wd-page-btn:disabled { opacity: 0.4; cursor: default; }
-.rm-wd-page-btn:disabled:hover { background: #f0f0f1; border-color: #8c8f94; }
+.rm-wd-page-btn:disabled:hover { background: #fff; border-color: #e5e7eb; color: #374151; }
 
 @media (max-width: 782px) {
+  .rm-admin-wd .rm-table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rm-admin-wd .rm-wd-table-wrap { min-width: 980px; }
+  .rm-admin-wd #rm-wd-table th,
+  .rm-admin-wd #rm-wd-table td { white-space: nowrap; }
+
   .rm-wd-filters { flex-direction: column; align-items: stretch; }
-  .rm-wd-filter-group { width: 100%; }
-  .rm-wd-filter-reset { width: 100%; justify-content: center; }
+  .rm-wd-filter-group { width: 100%; min-width: 0; }
+  .rm-wd-filter-group--search { min-width: 0; }
+  .rm-wd-filter-group input, .rm-wd-filter-group select { width: 100%; min-height: 38px; }
+  .rm-wd-filter-reset { width: 100%; justify-content: center; min-height: 38px; align-self: stretch; }
   
   .rm-wdv-card-header { flex-direction: column; padding: 20px; }
   .rm-wdv-amount-hero .amount { font-size: 2rem; }
   .rm-wdv-details { padding: 8px 20px 20px; }
   .rm-wdv-footer { padding: 16px 20px; flex-direction: column; gap: 10px; text-align: center; }
   
+  .rm-wd-pagination { flex-direction: column; align-items: center; text-align: center; }
+  .rm-wd-page-btns { flex-wrap: wrap; justify-content: center; }
+
   .rm-form-wrap { padding: 20px; margin: 10px; }
   .rm-form-btn-group { flex-direction: column; }
   .rm-btn { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .rm-admin-wd .rm-wd-header .wp-heading-inline { font-size: 20px; line-height: 1.3; }
+  .rm-admin-wd { margin-right: 0; }
 }
 </style>
 

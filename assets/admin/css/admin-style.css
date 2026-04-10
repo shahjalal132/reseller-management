@@ -2070,6 +2070,9 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    margin-right: 10px;
+    border-radius: 10px;
+    padding-right: 40px
   }
 
   .rm-hub-brand {
@@ -2148,7 +2151,7 @@
 
 @media (max-width: 782px) {
   .rm-table-responsive .rm-users-table {
-    min-width: 680px;
+    min-width: 100%;
   }
 
   .rm-table-responsive .rm-orders-table {
@@ -2200,8 +2203,9 @@
   }
 
   .rm-btn-add {
-    width: 100%;
+    width: 90%;
     justify-content: center;
+    padding-right: 5px;
   }
 
   .rm-search-input {
@@ -2331,5 +2335,92 @@
     width: 100%;
     margin-top: 12px;
     justify-content: flex-start;
+  }
+
+  /* Balance adjust page */
+  .rm-balance-adjust-page {
+    max-width: 100%;
+    min-height: auto;
+    padding: 8px 0 24px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .rm-balance-form-wrap form{
+    margin-right: 25px;
+  }
+
+  .rm-balance-adjust-page .rm-back-btn {
+    align-self: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .rm-balance-adjust-header {
+    margin: 8px 0 6px;
+    text-align: left;
+  }
+
+  .rm-balance-adjust-title {
+    font-size: 20px;
+  }
+
+  .rm-balance-adjust-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    line-height: 1.45;
+  }
+
+  .rm-balance-adjust-meta-sep {
+    display: none;
+  }
+
+  .rm-balance-adjust-balance {
+    margin-top: 10px;
+    font-size: 1rem;
+  }
+
+  .rm-balance-form-wrap {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .rm-balance-form-wrap .rm-form-group {
+    margin-bottom: 14px;
+  }
+
+  .rm-balance-form-wrap .rm-form-group input,
+  .rm-balance-form-wrap .rm-form-group select,
+  .rm-balance-form-wrap .rm-form-group textarea {
+    font-size: 14px;
+    min-height: 40px;
+    padding: 9px 12px;
+  }
+
+  .rm-balance-form-actions {
+    margin-top: 18px;
+    justify-content: stretch;
+  }
+
+  .rm-balance-form-actions .button-primary {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .rm-balance-secondary-links {
+    margin-top: 14px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .rm-balance-adjust-title {
+    font-size: 18px;
+  }
+
+  .rm-balance-form-wrap {
+    padding: 14px;
   }
 }
