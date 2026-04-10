@@ -2069,6 +2069,7 @@
     padding: 10px 16px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
   }
 
   .rm-hub-brand {
@@ -2081,14 +2082,17 @@
 
   .rm-hub-nav {
     width: 100%;
-    gap: 5px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .rm-hub-nav-item {
-    flex: 1 1 auto;
+    width: 100%;
     justify-content: center;
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 10px 12px;
+    min-height: 40px;
+    font-size: 12.5px;
   }
 
   .rm-hub-content {
@@ -2119,14 +2123,68 @@
   }
 }
 
+/* =========================================================
+   Reseller Hub – Table horizontal scrolling (all list views)
+   ========================================================= */
+
+.rm-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rm-table-responsive table {
+  width: 100%;
+}
+
+.rm-table-responsive .rm-users-table,
+.rm-table-responsive .rm-withdrawals-table,
+.rm-table-responsive .rm-orders-table,
+.rm-table-responsive .rm-stmt-table,
+.rm-table-responsive #rm-wd-table {
+  min-width: 780px;
+}
+
+@media (max-width: 782px) {
+  .rm-table-responsive .rm-users-table {
+    min-width: 680px;
+  }
+
+  .rm-table-responsive .rm-orders-table {
+    min-width: 1100px;
+  }
+
+  .rm-table-responsive .rm-stmt-table {
+    min-width: 980px;
+  }
+
+  .rm-table-responsive #rm-wd-table,
+  .rm-table-responsive .rm-withdrawals-table {
+    min-width: 980px;
+  }
+}
+
 @media (max-width: 480px) {
   .rm-page-title {
     font-size: 18px;
   }
 
+  .rm-hub-top-bar {
+    align-items: stretch;
+  }
+
+  .rm-hub-nav {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
   .rm-hub-nav-item {
-    font-size: 11px;
-    padding: 6px 8px;
+    font-size: 12px;
+    padding: 10px 12px;
+    min-height: 42px;
   }
 }
 
