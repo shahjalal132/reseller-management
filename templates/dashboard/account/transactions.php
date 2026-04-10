@@ -435,6 +435,13 @@ $fmt = function ( $amount ) {
 	var filtered   = allRows.slice();
 	var currentPage = 1;
 
+	function descAlreadyHasOrderId( desc, orderId ) {
+		if ( ! orderId ) {
+			return true;
+		}
+		return new RegExp( 'Order\\s*#\\s*' + String( orderId ) + '\\b', 'i' ).test( String( desc ) );
+	}
+
 	function renderTable() {
 		var start   = ( currentPage - 1 ) * PER_PAGE;
 		var end     = start + PER_PAGE;
@@ -462,7 +469,11 @@ $fmt = function ( $amount ) {
 			html += '<tr>';
 			html += '<td class="rm-tx-id">#' + row.id + '</td>';
 			html += '<td><span class="rm-tx-type-badge" style="background:' + row.type_bg + ';color:' + row.type_txt + ';">' + row.type + '</span></td>';
-			html += '<td class="rm-tx-desc">' + row.desc + (row.order_id ? ' (Order #' + row.order_id + ')' : '') + '</td>';
+			var descCell = row.desc;
+			if ( row.order_id && ! descAlreadyHasOrderId( row.desc, row.order_id ) ) {
+				descCell += ' (Order #' + row.order_id + ')';
+			}
+			html += '<td class="rm-tx-desc">' + descCell + '</td>';
 			html += '<td class="rm-tx-amount ' + amtClass + '">' + amtPrefix + '৳' + row.amount + '</td>';
 			html += '<td class="rm-tx-amount-bal">৳' + row.running_balance + '</td>';
 			html += '<td class="rm-tx-date">' + row.date + '</td>';
