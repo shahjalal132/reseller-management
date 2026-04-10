@@ -86,54 +86,56 @@ $rm_recent_users      = isset( $rm_recent_users )      ? (array) $rm_recent_user
         </a>
     </div>
 
-    <table class="rm-users-table">
-        <thead>
-            <tr>
-                <th><?php esc_html_e( 'Name', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Email', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Status', 'reseller-management' ); ?></th>
-                <th><?php esc_html_e( 'Actions', 'reseller-management' ); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if ( empty( $rm_recent_users ) ) : ?>
+    <div class="rm-table-responsive">
+        <table class="rm-users-table">
+            <thead>
                 <tr>
-                    <td colspan="4">
-                        <div class="rm-empty-state" style="padding:32px;">
-                            <p><?php esc_html_e( 'No reseller users yet.', 'reseller-management' ); ?></p>
-                        </div>
-                    </td>
+                    <th><?php esc_html_e( 'Name', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Email', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Status', 'reseller-management' ); ?></th>
+                    <th><?php esc_html_e( 'Actions', 'reseller-management' ); ?></th>
                 </tr>
-            <?php else : ?>
-                <?php foreach ( $rm_recent_users as $ru ) :
-                    $uid    = absint( $ru['ID'] );
-                    $status = (string) $ru['status'];
-                ?>
-                <tr>
-                    <td>
-                        <div class="rm-user-name-cell">
-                            <div class="rm-user-avatar"><?php echo esc_html( strtoupper( mb_substr( (string) $ru['name'], 0, 1 ) ) ); ?></div>
-                            <span class="rm-user-display-name"><?php echo esc_html( (string) $ru['name'] ); ?></span>
-                        </div>
-                    </td>
-                    <td><?php echo esc_html( (string) $ru['email'] ); ?></td>
-                    <td>
-                        <span class="rm-status-badge <?php echo esc_attr( $status ); ?>">
-                            <?php echo esc_html( 'approved' === $status ? __( 'active', 'reseller-management' ) : ucfirst( $status ) ); ?>
-                        </span>
-                    </td>
-                    <td>
-                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $uid ) ); ?>"
-                           class="rm-action-btn view" style="display:inline-flex;" title="<?php esc_attr_e( 'View Profile', 'reseller-management' ); ?>">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                            </svg>
-                        </a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                <?php if ( empty( $rm_recent_users ) ) : ?>
+                    <tr>
+                        <td colspan="4">
+                            <div class="rm-empty-state" style="padding:32px;">
+                                <p><?php esc_html_e( 'No reseller users yet.', 'reseller-management' ); ?></p>
+                            </div>
+                        </td>
+                    </tr>
+                <?php else : ?>
+                    <?php foreach ( $rm_recent_users as $ru ) :
+                        $uid    = absint( $ru['ID'] );
+                        $status = (string) $ru['status'];
+                    ?>
+                    <tr>
+                        <td>
+                            <div class="rm-user-name-cell">
+                                <div class="rm-user-avatar"><?php echo esc_html( strtoupper( mb_substr( (string) $ru['name'], 0, 1 ) ) ); ?></div>
+                                <span class="rm-user-display-name"><?php echo esc_html( (string) $ru['name'] ); ?></span>
+                            </div>
+                        </td>
+                        <td><?php echo esc_html( (string) $ru['email'] ); ?></td>
+                        <td>
+                            <span class="rm-status-badge <?php echo esc_attr( $status ); ?>">
+                                <?php echo esc_html( 'approved' === $status ? __( 'active', 'reseller-management' ) : ucfirst( $status ) ); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . $uid ) ); ?>"
+                               class="rm-action-btn view" style="display:inline-flex;" title="<?php esc_attr_e( 'View Profile', 'reseller-management' ); ?>">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>

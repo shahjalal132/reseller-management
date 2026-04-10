@@ -197,6 +197,7 @@ $fmt = function ( $amount ) {
         <p class="rm-section-card-title"><?php esc_html_e( 'Transaction Ledger', 'reseller-management' ); ?></p>
     </div>
 
+    <div class="rm-table-responsive">
     <table class="rm-users-table rm-stmt-table">
         <thead>
             <tr>
@@ -249,6 +250,7 @@ $fmt = function ( $amount ) {
             <?php endif; ?>
         </tbody>
     </table>
+    </div>
 
     <!-- Pagination -->
     <?php if ( $total_pages > 1 ) : ?>

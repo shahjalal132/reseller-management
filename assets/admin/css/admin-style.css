@@ -2048,3 +2048,230 @@
   border: 0;
   border-top: 1px solid #dfdfdf;
 }
+
+/* =========================================================
+   Reseller Hub – Responsiveness Improvements
+   ========================================================= */
+
+@media (max-width: 1024px) {
+  .rm-dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 782px) {
+  .rm-hub-wrap {
+    margin-right: 0;
+    margin-top: 10px;
+  }
+
+  .rm-hub-top-bar {
+    padding: 10px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rm-hub-brand {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .rm-hub-nav {
+    width: 100%;
+    gap: 5px;
+  }
+
+  .rm-hub-nav-item {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .rm-hub-content {
+    padding: 16px;
+  }
+
+  .rm-dashboard-cards {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .rm-stat-card {
+    padding: 16px;
+  }
+
+  .rm-stat-number {
+    font-size: 24px;
+  }
+
+  .rm-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .rm-users-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rm-page-title {
+    font-size: 18px;
+  }
+
+  .rm-hub-nav-item {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+}
+
+/* =========================================================
+   Reseller Hub – Users & User View Responsiveness
+   ========================================================= */
+
+@media (max-width: 782px) {
+  .rm-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .rm-btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rm-search-input {
+    width: 100% !important;
+  }
+
+  .rm-search-wrap {
+    width: 100%;
+  }
+
+  .rm-user-view-toolbar {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .rm-user-view-toolbar-center {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .rm-toolbar-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .rm-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .rm-view-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .rm-nid-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rm-status-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rm-status-btn {
+    justify-content: center;
+  }
+
+  .rm-ban-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rm-label-group {
+    width: 100%;
+  }
+
+  .rm-date-input {
+    width: 100% !important;
+  }
+
+  .rm-ban-btn, .rm-clear-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+}
+
+/* =========================================================
+   Reseller Hub – Orders & Statements Responsiveness
+   ========================================================= */
+
+@media (max-width: 782px) {
+  .rm-orders-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rm-filter-group {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .rm-filter-input, .rm-filter-select {
+    width: 100% !important;
+  }
+
+  .rm-filter-actions {
+    margin-top: 10px;
+    width: 100%;
+    display: flex;
+    gap: 10px;
+  }
+
+  .rm-filter-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .rm-statement-summary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .rm-stmt-card {
+    margin-bottom: 0;
+  }
+
+  .rm-pagination {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .rm-pagination-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .rm-page-header div {
+    width: 100%;
+  }
+
+  .rm-statement-export-hint {
+    width: 100%;
+    margin-top: 12px;
+    justify-content: flex-start;
+  }
+}

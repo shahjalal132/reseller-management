@@ -119,8 +119,8 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
     </div>
 </div>
 
-<div class="rm-enriched-table-container">
-    <table class="rm-enriched-table">
+<div class="rm-enriched-table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+    <table class="rm-enriched-table rm-orders-table">
         <thead>
             <tr>
                 <th width="40">#</th>
@@ -150,8 +150,10 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                 $status_name = ( 'processing' === $status ) ? __( 'New', 'reseller-management' ) : wc_get_order_status_name( $status );
                 ?>
                 <tr>
-                    <td><?php echo $i++; ?></td>
-                    <td class="rm-col-customer">
+                    <td data-label="#">
+                        <?php echo $i++; ?>
+                    </td>
+                    <td class="rm-col-customer" data-label="<?php esc_attr_e( 'Customer', 'reseller-management' ); ?>">
                         <div class="rm-customer-name"><?php echo esc_html( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() ); ?></div>
                         <div class="rm-customer-phone-badge">
                             <span class="rm-phone-icon"><?php echo $dashboard->get_svg_icon('account'); ?></span>
@@ -161,7 +163,7 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                         <div class="rm-customer-address"><?php echo esc_html( $order->get_billing_address_1() ); ?></div>
                         <div class="rm-customer-order-id" style="font-size: 0.75rem; color: #000000ff; margin-top: 4px; font-weight: bold;"><?php echo esc_html__( 'Order ID:', 'reseller-management' ); ?> #<?php echo esc_html( (string) $order->get_id() ); ?></div>
                     </td>
-                    <td class="rm-col-product">
+                    <td class="rm-col-product" data-label="<?php esc_attr_e( 'Product', 'reseller-management' ); ?>">
                         <?php if ( $product ) : ?>
                             <div class="rm-product-preview">
                                 <img src="<?php echo esc_url( wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ) ); ?>" alt="">
@@ -169,10 +171,10 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td class="rm-col-invoice">
+                    <td class="rm-col-invoice" data-label="<?php esc_attr_e( 'Invoice', 'reseller-management' ); ?>">
                         <span class="rm-invoice-id">M<?php echo esc_html( (string) $order->get_id() ); ?></span>
                     </td>
-                    <td class="rm-col-details">
+                    <td class="rm-col-details" data-label="<?php esc_attr_e( 'Details', 'reseller-management' ); ?>">
                         <div class="rm-details-grid">
                             <?php
                             $items_subtotal = 0;
@@ -194,10 +196,10 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                             <div class="rm-detail-row rm-detail-profit"><span>Profit:</span> <strong><?php echo $commission; ?></strong></div>
                         </div>
                     </td>
-                    <td class="rm-col-date">
+                    <td class="rm-col-date" data-label="<?php esc_attr_e( 'Date', 'reseller-management' ); ?>">
                         <div class="rm-order-date"><?php echo esc_html( $order->get_date_created()->date( 'Y-m-d H:i:s' ) ); ?></div>
                     </td>
-                    <td class="rm-col-courier">
+                    <td class="rm-col-courier" data-label="<?php esc_attr_e( 'Courier', 'reseller-management' ); ?>">
                         <div class="rm-courier-info">
                             <?php 
                             $consignment_id = $order->get_meta( '_steadfast_consignment_id' );
@@ -211,15 +213,15 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                             <?php endif; ?>
                         </div>
                     </td>
-                    <td class="rm-col-comment">
+                    <td class="rm-col-comment" data-label="<?php esc_attr_e( 'Comment', 'reseller-management' ); ?>">
                         <a href="#" class="rm-note-link"><?php esc_html_e( 'Note', 'reseller-management' ); ?></a>
                     </td>
-                    <td class="rm-col-status">
+                    <td class="rm-col-status" data-label="<?php esc_attr_e( 'Status', 'reseller-management' ); ?>">
                         <span class="rm-status-badge status-<?php echo esc_attr( $status ); ?>">
                             <?php echo esc_html( $status_name ); ?>
                         </span>
                     </td>
-                    <td class="rm-col-action">
+                    <td class="rm-col-action" data-label="<?php esc_attr_e( 'Action', 'reseller-management' ); ?>">
                         <div class="rm-action-dropdown-container">
                             <?php 
                             $restricted_statuses = [ 'delivered', 'shipping', 'packaging', 'cancelled', 'returned' ];
@@ -244,7 +246,7 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                             </div>
                         </div>
                     </td>
-                    <td class="rm-col-view">
+                    <td class="rm-col-view" data-label="<?php esc_attr_e( 'View', 'reseller-management' ); ?>">
                         <a href="<?php echo esc_url( home_url( '/?rm_action=print_invoice&order_id=' . $order->get_id() . '&nonce=' . wp_create_nonce( 'rm_public_nonce' ) ) ); ?>" target="_blank" class="rm-btn-view-teal" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
                             <span class="rm-view-icon">👁</span>
                             <?php esc_html_e( 'view', 'reseller-management' ); ?>

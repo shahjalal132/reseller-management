@@ -15,8 +15,29 @@ class Reseller_Registration {
      */
     protected function __construct() {
         add_shortcode( 'reseller_registration', [ $this, 'render_registration_shortcode' ] );
+        add_filter( 'template_include', [ $this, 'maybe_use_registration_template' ] );
         add_action( 'wp_ajax_reseller_register_user', [ $this, 'handle_registration' ] );
         add_action( 'wp_ajax_nopriv_reseller_register_user', [ $this, 'handle_registration' ] );
+    }
+
+    /**
+     * Swap to the registration full-page template when this shortcode is on the page.
+     *
+     * @param string $template
+     * @return string
+     */
+    public function maybe_use_registration_template( $template ) {
+        if ( ! is_singular() ) {
+            return $template;
+        }
+
+        global $post;
+
+        if ( ! $post instanceof \WP_Post || ! has_shortcode( (string) $post->post_content, 'reseller_registration' ) ) {
+            return $template;
+        }
+
+        return PLUGIN_BASE_PATH . '/templates/registration-layout.php';
     }
 
     /**

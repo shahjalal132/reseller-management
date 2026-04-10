@@ -111,8 +111,10 @@
 
     // Order Count Chart
     var orderCtx = document.getElementById('rm-order-count-canvas');
+    var orderChart = null;
+
     if (orderCtx) {
-      new Chart(orderCtx, {
+      orderChart = new Chart(orderCtx, {
         type: 'doughnut',
         data: {
           labels: ['Completed', 'Pending', 'Cancelled'],
@@ -133,11 +135,52 @@
           plugins: { legend: { display: false } }
         }
       });
+
+      // Handle Order Count filter
+      $('.rm-order-count-chart .rm-chart-filter').on('change', function () {
+        var days = $(this).val();
+        var $chartContainer = $(this).closest('.rm-order-count-chart');
+        $chartContainer.css('opacity', '0.5');
+
+        $.ajax({
+          url: rmPublic.ajaxUrl,
+          type: 'GET',
+          data: {
+            action: 'reseller_get_order_stats',
+            nonce: rmPublic.nonce,
+            days: days
+          },
+          success: function (response) {
+            $chartContainer.css('opacity', '1');
+            if (response.success && orderChart) {
+              var stats = response.data;
+              orderChart.data.datasets[0].data = [
+                stats.completed || 0,
+                stats.pending || 0,
+                stats.cancelled || 0
+              ];
+              orderChart.update();
+            }
+          },
+          error: function () {
+            $chartContainer.css('opacity', '1');
+          }
+        });
+      });
     }
 
     // Sidebar Toggle
     $('.rm-sidebar-toggle').on('click', function () {
-      $('.rm-dashboard-app').toggleClass('sidebar-collapsed');
+      if (window.innerWidth <= 1024) {
+        $('.rm-dashboard-app').toggleClass('sidebar-active');
+      } else {
+        $('.rm-dashboard-app').toggleClass('sidebar-collapsed');
+      }
+    });
+
+    // Mobile Overlay Click
+    $(document).on('click', '.rm-sidebar-overlay', function () {
+      $('.rm-dashboard-app').removeClass('sidebar-active');
     });
 
     // Sidebar Accordion Toggle
@@ -904,7 +947,7 @@
 
     /* ── Hamburger menu toggle ── */
     var hamburger = document.getElementById('rmhp-hamburger');
-    var nav       = document.getElementById('rmhp-nav');
+    var nav = document.getElementById('rmhp-nav');
     if (hamburger && nav) {
       hamburger.addEventListener('click', function () {
         nav.classList.toggle('rmhp-nav-open');
@@ -927,7 +970,7 @@
       var header = document.getElementById('rmhp-header');
       var offset = header ? header.offsetHeight + 20 : 90;
       var scrollY = window.pageYOffset;
-      var active  = null;
+      var active = null;
       sections.forEach(function (s) {
         if (s.el.offsetTop - offset <= scrollY) { active = s; }
       });
@@ -951,7 +994,7 @@
     /* ── FAQ accordion ── */
     document.querySelectorAll('.rmhp-faq-question').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var item   = btn.closest('.rmhp-faq-item');
+        var item = btn.closest('.rmhp-faq-item');
         var answer = document.getElementById(btn.getAttribute('aria-controls'));
         var isOpen = !answer.hidden;
 

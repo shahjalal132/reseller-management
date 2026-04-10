@@ -16,6 +16,9 @@ class Reseller_Auth {
     protected function __construct() {
         add_filter( 'wp_authenticate_user', [ $this, 'restrict_reseller_login' ], 10, 2 );
         add_action( 'login_head', [ $this, 'custom_login_design' ] );
+        add_action( 'login_enqueue_scripts', [ $this, 'enqueue_login_assets' ] );
+        add_filter( 'login_message', [ $this, 'inject_global_header' ] );
+        add_action( 'login_footer', [ $this, 'inject_global_footer' ] );
         add_filter( 'woocommerce_login_redirect', [ $this, 'custom_login_redirect' ], 10, 2 );
         add_filter( 'login_redirect', [ $this, 'custom_login_redirect' ], 10, 3 );
         add_action( 'template_redirect', [ $this, 'restrict_dashboard_access' ] );
@@ -39,13 +42,19 @@ class Reseller_Auth {
             body.login {
                 background: #f8fafc;
                 display: flex;
-                align-items: center;
-                justify-content: center;
+                flex-direction: column;
                 min-height: 100vh;
                 margin: 0;
+                overflow-y: auto !important;
+                height: auto !important;
+            }
+            body.login > header,
+            body.login > footer {
+                width: 100%;
             }
             body.login #login {
                 width: 100%;
+                max-width: none;
                 padding: 0;
                 margin: 0;
             }
@@ -55,13 +64,14 @@ class Reseller_Auth {
             .rm-login-wrapper {
                 max-width: 900px;
                 width: 100%;
-                margin: 40px auto;
+                margin: auto; /* Vertically centers the wrapper between header and footer */
                 display: flex;
                 background: #ffffff;
                 border-radius: 20px;
                 box-shadow: 0 15px 35px rgba(0,0,0,0.06);
                 overflow: hidden;
                 border: 1px solid var(--rm-border);
+                flex-shrink: 0;
             }
             .rm-login-left {
                 flex: 0 0 400px;
@@ -183,6 +193,16 @@ class Reseller_Auth {
                 margin: 0;
             }
             
+            @media (max-width: 900px) {
+                .rm-login-wrapper {
+                    max-width: 800px;
+                    margin: 20px;
+                }
+                .rm-login-left {
+                    flex: 0 0 320px;
+                }
+            }
+
             @media (max-width: 768px) {
                 .rm-login-wrapper {
                     flex-direction: column;
@@ -191,10 +211,32 @@ class Reseller_Auth {
                 }
                 .rm-login-left {
                     flex: none;
+                    padding: 40px 30px;
+                }
+                .rm-login-right {
+                    padding: 40px 30px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .rm-login-wrapper {
+                    margin: 20px 10px;
+                    width: calc(100% - 20px);
+                }
+                .rm-login-left, .rm-login-right {
                     padding: 30px 20px;
                 }
                 .rm-login-right {
-                    padding: 30px 20px;
+                    min-height: 400px;
+                }
+                .rm-login-left-content h3 {
+                    font-size: 24px;
+                }
+                .rm-auth-header-modern h2 {
+                    font-size: 20px;
+                }
+                body.login .button-primary {
+                    padding: 12px;
                 }
             }
         </style>
@@ -237,6 +279,63 @@ class Reseller_Auth {
                     regA.textContent = rmResellerRegistration.label;
                     regP.appendChild(regA);
                     nav.parentNode.insertBefore(regP, nav.nextSibling);
+                }
+            });
+        </script>
+        <?php
+    }
+
+    /**
+     * Enqueue public CSS and JS for the login page so the header looks right.
+     *
+     * @return void
+     */
+    public function enqueue_login_assets() {
+        wp_enqueue_style( 'wpb-public-css', PLUGIN_PUBLIC_ASSETS_URL . '/css/public-style.css', [], time(), 'all' );
+        wp_enqueue_script( 'wpb-public-js', PLUGIN_PUBLIC_ASSETS_URL . '/js/public-script.js', [ 'jquery' ], time(), true );
+    }
+
+    /**
+     * Inject the global header into the login page.
+     * We use login_message to echo it and wrap it in a hidden container,
+     * then JS will prepend it to the body.
+     *
+     * @param string $message Existing message.
+     * @return string
+     */
+    public function inject_global_header( $message ) {
+        ob_start();
+        echo '<div id="rm-global-header-container" style="display:none;">';
+        include PLUGIN_BASE_PATH . '/templates/template-parts/global-header.php';
+        echo '</div>';
+        $header_html = ob_get_clean();
+
+        return $message . "\n" . $header_html;
+    }
+
+    /**
+     * Inject the global footer into the login page and JS to place the header properly.
+     *
+     * @return void
+     */
+    public function inject_global_footer() {
+        include PLUGIN_BASE_PATH . '/templates/template-parts/global-footer.php';
+        ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var headerContainer = document.getElementById("rm-global-header-container");
+                if (headerContainer) {
+                    var body = document.body;
+                    body.insertBefore(headerContainer, body.firstChild);
+                    
+                    // The actual header is inside the container
+                    var actualHeader = headerContainer.querySelector('header');
+                    if (actualHeader) {
+                        body.insertBefore(actualHeader, body.firstChild);
+                        headerContainer.parentNode.removeChild(headerContainer);
+                    } else {
+                        headerContainer.style.display = "block";
+                    }
                 }
             });
         </script>
@@ -311,6 +410,10 @@ class Reseller_Auth {
         }
 
         if ( Reseller_Helper::is_reseller( $current_user ) ) {
+            if ( user_can( $current_user, 'manage_options' ) ) {
+                return admin_url();
+            }
+
             $dashboard_page = get_page_by_path( 'reseller-dashboard' );
             if ( $dashboard_page ) {
                 return get_permalink( $dashboard_page->ID );

@@ -200,65 +200,57 @@ class Reseller_Orders {
      */
     public static function get_order_status_counts( $user_id ) {
         $orders = self::get_reseller_orders( $user_id );
-        $counts = [
-            'new'        => 0,
-            'pending'    => 0,
-            'confirmed'  => 0,
-            'packaging'    => 0,
-            'shipping'   => 0,
-            'delivered'  => 0,
-            'wfr'        => 0,
-            'returned'   => 0,
-            'cancel'     => 0,
-            'all'        => count( $orders ),
-            'incomplete' => 0,
+        return self::categorize_orders_for_stats( $orders );
+    }
+
+    /**
+     * Get order stats for a specific number of days.
+     *
+     * @param int $user_id Reseller ID.
+     * @param int $days    Number of days.
+     *
+     * @return array<string, int>
+     */
+    public static function get_order_stats_by_days( $user_id, $days ) {
+        $args = [];
+        if ( $days > 0 ) {
+            $args['date_from'] = date( 'Y-m-d', strtotime( "-$days days" ) );
+        } elseif ( 0 === $days ) {
+            $args['date_from'] = date( 'Y-m-d 00:00:00' );
+            $args['date_to']   = date( 'Y-m-d 23:59:59' );
+        }
+
+        $orders = self::get_reseller_orders( $user_id, $args );
+        return self::categorize_orders_for_stats( $orders );
+    }
+
+    /**
+     * Categorize orders into stats buckets.
+     *
+     * @param array<\WC_Order> $orders List of orders.
+     *
+     * @return array<string, int>
+     */
+    private static function categorize_orders_for_stats( $orders ) {
+        $stats = [
+            'completed' => 0,
+            'pending'   => 0,
+            'cancelled' => 0,
+            'total'     => count( $orders ),
         ];
 
         foreach ( $orders as $order ) {
             $status = $order->get_status();
-            
-            // Map WC statuses to our display categories
-            // Note: These mappings might need adjustment based on custom statuses in use.
-            switch ( $status ) {
-                case 'pending':
-                case 'on-hold':
-                    $counts['pending']++;
-                    break;
-                case 'processing':
-                    $counts['new']++;
-                    break;
-                case 'confirmed':
-                    $counts['confirmed']++;
-                    break;
-                case 'completed':
-                    $counts['delivered']++;
-                    break;
-                case 'packaging':
-                    $counts['packaging']++;
-                    break;
-                case 'shipping':
-                    $counts['shipping']++;
-                    break;
-                case 'returned':
-                    $counts['returned']++;
-                    break;
-                case 'delivered':
-                    $counts['delivered']++;
-                    break;
-                case 'cancelled':
-                    $counts['cancel']++;
-                    break;
-                case 'refunded':
-                    $counts['returned']++;
-                    break;
-                case 'failed':
-                    $counts['incomplete']++;
-                    break;
-                // Add more cases for custom statuses if available
+            if ( 'completed' === $status ) {
+                $stats['completed']++;
+            } elseif ( in_array( $status, [ 'pending', 'processing', 'on-hold' ], true ) ) {
+                $stats['pending']++;
+            } elseif ( in_array( $status, [ 'cancelled', 'failed', 'refunded' ], true ) ) {
+                $stats['cancelled']++;
             }
         }
 
-        return $counts;
+        return $stats;
     }
 
     /**

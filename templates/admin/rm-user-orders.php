@@ -202,6 +202,7 @@ $page_url = function ( $p ) use ( $filter_base ) {
         </div>
     <?php else : ?>
 
+        <div class="rm-table-responsive">
         <table class="rm-users-table rm-orders-table">
             <thead>
                 <tr>
@@ -252,6 +253,7 @@ $page_url = function ( $p ) use ( $filter_base ) {
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
 
         <!-- Pagination -->
         <?php if ( $total_pages > 1 ) : ?>

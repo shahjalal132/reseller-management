@@ -98,7 +98,8 @@ if ( 'settings-updated' === $notice ) {
         </div>
         <div class="rm-card-body">
             <p class="description" style="margin-top:0;"><?php esc_html_e( 'Resellers can pick these on Add New Order to fill the shipping charge (they may still edit the amount). Rows without a title are ignored when saving.', 'reseller-management' ); ?></p>
-            <table id="rm-shipping-presets-table" class="widefat striped rm-shipping-presets-table" style="max-width: 720px; margin-top: 12px;">
+            <div class="rm-table-responsive">
+                <table id="rm-shipping-presets-table" class="widefat striped rm-shipping-presets-table" style="max-width: 720px; margin-top: 12px;">
                 <thead>
                     <tr>
                         <th scope="col"><?php esc_html_e( 'Title', 'reseller-management' ); ?></th>
@@ -122,6 +123,7 @@ if ( 'settings-updated' === $notice ) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
             <p style="margin-top: 12px;">
                 <button type="button" class="button" id="rm-shipping-preset-add"><?php esc_html_e( 'Add preset', 'reseller-management' ); ?></button>
             </p>
@@ -189,4 +191,13 @@ if ( 'settings-updated' === $notice ) {
     
     .rm-button { background: #2271b1; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
     .rm-button:hover { background: #135e96; }
+
+    @media (max-width: 782px) {
+        .rm-card-body { padding: 15px; }
+        .rm-grid { grid-template-columns: 1fr !important; }
+        .rm-field input { width: 100% !important; }
+        .rm-shipping-presets-table input { width: 100% !important; min-width: 100px; }
+        .rm-button { width: 100%; }
+        .rm-page-header { flex-direction: column; align-items: flex-start; }
+    }
 </style>
