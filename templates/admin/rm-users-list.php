@@ -95,7 +95,8 @@ $rm_search = sanitize_text_field( wp_unslash( $_GET['rm_search'] ?? '' ) ); // p
                                 <?php echo esc_html( $avatar_letter ); ?>
                             <?php endif; ?>
                         </div>
-                        <span class="rm-user-display-name"><?php echo esc_html( (string) $rm_u['name'] ); ?></span>
+                        <!-- Display user business name -->
+                        <span class="rm-user-display-name"><?php echo esc_html( (string) get_user_meta( $uid, '_reseller_business_name', true ) ); ?></span>
                     </div>
                 </td>
                 <td><?php echo esc_html( (string) $rm_u['email'] ); ?></td>
