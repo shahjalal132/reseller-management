@@ -7,7 +7,7 @@
  * Author:      Grocoder Software Solution
  * Author URI:  https://facebook.com/grocoder
  * Description: Reseller Management.
- * Version:     1.0.0
+ * Version:     1.0.
  * text-domain: reseller-management
  * Domain Path: /languages
  * 
