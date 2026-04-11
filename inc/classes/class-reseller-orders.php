@@ -21,6 +21,7 @@ class Reseller_Orders {
         add_action( 'wp_ajax_reseller_update_order_status', [ $this, 'handle_update_order_status' ] );
         add_action( 'wp_ajax_reseller_search_products', [ $this, 'handle_search_products' ] );
         add_action( 'template_redirect', [ $this, 'handle_print_invoice' ] );
+        add_action( 'admin_init', [ $this, 'handle_admin_print_invoice' ] );
     }
 
     /**
@@ -759,6 +760,47 @@ class Reseller_Orders {
         $order = wc_get_order( $order_id );
         if ( ! $order || (int) $order->get_meta( '_assigned_reseller_id' ) !== get_current_user_id() ) {
             wp_die( esc_html__( 'Order not found or access denied.', 'reseller-management' ) );
+        }
+
+        $template = PLUGIN_BASE_PATH . '/templates/dashboard/invoice.php';
+        if ( file_exists( $template ) ) {
+            include $template;
+        } else {
+            wp_die( esc_html__( 'Invoice template not found.', 'reseller-management' ) );
+        }
+        exit;
+    }
+
+    /**
+     * Admin: full-page invoice view (same template as reseller dashboard) with print control.
+     *
+     * @return void
+     */
+    public function handle_admin_print_invoice() {
+        if ( ! isset( $_GET['rm_action'] ) || 'admin_print_invoice' !== $_GET['rm_action'] ) {
+            return;
+        }
+
+        if ( ! is_admin() || ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized.', 'reseller-management' ) );
+        }
+
+        $order_id = absint( $_GET['order_id'] ?? 0 );
+        if ( ! $order_id || ! isset( $_GET['nonce'] ) ) {
+            wp_die( esc_html__( 'Invalid request or link expired.', 'reseller-management' ) );
+        }
+
+        if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'rm_admin_print_invoice_' . $order_id ) ) {
+            wp_die( esc_html__( 'Invalid request or link expired.', 'reseller-management' ) );
+        }
+
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            wp_die( esc_html__( 'You do not have permission to print this invoice.', 'reseller-management' ) );
+        }
+
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            wp_die( esc_html__( 'Order not found.', 'reseller-management' ) );
         }
 
         $template = PLUGIN_BASE_PATH . '/templates/dashboard/invoice.php';

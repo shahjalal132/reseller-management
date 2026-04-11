@@ -12,11 +12,19 @@ if ( ! isset( $order ) || ! $order instanceof WC_Order ) {
 }
 
 $reseller_id = (int) $order->get_meta( '_assigned_reseller_id' );
-$reseller = get_userdata( $reseller_id );
-$business_name = get_user_meta( $reseller_id, '_reseller_business_name', true ) ?: $reseller->display_name;
-$reseller_phone = get_user_meta( $reseller_id, '_reseller_phone', true );
-$reseller_website = get_user_meta( $reseller_id, '_reseller_web_url', true );
-$reseller_email = $reseller->user_email;
+$reseller    = $reseller_id ? get_userdata( $reseller_id ) : false;
+
+if ( $reseller_id && $reseller ) {
+	$business_name    = get_user_meta( $reseller_id, '_reseller_business_name', true ) ?: $reseller->display_name;
+	$reseller_phone   = get_user_meta( $reseller_id, '_reseller_phone', true );
+	$reseller_website = get_user_meta( $reseller_id, '_reseller_web_url', true );
+	$reseller_email   = $reseller->user_email;
+} else {
+	$business_name    = get_bloginfo( 'name' );
+	$reseller_phone   = get_option( 'woocommerce_store_phone', '' );
+	$reseller_website = '';
+	$reseller_email   = get_option( 'woocommerce_email_from_address', get_bloginfo( 'admin_email' ) );
+}
 
 $items = $order->get_items();
 $items_subtotal = 0;
