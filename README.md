@@ -25,6 +25,34 @@ This plugin provides an app-like, decoupled frontend dashboard for resellers and
 
 ---
 
+## 📸 Screenshots
+
+### Registration
+
+![Reseller registration form](assets/screenshots/registration.png)
+
+### Reseller dashboard
+
+![Reseller dashboard](assets/screenshots/reseller-dashboard.png)
+
+### Statements
+
+![Financial statements](assets/screenshots/statements.png)
+
+### Withdrawals
+
+![Withdrawal requests](assets/screenshots/withdrawls.png)
+
+### User details (admin)
+
+![Reseller user details](assets/screenshots/user-details.png)
+
+### Admin dashboard
+
+![Admin reseller hub](assets/screenshots/admin-dashboard.png)
+
+---
+
 ## 🛠️ Tech Stack & Architecture
 
 *   **Core:** PHP, WordPress Plugin API, WooCommerce Core
