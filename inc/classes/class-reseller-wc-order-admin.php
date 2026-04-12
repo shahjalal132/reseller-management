@@ -31,6 +31,13 @@ class Reseller_Wc_Order_Admin {
 
 		// totals customizations
 		add_action( 'woocommerce_admin_order_totals_after_shipping', [ $this, 'render_paid_and_due_amount_rows' ] );
+
+		// Bulk Actions
+		add_filter( 'bulk_actions-edit-shop_order', [ $this, 'add_bulk_actions' ], 20 );
+		add_filter( 'bulk_actions-woocommerce_page_wc-orders', [ $this, 'add_bulk_actions' ], 20 );
+		add_filter( 'handle_bulk_actions-edit-shop_order', [ $this, 'handle_bulk_actions' ], 20, 3 );
+		add_filter( 'handle_bulk_actions-woocommerce_page_wc-orders', [ $this, 'handle_bulk_actions' ], 20, 3 );
+		add_action( 'admin_notices', [ $this, 'bulk_admin_notices' ] );
 	}
 
 	/**
@@ -295,5 +302,101 @@ class Reseller_Wc_Order_Admin {
 			<td colspan="3"><hr></td>
 		</tr>
 		<?php
+	}
+
+	/**
+	 * Add custom order statuses to bulk actions dropdown.
+	 *
+	 * @param array $actions Existing bulk actions.
+	 * @return array Updated bulk actions.
+	 */
+	public function add_bulk_actions( $actions ) {
+		$statuses = wc_get_order_statuses();
+
+		foreach ( $statuses as $status => $label ) {
+			$action_key = 'mark_' . str_replace( 'wc-', '', $status );
+			
+			// If already exists (core WooCommerce actions), skip or overwrite if needed
+			if ( ! isset( $actions[ $action_key ] ) ) {
+				$actions[ $action_key ] = sprintf( __( 'Change status to %s', 'reseller-management' ), $label );
+			}
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * Handle custom bulk actions.
+	 *
+	 * @param string $redirect_to The redirect URL.
+	 * @param string $action      The action being taken.
+	 * @param array  $ids         The array of IDs.
+	 * @return string The redirect URL with extra args.
+	 */
+	public function handle_bulk_actions( $redirect_to, $action, $ids ) {
+		if ( strpos( $action, 'mark_' ) !== 0 ) {
+			return $redirect_to;
+		}
+
+		$status = 'wc-' . str_replace( 'mark_', '', $action );
+		$valid_statuses = wc_get_order_statuses();
+
+		if ( ! isset( $valid_statuses[ $status ] ) ) {
+			return $redirect_to;
+		}
+
+		$changed = 0;
+
+		foreach ( $ids as $id ) {
+			$order = wc_get_order( $id );
+			if ( $order ) {
+				$order->update_status( $status, __( 'Bulk status update by admin.', 'reseller-management' ) );
+				$changed++;
+			}
+		}
+
+		$redirect_to = add_query_arg(
+			[
+				'rm_bulk_updated' => $changed,
+				'rm_bulk_action'  => $action,
+			],
+			$redirect_to
+		);
+
+		return $redirect_to;
+	}
+
+	/**
+	 * Display admin notice after bulk update.
+	 *
+	 * @return void
+	 */
+	public function bulk_admin_notices() {
+		if ( empty( $_REQUEST['rm_bulk_updated'] ) ) {
+			return;
+		}
+
+		$count  = (int) $_REQUEST['rm_bulk_updated'];
+		$action = sanitize_text_field( $_REQUEST['rm_bulk_action'] );
+		$status_key = 'wc-' . str_replace( 'mark_', '', $action );
+		$statuses = wc_get_order_statuses();
+		$status_label = isset( $statuses[ $status_key ] ) ? $statuses[ $status_key ] : $status_key;
+
+		printf(
+			'<div class="updated notice is-dismissible"><p>%s</p></div>',
+			esc_html(
+				sprintf(
+					/* translators: 1: number of orders, 2: status label */
+					_n(
+						'%1$s order status changed to %2$s.',
+						'%1$s orders status changed to %2$s.',
+						$count,
+						'reseller-management'
+					),
+					number_format_i18_numeral( $count ),
+					$status_label
+				)
+			)
+		);
 	}
 }
