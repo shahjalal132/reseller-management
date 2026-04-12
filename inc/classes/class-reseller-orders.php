@@ -22,6 +22,7 @@ class Reseller_Orders {
         add_action( 'wp_ajax_reseller_search_products', [ $this, 'handle_search_products' ] );
         add_action( 'template_redirect', [ $this, 'handle_print_invoice' ] );
         add_action( 'admin_init', [ $this, 'handle_admin_print_invoice' ] );
+        add_action( 'admin_init', [ $this, 'handle_admin_bulk_print_invoice' ] );
     }
 
     /**
@@ -808,6 +809,44 @@ class Reseller_Orders {
             include $template;
         } else {
             wp_die( esc_html__( 'Invoice template not found.', 'reseller-management' ) );
+        }
+        exit;
+    }
+
+    /**
+     * Handle bulk printing of order invoices from admin.
+     *
+     * @return void
+     */
+    public function handle_admin_bulk_print_invoice() {
+        if ( ! isset( $_GET['rm_action'] ) || 'admin_bulk_print_invoice' !== $_GET['rm_action'] ) {
+            return;
+        }
+
+        if ( ! is_admin() || ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized.', 'reseller-management' ) );
+        }
+
+        if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'rm_admin_bulk_print' ) ) {
+            wp_die( esc_html__( 'Invalid request or link expired.', 'reseller-management' ) );
+        }
+
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            wp_die( esc_html__( 'You do not have permission to print these invoices.', 'reseller-management' ) );
+        }
+
+        $order_ids_raw = sanitize_text_field( wp_unslash( $_GET['order_ids'] ?? '' ) );
+        $order_ids     = array_filter( array_map( 'absint', explode( ',', $order_ids_raw ) ) );
+
+        if ( empty( $order_ids ) ) {
+            wp_die( esc_html__( 'No orders selected for printing.', 'reseller-management' ) );
+        }
+
+        $template = PLUGIN_BASE_PATH . '/templates/dashboard/bulk-invoice.php';
+        if ( file_exists( $template ) ) {
+            include $template;
+        } else {
+            wp_die( esc_html__( 'Bulk invoice template not found.', 'reseller-management' ) );
         }
         exit;
     }

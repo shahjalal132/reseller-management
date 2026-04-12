@@ -311,6 +311,8 @@ class Reseller_Wc_Order_Admin {
 	 * @return array Updated bulk actions.
 	 */
 	public function add_bulk_actions( $actions ) {
+		$actions['reseller_print_invoices'] = __( 'Print Invoices', 'reseller-management' );
+
 		$statuses = wc_get_order_statuses();
 
 		foreach ( $statuses as $status => $label ) {
@@ -334,6 +336,17 @@ class Reseller_Wc_Order_Admin {
 	 * @return string The redirect URL with extra args.
 	 */
 	public function handle_bulk_actions( $redirect_to, $action, $ids ) {
+		if ( 'reseller_print_invoices' === $action ) {
+			return add_query_arg(
+				[
+					'rm_action' => 'admin_bulk_print_invoice',
+					'order_ids' => implode( ',', array_map( 'absint', $ids ) ),
+					'nonce'     => wp_create_nonce( 'rm_admin_bulk_print' ),
+				],
+				admin_url( 'admin.php' )
+			);
+		}
+
 		if ( strpos( $action, 'mark_' ) !== 0 ) {
 			return $redirect_to;
 		}
