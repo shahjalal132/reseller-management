@@ -20,3 +20,10 @@ Steadfast Webhook Order Check: Invoice=M78, OrderID=78 - 2026-04-06 19:40:14
 
 Steadfast Webhook Status Mapping: delivered -> completed - 2026-04-06 19:40:14
 
+
+--- Steadfast Webhook Request Received at 2026-04-12 15:44:23 ---
+Auth: Provided=grocoder, Saved=grocoder
+Payload: {"notification_type":"delivery_status_update","invoice":"M77","consignment_id":"ST-TEST-1776008661","status":"delivered","tracking_message":"Simulated delivery status update"}
+Processing order: 77
+Status updated to: delivered
+Success: Webhook processed (200)

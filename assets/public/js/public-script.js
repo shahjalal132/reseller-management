@@ -723,9 +723,11 @@
           // Search
           if (show && search) {
             var title = $card.find('.rm-product-title').text().toLowerCase();
+            var sku = $card.attr('data-sku') || '';
+            sku = sku.toLowerCase();
             var copyText = $card.find('.copy-btn').attr('data-copy') || '';
             copyText = copyText.toLowerCase();
-            if (title.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
+            if (title.indexOf(search) === -1 && sku.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
               show = false;
             }
           }

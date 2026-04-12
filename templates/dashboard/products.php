@@ -69,6 +69,7 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
                 $product      = wc_get_product( $product_post->ID );
                 $image_url    = get_the_post_thumbnail_url( $product_post->ID, 'large' );
                 $regular      = $product ? $product->get_regular_price() : '';
+                $sku          = $product ? $product->get_sku() : '';
                 $recommended  = get_post_meta( $product_post->ID, '_reseller_recommended_price', true );
 
                 // Gather all images
@@ -90,7 +91,11 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
                 $all_images = array_values( array_unique( $all_images ) );
 
                 // Prepare copy text
-                $copy_text = $product_post->post_title . "\n";
+                $copy_text = $product_post->post_title;
+                if ( $sku ) {
+                    $copy_text .= " ({$sku})";
+                }
+                $copy_text .= "\n";
                 if ( $regular ) {
                     $copy_text .= "Price: {$regular} TK\n";
                 }
@@ -107,7 +112,7 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
                     $product_cat_ids = [];
                 }
                 ?>
-                <article class="rm-product-card" data-categories="<?php echo esc_attr( implode( ',', $product_cat_ids ) ); ?>">
+                <article class="rm-product-card" data-categories="<?php echo esc_attr( implode( ',', $product_cat_ids ) ); ?>" data-sku="<?php echo esc_attr( $sku ); ?>">
                     <div class="rm-product-image">
                         <a href="<?php echo esc_url( add_query_arg( 'product_id', $product_post->ID ) ); ?>">
                             <?php if ( $image_url ) : ?>
