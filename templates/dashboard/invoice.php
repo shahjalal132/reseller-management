@@ -276,6 +276,19 @@ $due = $calculated_total - $paid;
                         <td><?php echo esc_html( $order->get_order_number() ); ?></td>
                     </tr>
                     <tr>
+                        <td><?php esc_html_e( 'Consignment ID:', 'reseller-management' ); ?></td>
+                        <td>
+                            <?php 
+                            $consignment_id = get_post_meta($order->get_id(), 'steadfast_consignment_id', true);
+                            if ( $consignment_id ) {
+                                echo '<strong>' . esc_html( $consignment_id ) . '</strong>';
+                            } else {
+                                echo '<span style="color:red;">' . esc_html__( 'Not Sent', 'reseller-management' ) . '</span>';
+                            }
+                            ?>
+                        </td>
+                    </tr>
+                    <tr>
                         <td><?php esc_html_e( 'Date:', 'reseller-management' ); ?></td>
                         <td><?php echo esc_html( wc_format_datetime( $order->get_date_created() ) ); ?></td>
                     </tr>
