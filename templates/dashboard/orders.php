@@ -202,8 +202,14 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                     <td class="rm-col-courier" data-label="<?php esc_attr_e( 'Courier', 'reseller-management' ); ?>">
                         <div class="rm-courier-info">
                             <?php 
+                            $tracking_link   = (string) $order->get_meta( '_rm_tracking_link', true );
                             $consignment_id = $order->get_meta( '_steadfast_consignment_id' );
-                            if ( $consignment_id ) : ?>
+                            if ( ! empty( $tracking_link ) ) : ?>
+                                <span class="rm-courier-name"><?php esc_html_e( 'Tracking', 'reseller-management' ); ?></span>
+                                <a href="<?php echo esc_url( $tracking_link ); ?>" target="_blank" rel="noopener noreferrer" class="rm-courier-link">
+                                    <?php esc_html_e( 'Track Shipment', 'reseller-management' ); ?>
+                                </a>
+                            <?php elseif ( $consignment_id ) : ?>
                                 <span class="rm-courier-name"><?php esc_html_e( 'Steadfast', 'reseller-management' ); ?></span>
                                 <a href="<?php echo esc_url( 'https://steadfast.com.bd/t/' . $consignment_id ); ?>" target="_blank" class="rm-courier-link">
                                     <?php echo esc_html( $consignment_id ); ?>

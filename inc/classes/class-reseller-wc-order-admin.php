@@ -19,12 +19,16 @@ class Reseller_Wc_Order_Admin {
 		add_action( 'manage_shop_order_custom_column', [ $this, 'render_reseller_column' ], 20, 2 );
 		add_filter( 'manage_edit-shop_order_columns', [ $this, 'add_print_invoice_column' ], 25 );
 		add_action( 'manage_shop_order_custom_column', [ $this, 'render_print_invoice_column' ], 25, 2 );
+		add_filter( 'manage_edit-shop_order_columns', [ $this, 'add_tracking_link_column' ], 26 );
+		add_action( 'manage_shop_order_custom_column', [ $this, 'render_tracking_link_column' ], 26, 2 );
 
 		// High-Performance Order Storage (HPOS)
 		add_filter( 'manage_woocommerce_page_wc-orders_columns', [ $this, 'add_reseller_column' ], 20 );
 		add_action( 'manage_woocommerce_page_wc-orders_custom_column', [ $this, 'render_reseller_column_hpos' ], 20, 2 );
 		add_filter( 'manage_woocommerce_page_wc-orders_columns', [ $this, 'add_print_invoice_column' ], 25 );
 		add_action( 'manage_woocommerce_page_wc-orders_custom_column', [ $this, 'render_print_invoice_column_hpos' ], 25, 2 );
+		add_filter( 'manage_woocommerce_page_wc-orders_columns', [ $this, 'add_tracking_link_column' ], 26 );
+		add_action( 'manage_woocommerce_page_wc-orders_custom_column', [ $this, 'render_tracking_link_column_hpos' ], 26, 2 );
 		
 		// Rename meta keys for display
 		add_filter( 'woocommerce_order_item_display_meta_key', [ $this, 'rename_order_item_meta_keys' ], 10, 3 );
@@ -38,6 +42,10 @@ class Reseller_Wc_Order_Admin {
 		add_filter( 'handle_bulk_actions-edit-shop_order', [ $this, 'handle_bulk_actions' ], 20, 3 );
 		add_filter( 'handle_bulk_actions-woocommerce_page_wc-orders', [ $this, 'handle_bulk_actions' ], 20, 3 );
 		add_action( 'admin_notices', [ $this, 'bulk_admin_notices' ] );
+		add_action( 'admin_init', [ $this, 'maybe_save_order_tracking_link' ] );
+		add_action( 'admin_post_rm_save_order_tracking_link', [ $this, 'handle_save_order_tracking_link' ] );
+		add_action( 'wp_ajax_rm_save_order_tracking', [ $this, 'ajax_save_order_tracking' ] );
+		add_action( 'admin_footer', [ $this, 'print_order_tracking_save_script' ], 99 );
 	}
 
 	/**
@@ -92,6 +100,34 @@ class Reseller_Wc_Order_Admin {
 
 		if ( ! $inserted ) {
 			$new_columns['rm_print_invoice'] = __( 'Invoice', 'reseller-management' );
+		}
+
+		return $new_columns;
+	}
+
+	/**
+	 * Add "Tracking Link" column for order list (HPOS + legacy lists).
+	 *
+	 * @param array $columns Existing columns.
+	 * @return array
+	 */
+	public function add_tracking_link_column( $columns ) {
+		if ( isset( $columns['rm_tracking_link'] ) ) {
+			return $columns;
+		}
+
+		$new_columns = [];
+
+		foreach ( $columns as $key => $label ) {
+			$new_columns[ $key ] = $label;
+
+			if ( 'rm_print_invoice' === $key ) {
+				$new_columns['rm_tracking_link'] = __( 'Tracking Link', 'reseller-management' );
+			}
+		}
+
+		if ( ! isset( $new_columns['rm_tracking_link'] ) ) {
+			$new_columns['rm_tracking_link'] = __( 'Tracking Link', 'reseller-management' );
 		}
 
 		return $new_columns;
@@ -186,6 +222,154 @@ class Reseller_Wc_Order_Admin {
 			),
 			esc_html__( 'Print', 'reseller-management' )
 		);
+	}
+
+	/**
+	 * Render tracking link column (Traditional orders).
+	 *
+	 * @param string $column  Column key.
+	 * @param int    $post_id Post ID.
+	 * @return void
+	 */
+	public function render_tracking_link_column( $column, $post_id ) {
+		if ( 'rm_tracking_link' !== $column ) {
+			return;
+		}
+
+		$order = wc_get_order( $post_id );
+		if ( ! $order ) {
+			echo '&mdash;';
+			return;
+		}
+
+		$this->render_tracking_link_form( $order );
+	}
+
+	/**
+	 * Render tracking link column (HPOS).
+	 *
+	 * @param string    $column Column key.
+	 * @param \WC_Order $order  Order object.
+	 * @return void
+	 */
+	public function render_tracking_link_column_hpos( $column, $order ) {
+		if ( 'rm_tracking_link' !== $column ) {
+			return;
+		}
+
+		if ( ! $order instanceof \WC_Order ) {
+			echo '&mdash;';
+			return;
+		}
+
+		$this->render_tracking_link_form( $order );
+	}
+
+	/**
+	 * Render tracking link update form in admin order list.
+	 *
+	 * @param \WC_Order $order Order object.
+	 * @return void
+	 */
+	private function render_tracking_link_form( $order ) {
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			echo '&mdash;';
+			return;
+		}
+
+		$order_id      = $order->get_id();
+		$tracking_link = (string) $order->get_meta( '_rm_tracking_link', true );
+		$nonce         = wp_create_nonce( 'rm_save_order_tracking_link_' . $order_id );
+
+		printf(
+			'<div class="rm-tracking-row" style="display:flex;gap:6px;align-items:center;max-width:320px;">
+				<input type="url" value="%3$s" class="rm-tracking-link-input regular-text" placeholder="%4$s" autocomplete="off" style="min-width:170px;max-width:220px;" />
+				<button type="button" class="button button-small rm-save-tracking-btn" data-order-id="%1$d" data-nonce="%2$s">%5$s</button>
+			</div>',
+			(int) $order_id,
+			esc_attr( $nonce ),
+			esc_attr( $tracking_link ),
+			esc_attr__( 'https://tracking.example/abc', 'reseller-management' ),
+			esc_html__( 'Save', 'reseller-management' )
+		);
+	}
+
+	/**
+	 * Inline script: POST tracking link via admin-ajax (WC orders list table uses a GET form — nested submit never reached POST handler).
+	 *
+	 * @return void
+	 */
+	public function print_order_tracking_save_script() {
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			return;
+		}
+		$allowed = false;
+		if ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( $screen && in_array( $screen->id, [ 'woocommerce_page_wc-orders', 'edit-shop_order' ], true ) ) {
+				$allowed = true;
+			}
+		}
+		if ( ! $allowed && isset( $_GET['page'] ) && 'wc-orders' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+			$allowed = true;
+		}
+		if ( ! $allowed && isset( $_GET['post_type'] ) && 'shop_order' === sanitize_text_field( wp_unslash( $_GET['post_type'] ) ) ) {
+			$allowed = true;
+		}
+		if ( ! $allowed ) {
+			return;
+		}
+		$url = admin_url( 'admin-ajax.php' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<script>(function(){var u=' . wp_json_encode( $url ) . ";document.addEventListener('click',function(e){var b=e.target.closest('.rm-save-tracking-btn');if(!b)return;e.preventDefault();e.stopPropagation();var w=b.closest('.rm-tracking-row'),inp=w?w.querySelector('.rm-tracking-link-input'):null,id=b.getAttribute('data-order-id'),n=b.getAttribute('data-nonce');if(!inp||!id)return;b.disabled=true;var fd=new FormData();fd.append('action','rm_save_order_tracking');fd.append('nonce',n);fd.append('order_id',id);fd.append('tracking_link',inp.value);fetch(u,{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json();}).then(function(d){b.disabled=false;if(d.success)return;var m=d.data&&d.data.message?d.data.message:'Error';window.alert(m);}).catch(function(){b.disabled=false;});});})();</script>\n";
+	}
+
+	/**
+	 * AJAX: save order tracking link (orders list screen).
+	 *
+	 * @return void
+	 */
+	public function ajax_save_order_tracking() {
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You do not have permission to edit shop orders.', 'reseller-management' ) ], 403 );
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$nonce    = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+
+		if ( ! $order_id || ! wp_verify_nonce( $nonce, 'rm_save_order_tracking_link_' . $order_id ) ) {
+			wp_send_json_error( [ 'message' => __( 'Invalid request.', 'reseller-management' ) ], 400 );
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			wp_send_json_error( [ 'message' => __( 'Order not found.', 'reseller-management' ) ], 404 );
+		}
+
+		$tracking_input = isset( $_POST['tracking_link'] ) ? wp_unslash( $_POST['tracking_link'] ) : '';
+		$tracking_link  = esc_url_raw( $tracking_input );
+
+		if ( '' === $tracking_link ) {
+			$order->delete_meta_data( '_rm_tracking_link' );
+		} else {
+			$order->update_meta_data( '_rm_tracking_link', $tracking_link );
+		}
+		$order->save();
+
+		wp_send_json_success( [ 'message' => __( 'Tracking link saved.', 'reseller-management' ) ] );
+	}
+
+	/**
+	 * Save tracking link when submitted from orders list parent form.
+	 *
+	 * @return void
+	 */
+	public function maybe_save_order_tracking_link() {
+		if ( 'POST' !== $_SERVER['REQUEST_METHOD'] || empty( $_POST['rm_save_tracking_order_id'] ) ) {
+			return;
+		}
+
+		$this->handle_save_order_tracking_link();
 	}
 
 	/**
@@ -411,5 +595,61 @@ class Reseller_Wc_Order_Admin {
 				)
 			)
 		);
+	}
+
+	/**
+	 * Save tracking link from admin order list.
+	 *
+	 * @return void
+	 */
+	public function handle_save_order_tracking_link() {
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit shop orders.', 'reseller-management' ) );
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		if ( ! $order_id && isset( $_POST['rm_save_tracking_order_id'] ) ) {
+			$order_id = absint( wp_unslash( $_POST['rm_save_tracking_order_id'] ) );
+		}
+
+		$nonce = '';
+		if ( isset( $_POST['rm_tracking_nonce'] ) && is_array( $_POST['rm_tracking_nonce'] ) && $order_id ) {
+			$nonce = sanitize_text_field( wp_unslash( $_POST['rm_tracking_nonce'][ $order_id ] ?? '' ) );
+		} elseif ( isset( $_POST['rm_tracking_nonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_POST['rm_tracking_nonce'] ) );
+		}
+
+		if ( ! $order_id || ! wp_verify_nonce( $nonce, 'rm_save_order_tracking_link_' . $order_id ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'reseller-management' ) );
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			wp_die( esc_html__( 'Order not found.', 'reseller-management' ) );
+		}
+
+		$tracking_input = '';
+		if ( isset( $_POST['tracking_link'] ) && is_array( $_POST['tracking_link'] ) && $order_id ) {
+			$tracking_input = wp_unslash( $_POST['tracking_link'][ $order_id ] ?? '' );
+		} elseif ( isset( $_POST['tracking_link'] ) ) {
+			$tracking_input = wp_unslash( $_POST['tracking_link'] );
+		}
+		$tracking_link = esc_url_raw( $tracking_input );
+
+		if ( empty( $tracking_link ) ) {
+			$order->delete_meta_data( '_rm_tracking_link' );
+		} else {
+			$order->update_meta_data( '_rm_tracking_link', $tracking_link );
+		}
+
+		$order->save();
+
+		$redirect = wp_get_referer();
+		if ( ! $redirect ) {
+			$redirect = admin_url( 'admin.php?page=wc-orders' );
+		}
+
+		wp_safe_redirect( $redirect );
+		exit;
 	}
 }
