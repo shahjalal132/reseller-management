@@ -708,8 +708,9 @@
 
 
       function filterProducts() {
-        var limit = $('.rm-filter-limit').val();
-        var search = $('.rm-filter-search').val().toLowerCase().trim();
+        var limit = $('.rm-filter-limit').val() || 'all';
+        var searchInputVal = $('.rm-filter-search').val();
+        var search = (typeof searchInputVal === 'string' ? searchInputVal : '').toLowerCase().trim();
         var cat = $catSelect.val();
         var subCat = $subCatSelect.val();
         var subSubCat = $subSubCatSelect.val();
