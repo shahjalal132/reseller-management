@@ -282,9 +282,12 @@ class Reseller_Wc_Order_Admin {
 		$nonce         = wp_create_nonce( 'rm_save_order_tracking_link_' . $order_id );
 
 		printf(
-			'<div class="rm-tracking-row" style="display:flex;gap:6px;align-items:center;max-width:320px;">
-				<input type="url" value="%3$s" class="rm-tracking-link-input regular-text" placeholder="%4$s" autocomplete="off" style="min-width:170px;max-width:220px;" />
-				<button type="button" class="button button-small rm-save-tracking-btn" data-order-id="%1$d" data-nonce="%2$s">%5$s</button>
+			'<div class="rm-tracking-row">
+				<input type="url" value="%3$s" class="rm-tracking-link-input regular-text" placeholder="%4$s" autocomplete="off" />
+				<div class="rm-tracking-actions">
+					<button type="button" class="button button-small rm-save-tracking-btn" data-order-id="%1$d" data-nonce="%2$s">%5$s</button>
+					<span class="rm-tracking-save-message" aria-live="polite"></span>
+				</div>
 			</div>',
 			(int) $order_id,
 			esc_attr( $nonce ),
@@ -320,8 +323,22 @@ class Reseller_Wc_Order_Admin {
 			return;
 		}
 		$url = admin_url( 'admin-ajax.php' );
+		$error_message = __( 'Could not save tracking link. Please try again.', 'reseller-management' );
+		$saving_text   = __( 'Saving...', 'reseller-management' );
+		$saved_text    = __( 'Saved', 'reseller-management' );
+		$failed_text   = __( 'Failed', 'reseller-management' );
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<script>(function(){var u=' . wp_json_encode( $url ) . ";document.addEventListener('click',function(e){var b=e.target.closest('.rm-save-tracking-btn');if(!b)return;e.preventDefault();e.stopPropagation();var w=b.closest('.rm-tracking-row'),inp=w?w.querySelector('.rm-tracking-link-input'):null,id=b.getAttribute('data-order-id'),n=b.getAttribute('data-nonce');if(!inp||!id)return;b.disabled=true;var fd=new FormData();fd.append('action','rm_save_order_tracking');fd.append('nonce',n);fd.append('order_id',id);fd.append('tracking_link',inp.value);fetch(u,{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json();}).then(function(d){b.disabled=false;if(d.success)return;var m=d.data&&d.data.message?d.data.message:'Error';window.alert(m);}).catch(function(){b.disabled=false;});});})();</script>\n";
+		echo '<style>
+			th.column-rm_tracking_link, td.column-rm_tracking_link { width: 260px; min-width: 220px; }
+			.rm-tracking-row { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
+			.rm-tracking-row .rm-tracking-link-input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+			.rm-tracking-row .rm-tracking-actions { display: flex; align-items: center; gap: 6px; }
+			.rm-tracking-row .rm-tracking-save-message { font-size: 11px; color: #50575e; }
+			.rm-tracking-row .rm-tracking-save-message.is-success { color: #0a7f2e; }
+			.rm-tracking-row .rm-tracking-save-message.is-error { color: #b32d2e; }
+		</style>' . "\n";
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<script>(function(){var u=' . wp_json_encode( $url ) . ',saving=' . wp_json_encode( $saving_text ) . ',saved=' . wp_json_encode( $saved_text ) . ',failed=' . wp_json_encode( $failed_text ) . ',fallbackErr=' . wp_json_encode( $error_message ) . ";function setStatus(el,msg,type){if(!el)return;el.textContent=msg||'';el.classList.remove('is-success','is-error');if(type){el.classList.add(type==='success'?'is-success':'is-error');}}function isTrackingTarget(t){return !!(t&&t.closest&&t.closest('.rm-tracking-row'));}document.addEventListener('mousedown',function(e){if(isTrackingTarget(e.target)){e.stopPropagation();}},true);document.addEventListener('dblclick',function(e){if(isTrackingTarget(e.target)){e.stopPropagation();}},true);document.addEventListener('click',function(e){var b=e.target.closest('.rm-save-tracking-btn');if(b){e.preventDefault();e.stopPropagation();var w=b.closest('.rm-tracking-row'),inp=w?w.querySelector('.rm-tracking-link-input'):null,msg=w?w.querySelector('.rm-tracking-save-message'):null,id=b.getAttribute('data-order-id'),n=b.getAttribute('data-nonce');if(!inp||!id)return;var before=b.textContent;b.disabled=true;b.textContent=saving;setStatus(msg,'');var fd=new FormData();fd.append('action','rm_save_order_tracking');fd.append('nonce',n||'');fd.append('order_id',id);fd.append('tracking_link',(inp.value||'').trim());fetch(u,{method:'POST',credentials:'same-origin',body:fd}).then(function(r){var ct=r.headers.get('content-type')||'';if(ct.indexOf('application/json')===-1){return r.text().then(function(){throw new Error(fallbackErr);});}return r.json();}).then(function(d){b.disabled=false;b.textContent=before;if(d&&d.success){if(d.data&&typeof d.data.tracking_link==='string'){inp.value=d.data.tracking_link;}setStatus(msg,saved,'success');window.setTimeout(function(){setStatus(msg,'');},2500);return;}var m=d&&d.data&&d.data.message?d.data.message:fallbackErr;setStatus(msg,failed,'error');window.alert(m);}).catch(function(err){b.disabled=false;b.textContent=before;setStatus(msg,failed,'error');window.alert((err&&err.message)?err.message:fallbackErr);});return;}if(isTrackingTarget(e.target)){e.stopPropagation();}},true);})();</script>\n";
 	}
 
 	/**
@@ -347,7 +364,7 @@ class Reseller_Wc_Order_Admin {
 		}
 
 		$tracking_input = isset( $_POST['tracking_link'] ) ? wp_unslash( $_POST['tracking_link'] ) : '';
-		$tracking_link  = esc_url_raw( $tracking_input );
+		$tracking_link  = $this->sanitize_tracking_link( $tracking_input );
 
 		if ( '' === $tracking_link ) {
 			$order->delete_meta_data( '_rm_tracking_link' );
@@ -356,7 +373,12 @@ class Reseller_Wc_Order_Admin {
 		}
 		$order->save();
 
-		wp_send_json_success( [ 'message' => __( 'Tracking link saved.', 'reseller-management' ) ] );
+		wp_send_json_success(
+			[
+				'message'       => __( 'Tracking link saved.', 'reseller-management' ),
+				'tracking_link' => $tracking_link,
+			]
+		);
 	}
 
 	/**
@@ -634,7 +656,7 @@ class Reseller_Wc_Order_Admin {
 		} elseif ( isset( $_POST['tracking_link'] ) ) {
 			$tracking_input = wp_unslash( $_POST['tracking_link'] );
 		}
-		$tracking_link = esc_url_raw( $tracking_input );
+		$tracking_link = $this->sanitize_tracking_link( $tracking_input );
 
 		if ( empty( $tracking_link ) ) {
 			$order->delete_meta_data( '_rm_tracking_link' );
@@ -651,5 +673,26 @@ class Reseller_Wc_Order_Admin {
 
 		wp_safe_redirect( $redirect );
 		exit;
+	}
+
+	/**
+	 * Sanitize and normalize tracking link before saving.
+	 *
+	 * @param string $tracking_input Raw tracking input.
+	 * @return string
+	 */
+	private function sanitize_tracking_link( $tracking_input ) {
+		$tracking_input = trim( (string) $tracking_input );
+
+		if ( '' === $tracking_input ) {
+			return '';
+		}
+
+		// Allow users to paste domains without a scheme.
+		if ( ! preg_match( '#^[a-z][a-z0-9+\-.]*://#i', $tracking_input ) ) {
+			$tracking_input = 'https://' . ltrim( $tracking_input, '/' );
+		}
+
+		return esc_url_raw( $tracking_input, [ 'http', 'https' ] );
 	}
 }
