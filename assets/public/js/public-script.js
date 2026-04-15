@@ -318,6 +318,13 @@
         } else {
           var html = '';
           orderItems.forEach((item, index) => {
+            if (item.variants.length > 0 && (!item.selected_variant || item.selected_variant == 0)) {
+              item.selected_variant = item.variants[0].id;
+              item.id = item.variants[0].id;
+              item.price = parseFloat(item.variants[0].price || item.price || 0);
+              item.resale_price = parseFloat(item.variants[0].recommended_price || item.resale_price || item.price || 0);
+            }
+
             html += '<tr data-index="' + index + '">';
             html += '<td>' + (index + 1) + '</td>';
             html += '<td><div class="rm-item-product"><img src="' + item.image + '" alt=""><span>' + item.name + '</span></div></td>';
@@ -357,6 +364,7 @@
         var $opt = $(this).find('option:selected');
 
         orderItems[index].selected_variant = variantId;
+        orderItems[index].id = parseInt(variantId, 10) || orderItems[index].id;
         orderItems[index].price = parseFloat($opt.data('price'));
         orderItems[index].resale_price = parseFloat($opt.data('recommended'));
 
@@ -708,8 +716,9 @@
 
 
       function filterProducts() {
-        var limit = $('.rm-filter-limit').val();
-        var search = $('.rm-filter-search').val().toLowerCase().trim();
+        var limit = $('.rm-filter-limit').val() || 'all';
+        var searchInputVal = $('.rm-filter-search').val();
+        var search = (typeof searchInputVal === 'string' ? searchInputVal : '').toLowerCase().trim();
         var cat = $catSelect.val();
         var subCat = $subCatSelect.val();
         var subSubCat = $subSubCatSelect.val();
@@ -723,9 +732,11 @@
           // Search
           if (show && search) {
             var title = $card.find('.rm-product-title').text().toLowerCase();
+            var sku = $card.attr('data-sku') || '';
+            sku = sku.toLowerCase();
             var copyText = $card.find('.copy-btn').attr('data-copy') || '';
             copyText = copyText.toLowerCase();
-            if (title.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
+            if (title.indexOf(search) === -1 && sku.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
               show = false;
             }
           }

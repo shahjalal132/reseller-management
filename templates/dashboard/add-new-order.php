@@ -80,13 +80,16 @@ if ( $is_edit ) {
     $p_id = absint( $_GET['product_id'] );
     $qty  = isset( $_GET['qty'] ) ? absint( $_GET['qty'] ) : 1;
     $product = wc_get_product( $p_id );
+
     if ( $product ) {
+        $display_product = $product;
         $recommended_price = $product->get_meta( '_reseller_recommended_price' );
         if ( empty( $recommended_price ) ) {
             $recommended_price = $product->get_price();
         }
 
         $variants = [];
+        $selected_variant = 0;
         if ( $product->is_type( 'variable' ) ) {
             foreach ( $product->get_available_variations() as $variation_data ) {
                 $v_id = $variation_data['variation_id'];
@@ -103,19 +106,54 @@ if ( $is_edit ) {
                     'recommended_price' => (float) $v_recommended,
                 ];
             }
+        } elseif ( $product->is_type( 'variation' ) ) {
+            $selected_variant = (int) $product->get_id();
+            $parent_product = wc_get_product( $product->get_parent_id() );
+
+            if ( $parent_product && $parent_product->is_type( 'variable' ) ) {
+                $display_product = $parent_product;
+                foreach ( $parent_product->get_available_variations() as $variation_data ) {
+                    $v_id = $variation_data['variation_id'];
+                    $variation = wc_get_product( $v_id );
+                    if ( ! $variation ) {
+                        continue;
+                    }
+                    $v_recommended = $variation->get_meta( '_reseller_recommended_price' );
+                    if ( ! $v_recommended ) {
+                        $v_recommended = $variation->get_price();
+                    }
+
+                    $variants[] = [
+                        'id'                => $v_id,
+                        'attributes'        => $variation_data['attributes'],
+                        'price'             => (float) $variation->get_price(),
+                        'recommended_price' => (float) $v_recommended,
+                    ];
+                }
+            }
+        }
+
+        if ( $selected_variant > 0 && ! empty( $variants ) ) {
+            foreach ( $variants as $variant_row ) {
+                if ( (int) $variant_row['id'] === (int) $selected_variant ) {
+                    $recommended_price = (float) $variant_row['recommended_price'];
+                    break;
+                }
+            }
         }
 
         $prefilled_items[] = [
-            'id'                => $product->get_id(),
-            'name'              => $product->get_name(),
-            'image'             => wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ),
+            'id'                => $selected_variant > 0 ? $selected_variant : $product->get_id(),
+            'name'              => $display_product->get_name(),
+            'image'             => wp_get_attachment_image_url( $display_product->get_image_id(), 'thumbnail' ),
             'price'             => (float) $product->get_price(),
             'resale_price'      => (float) $recommended_price,
             'recommended_price' => (float) $recommended_price,
             'quantity'          => $qty,
             'variants'          => $variants,
-            'selected_variant'  => 0,
+            'selected_variant'  => $selected_variant,
         ];
+
     }
 }
 

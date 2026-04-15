@@ -15,13 +15,101 @@ if ( ! $product ) {
     return;
 }
 
-$product_post = get_post( $product_id );
-$image_url    = get_the_post_thumbnail_url( $product_id, 'large' );
-$regular      = $product->get_regular_price();
-$recommended  = get_post_meta( $product_id, '_reseller_recommended_price', true );
+$is_variation      = $product->is_type( 'variation' );
+$base_product_id   = $is_variation ? $product->get_parent_id() : $product_id;
+$base_product      = $is_variation ? wc_get_product( $base_product_id ) : $product;
+$product_post      = get_post( $product_id );
+$base_product_post = get_post( $base_product_id );
+
+if ( ! $product_post ) {
+    $product_post = $base_product_post;
+}
+
+$image_id = (int) $product->get_image_id();
+if ( ! $image_id && $base_product ) {
+    $image_id = (int) $base_product->get_image_id();
+}
+$image_url   = $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '';
+$regular     = $product->get_regular_price();
+$recommended = get_post_meta( $product_id, '_reseller_recommended_price', true );
+
+if ( '' === $recommended || null === $recommended ) {
+    $recommended = get_post_meta( $base_product_id, '_reseller_recommended_price', true );
+}
+
+$variation_choices      = [];
+$selected_variation_id  = (int) $product_id;
+
+if ( $base_product && $base_product->is_type( 'variable' ) ) {
+    foreach ( $base_product->get_available_variations() as $variation_data ) {
+        $variation_id = (int) ( $variation_data['variation_id'] ?? 0 );
+        $variation    = wc_get_product( $variation_id );
+        if ( ! $variation ) {
+            continue;
+        }
+
+        $variation_regular = $variation->get_regular_price();
+        $variation_recommended = $variation->get_meta( '_reseller_recommended_price' );
+        if ( '' === $variation_recommended || null === $variation_recommended ) {
+            $variation_recommended = $variation->get_price();
+        }
+
+        $variation_label = wc_get_formatted_variation( $variation, true, false, true );
+        if ( ! $variation_label ) {
+            $label_parts = [];
+            $raw_attrs   = $variation_data['attributes'] ?? [];
+
+            foreach ( $raw_attrs as $raw_key => $raw_value ) {
+                if ( '' === (string) $raw_value ) {
+                    continue;
+                }
+
+                $taxonomy = str_replace( 'attribute_', '', (string) $raw_key );
+                $attr_label = wc_attribute_label( $taxonomy );
+                if ( ! $attr_label || $attr_label === $taxonomy ) {
+                    $attr_label = ucwords( str_replace( [ 'pa_', '_' ], [ '', ' ' ], $taxonomy ) );
+                }
+
+                $display_value = (string) $raw_value;
+                if ( taxonomy_exists( $taxonomy ) ) {
+                    $term = get_term_by( 'slug', (string) $raw_value, $taxonomy );
+                    if ( $term && ! is_wp_error( $term ) ) {
+                        $display_value = $term->name;
+                    }
+                }
+
+                $label_parts[] = sprintf( '%s: %s', $attr_label, $display_value );
+            }
+
+            if ( ! empty( $label_parts ) ) {
+                $variation_label = implode( ', ', $label_parts );
+            } else {
+                $variation_label = sprintf(
+                    /* translators: %d: variation ID. */
+                    __( 'Variation #%d', 'reseller-management' ),
+                    $variation_id
+                );
+            }
+        }
+
+        $variation_choices[] = [
+            'id'          => $variation_id,
+            'label'       => wp_strip_all_tags( $variation_label ),
+            'regular'     => $variation_regular ? $variation_regular : '0',
+            'recommended' => $variation_recommended ? $variation_recommended : '0',
+        ];
+    }
+
+    if ( ! $is_variation && ! empty( $variation_choices ) ) {
+        $selected_variation_id = (int) $variation_choices[0]['id'];
+    }
+}
 
 // Gallery images
 $attachment_ids = $product->get_gallery_image_ids();
+if ( empty( $attachment_ids ) && $base_product ) {
+    $attachment_ids = $base_product->get_gallery_image_ids();
+}
 $all_images    = [];
 if ( $image_url ) {
     $all_images[] = $image_url;
@@ -35,7 +123,12 @@ foreach ( $attachment_ids as $attachment_id ) {
 $all_images = array_unique( $all_images );
 
 // Prepare copy text
-$copy_text = $product_post->post_title . "\n";
+$display_title = $product->get_name();
+if ( ! $display_title && $product_post ) {
+    $display_title = $product_post->post_title;
+}
+
+$copy_text = $display_title . "\n";
 if ( $product->get_sku() ) {
     $copy_text .= "SKU: " . $product->get_sku() . "\n";
 }
@@ -45,7 +138,10 @@ if ( $regular ) {
 if ( $recommended ) {
     $copy_text .= "Customer / Retail Price : {$recommended}\n";
 }
-$desc = wp_strip_all_tags( $product_post->post_content );
+$desc = wp_strip_all_tags( $product_post->post_content ?? '' );
+if ( ! $desc && $base_product_post ) {
+    $desc = wp_strip_all_tags( $base_product_post->post_content );
+}
 if ( $desc ) {
     $copy_text .= "\n" . $desc;
 }
@@ -65,7 +161,7 @@ $back_url = remove_query_arg( 'product_id' );
         <div class="rm-single-product-images">
             <div class="rm-main-image">
                 <?php if ( $image_url ) : ?>
-                    <img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $product_post->post_title ); ?>" id="rm-main-product-img">
+                    <img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $display_title ); ?>" id="rm-main-product-img">
                 <?php else : ?>
                     <div class="rm-product-img-placeholder"></div>
                 <?php endif; ?>
@@ -82,7 +178,7 @@ $back_url = remove_query_arg( 'product_id' );
         </div>
 
         <div class="rm-single-product-details">
-            <h1 class="rm-product-title"><?php echo esc_html( $product_post->post_title ); ?></h1>
+            <h1 class="rm-product-title"><?php echo esc_html( $display_title ); ?></h1>
             <?php if ( $product->get_sku() ) : ?>
                 <div class="rm-product-sku" style="margin-bottom: 10px;">
                     <span class="rm-label"><?php esc_html_e( 'SKU:', 'reseller-management' ); ?></span>
@@ -91,14 +187,78 @@ $back_url = remove_query_arg( 'product_id' );
             <?php endif; ?>
             
             <div class="rm-product-price-box">
-                <div class="rm-price-item">
-                    <span class="rm-label"><?php esc_html_e( 'Price:', 'reseller-management' ); ?></span>
-                    <span class="rm-value"><?php echo esc_html( $regular ? $regular : '0' ); ?> TK</span>
-                </div>
-                <div class="rm-price-item recommended">
-                    <span class="rm-label"><?php esc_html_e( 'Customer / Retail Price:', 'reseller-management' ); ?></span>
-                    <span class="rm-value"><?php echo esc_html( $recommended ? $recommended : '0' ); ?> TK</span>
-                </div>
+
+                <?php if ( $base_product && $base_product->is_type( 'variable' ) ) : ?>
+                    <?php
+                    $selected_choice = null;
+                    foreach ( $variation_choices as $variation_choice ) {
+                        if ( (int) $variation_choice['id'] === (int) $selected_variation_id ) {
+                            $selected_choice = $variation_choice;
+                            break;
+                        }
+                    }
+                    if ( ! $selected_choice && ! empty( $variation_choices ) ) {
+                        $selected_choice = $variation_choices[0];
+                    }
+                    ?>
+                    <div class="rm-price-item">
+                        <span class="rm-label"><?php esc_html_e( 'Variation & Price:', 'reseller-management' ); ?></span>
+                        <select id="rm-variation-price-select" class="rm-value" style="min-width: 260px; width: 100%; max-width: 420px;">
+                            <?php foreach ( $variation_choices as $variation_choice ) : ?>
+                                <option
+                                    value="<?php echo esc_attr( (string) $variation_choice['id'] ); ?>"
+                                    data-label="<?php echo esc_attr( $variation_choice['label'] ); ?>"
+                                    data-regular="<?php echo esc_attr( (string) $variation_choice['regular'] ); ?>"
+                                    data-recommended="<?php echo esc_attr( (string) $variation_choice['recommended'] ); ?>"
+                                    <?php selected( (int) $variation_choice['id'], (int) $selected_variation_id ); ?>
+                                >
+                                    <?php echo esc_html( $variation_choice['label'] ); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="rm-price-item">
+                        <span class="rm-label" id="rm-selected-variation-label"><?php echo esc_html( $selected_choice['label'] ?? '' ); ?>:</span>
+                        <span class="rm-value" id="rm-selected-variation-regular"><?php echo esc_html( $selected_choice['regular'] ?? '0' ); ?> TK</span>
+                    </div>
+                    <div class="rm-price-item recommended">
+                        <span class="rm-label"><?php esc_html_e( 'Customer / Retail Price:', 'reseller-management' ); ?></span>
+                        <span class="rm-value" id="rm-selected-variation-recommended"><?php echo esc_html( $selected_choice['recommended'] ?? '0' ); ?> TK</span>
+                    </div>
+                <?php elseif ( $base_product && $base_product->is_type( 'variation' ) ) : ?>
+                    <div class="rm-price-item">
+                        <span class="rm-label"><?php esc_html_e( 'Variation:', 'reseller-management' ); ?></span>
+                        <span class="rm-value"><?php echo esc_html( $display_title ); ?></span>
+                    </div>
+                    <div class="rm-price-item">
+                        <span class="rm-label"><?php esc_html_e( 'Price:', 'reseller-management' ); ?></span>
+                        <span class="rm-value"><?php echo esc_html( $regular ? $regular : '0' ); ?> TK</span>
+                    </div>
+                    <div class="rm-price-item recommended">
+                        <span class="rm-label"><?php esc_html_e( 'Customer / Retail Price:', 'reseller-management' ); ?></span>
+                        <span class="rm-value"><?php echo esc_html( $recommended ? $recommended : '0' ); ?> TK</span>
+                    </div>
+                <?php elseif ( ! empty( $variation_choices ) ) : ?>
+                    <?php foreach ( $variation_choices as $variation_choice ) : ?>
+                        <div class="rm-price-item">
+                            <span class="rm-label"><?php echo esc_html( $variation_choice['label'] ); ?>:</span>
+                            <span class="rm-value"><?php echo esc_html( $variation_choice['regular'] ); ?> TK</span>
+                        </div>
+                        <div class="rm-price-item recommended">
+                            <span class="rm-label"><?php esc_html_e( 'Customer / Retail Price:', 'reseller-management' ); ?></span>
+                            <span class="rm-value"><?php echo esc_html( $variation_choice['recommended'] ); ?> TK</span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <div class="rm-price-item">
+                        <span class="rm-label"><?php esc_html_e( 'Price:', 'reseller-management' ); ?></span>
+                        <span class="rm-value"><?php echo esc_html( $regular ? $regular : '0' ); ?> TK</span>
+                    </div>
+                    <div class="rm-price-item recommended">
+                        <span class="rm-label"><?php esc_html_e( 'Customer / Retail Price:', 'reseller-management' ); ?></span>
+                        <span class="rm-value"><?php echo esc_html( $recommended ? $recommended : '0' ); ?> TK</span>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="rm-product-order-box">
@@ -127,6 +287,10 @@ $back_url = remove_query_arg( 'product_id' );
             </div>
 
             <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const variationSelect = document.getElementById('rm-variation-price-select');
+                });
+
                 function updateQty(delta) {
                     const input = document.getElementById('rm-product-qty');
                     let val = parseInt(input.value) + delta;
@@ -137,16 +301,45 @@ $back_url = remove_query_arg( 'product_id' );
                 function updateBtnLink() {
                     const qty = document.getElementById('rm-product-qty').value;
                     const link = document.getElementById('rm-order-now-link');
+                    const variationSelect = document.getElementById('rm-variation-price-select');
                     const url = new URL(link.href);
                     url.searchParams.set('qty', qty);
+                    if (variationSelect && variationSelect.value) {
+                        url.searchParams.set('product_id', variationSelect.value);
+
+                        const selectedOpt = variationSelect.options[variationSelect.selectedIndex];
+                        const selectedLabelEl = document.getElementById('rm-selected-variation-label');
+                        const selectedRegularEl = document.getElementById('rm-selected-variation-regular');
+                        const selectedRecommendedEl = document.getElementById('rm-selected-variation-recommended');
+
+                        if (selectedOpt && selectedLabelEl && selectedRegularEl && selectedRecommendedEl) {
+                            selectedLabelEl.textContent = (selectedOpt.getAttribute('data-label') || '') + ':';
+                            selectedRegularEl.textContent = (selectedOpt.getAttribute('data-regular') || '0') + ' TK';
+                            selectedRecommendedEl.textContent = (selectedOpt.getAttribute('data-recommended') || '0') + ' TK';
+                        }
+                    }
                     link.href = url.toString();
                 }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    const variationSelect = document.getElementById('rm-variation-price-select');
+                    if (variationSelect) {
+                        variationSelect.addEventListener('change', updateBtnLink);
+                    }
+                    updateBtnLink();
+                });
             </script>
 
             <div class="rm-product-description">
                 <h3><?php esc_html_e( 'Description', 'reseller-management' ); ?></h3>
                 <div class="rm-description-content">
-                    <?php echo wp_kses_post( wpautop( $product_post->post_content ) ); ?>
+                    <?php
+                    $description_html = $product_post->post_content ?? '';
+                    if ( ! $description_html && $base_product_post ) {
+                        $description_html = $base_product_post->post_content;
+                    }
+                    echo wp_kses_post( wpautop( $description_html ) );
+                    ?>
                 </div>
             </div>
         </div>
@@ -154,7 +347,7 @@ $back_url = remove_query_arg( 'product_id' );
 
     <?php
     // Related Products logic
-    $related_ids = wc_get_related_products( $product_id, 5 );
+    $related_ids = wc_get_related_products( $base_product_id, 5 );
     if ( ! empty( $related_ids ) ) : ?>
         <div class="rm-related-products-section" style="margin-top: 60px; padding-top: 40px; border-top: 1px solid #e2e8f0;">
             <h2 class="rm-section-title" style="font-size: 22px; color: #0f172a; font-weight: 700; margin-bottom: 24px;">

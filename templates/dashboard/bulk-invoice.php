@@ -1,52 +1,21 @@
 <?php
 /**
- * Professional Invoice Template
+ * Bulk Invoice Template
  *
- * @var WC_Order $order
+ * @var array $order_ids
  */
 defined( 'ABSPATH' ) || exit;
 
-// We expect $order to be available from the include in handle_print_invoice()
-if ( ! isset( $order ) || ! $order instanceof WC_Order ) {
+if ( empty( $order_ids ) ) {
     exit;
 }
-
-$reseller_id = (int) $order->get_meta( '_assigned_reseller_id' );
-$reseller    = $reseller_id ? get_userdata( $reseller_id ) : false;
-
-if ( $reseller_id && $reseller ) {
-	$business_name    = get_user_meta( $reseller_id, '_reseller_business_name', true ) ?: $reseller->display_name;
-	$reseller_phone   = get_user_meta( $reseller_id, '_reseller_phone', true );
-	$reseller_website = get_user_meta( $reseller_id, '_reseller_web_url', true );
-	$reseller_email   = $reseller->user_email;
-} else {
-	$business_name    = get_bloginfo( 'name' );
-	$reseller_phone   = get_option( 'woocommerce_store_phone', '' );
-	$reseller_website = '';
-	$reseller_email   = get_option( 'woocommerce_email_from_address', get_bloginfo( 'admin_email' ) );
-}
-
-$items = $order->get_items();
-$items_subtotal = 0;
-foreach ( $items as $item_id => $item ) {
-    $resale_price = $item->get_meta('_resale_price');
-    $unit_price = $resale_price ? floatval($resale_price) : ($item->get_quantity() > 0 ? $item->get_subtotal() / $item->get_quantity() : 0);
-    $items_subtotal += $unit_price * $item->get_quantity();
-}
-
-$discount = $order->get_total_discount();
-$shipping = $order->get_shipping_total();
-$paid = floatval( $order->get_meta('_paid_amount') ?: '0' );
-
-$calculated_total = $items_subtotal + $shipping - $discount;
-$due = $calculated_total - $paid;
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php printf( esc_html__( 'Invoice - Order #%s', 'reseller-management' ), $order->get_order_number() ); ?></title>
+    <title><?php esc_html_e( 'Bulk Invoices', 'reseller-management' ); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -73,6 +42,7 @@ $due = $calculated_total - $paid;
             padding: 40px 50px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
+            page-break-after: always;
         }
         .invoice-header {
             display: flex;
@@ -246,7 +216,7 @@ $due = $calculated_total - $paid;
         }
         @media print {
             body { background: white; margin: 0; padding: 0; }
-            .invoice-wrapper { margin: 0; padding: 0; box-shadow: none; max-width: 100%; }
+            .invoice-wrapper { margin: 0; padding: 0; box-shadow: none; max-width: 100%; border: none; border-radius: 0; }
             .print-btn-wrapper { display: none; }
             @page { margin: 1cm; }
         }
@@ -256,10 +226,44 @@ $due = $calculated_total - $paid;
     <div class="print-btn-wrapper" style="margin-top: 20px;">
         <button class="btn-print" onclick="window.print()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            <?php esc_html_e( 'Print Invoice', 'reseller-management' ); ?>
+            <?php esc_html_e( 'Print All Invoices', 'reseller-management' ); ?>
         </button>
     </div>
 
+    <?php foreach ( $order_ids as $order_id ) : 
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) continue;
+
+        $reseller_id = (int) $order->get_meta( '_assigned_reseller_id' );
+        $reseller    = $reseller_id ? get_userdata( $reseller_id ) : false;
+
+        if ( $reseller_id && $reseller ) {
+            $business_name    = get_user_meta( $reseller_id, '_reseller_business_name', true ) ?: $reseller->display_name;
+            $reseller_phone   = get_user_meta( $reseller_id, '_reseller_phone', true );
+            $reseller_website = get_user_meta( $reseller_id, '_reseller_web_url', true );
+            $reseller_email   = $reseller->user_email;
+        } else {
+            $business_name    = get_bloginfo( 'name' );
+            $reseller_phone   = get_option( 'woocommerce_store_phone', '' );
+            $reseller_website = '';
+            $reseller_email   = get_option( 'woocommerce_email_from_address', get_bloginfo( 'admin_email' ) );
+        }
+
+        $items = $order->get_items();
+        $items_subtotal = 0;
+        foreach ( $items as $item_id => $item ) {
+            $resale_price = $item->get_meta('_resale_price');
+            $unit_price = $resale_price ? floatval($resale_price) : ($item->get_quantity() > 0 ? $item->get_subtotal() / $item->get_quantity() : 0);
+            $items_subtotal += $unit_price * $item->get_quantity();
+        }
+
+        $discount = $order->get_total_discount();
+        $shipping = $order->get_shipping_total();
+        $paid = floatval( $order->get_meta('_paid_amount') ?: '0' );
+
+        $calculated_total = $items_subtotal + $shipping - $discount;
+        $due = $calculated_total - $paid;
+    ?>
     <div class="invoice-wrapper">
         <header class="invoice-header">
             <div class="brand-section">
@@ -337,7 +341,6 @@ $due = $calculated_total - $paid;
             <tbody>
                 <?php foreach ( $items as $item_id => $item ) : 
                     $product = $item->get_product();
-                    // Get custom resale price or use subtotal/qty
                     $resale_price = $item->get_meta('_resale_price');
                     $unit_price = $resale_price ? floatval($resale_price) : ($item->get_quantity() > 0 ? $item->get_subtotal() / $item->get_quantity() : 0);
                     $line_total = $unit_price * $item->get_quantity();
@@ -402,5 +405,6 @@ $due = $calculated_total - $paid;
             <p style="margin: 4px 0 0;"><?php printf( esc_html__( 'Generated on %s', 'reseller-management' ), date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></p>
         </footer>
     </div>
+    <?php endforeach; ?>
 </body>
 </html>
