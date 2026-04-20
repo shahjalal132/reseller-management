@@ -986,6 +986,10 @@ body.rm-dashboard-body {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
   }
+
+  .rm-dashboard-panel {
+    padding: 0px;
+  }
 }
 
 .rm-product-card {

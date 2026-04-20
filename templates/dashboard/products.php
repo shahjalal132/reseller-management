@@ -156,9 +156,9 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
             <div class="rm-filter-per-page">
                 <label for="rm-products-per-page"><?php esc_html_e( 'Products per page', 'reseller-management' ); ?></label>
                 <select id="rm-products-per-page" class="rm-filter-limit" aria-label="<?php esc_attr_e( 'Number of products to show per page', 'reseller-management' ); ?>">
-                    <option value="30"><?php echo esc_html( sprintf( /* translators: %d: number of products */ __( '%d per page', 'reseller-management' ), 30 ) ); ?></option>
-                    <option value="50"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 50 ) ); ?></option>
-                    <option value="100"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 100 ) ); ?></option>
+                    <option value="35"><?php echo esc_html( sprintf( /* translators: %d: number of products */ __( '%d per page', 'reseller-management' ), 35 ) ); ?></option>
+                    <option value="70"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 70 ) ); ?></option>
+                    <option value="105"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 105 ) ); ?></option>
                     <option value="all"><?php esc_html_e( 'All', 'reseller-management' ); ?></option>
                 </select>
             </div>
