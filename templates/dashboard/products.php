@@ -153,12 +153,15 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
     </script>
     <div class="rm-products-filter">
         <div class="rm-filter-row rm-filter-top">
-            <select class="rm-filter-limit">
-                <option value="30">30</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="all">All</option>
-            </select>
+            <div class="rm-filter-per-page">
+                <label for="rm-products-per-page"><?php esc_html_e( 'Products per page', 'reseller-management' ); ?></label>
+                <select id="rm-products-per-page" class="rm-filter-limit" aria-label="<?php esc_attr_e( 'Number of products to show per page', 'reseller-management' ); ?>">
+                    <option value="30"><?php echo esc_html( sprintf( /* translators: %d: number of products */ __( '%d per page', 'reseller-management' ), 30 ) ); ?></option>
+                    <option value="50"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 50 ) ); ?></option>
+                    <option value="100"><?php echo esc_html( sprintf( __( '%d per page', 'reseller-management' ), 100 ) ); ?></option>
+                    <option value="all"><?php esc_html_e( 'All', 'reseller-management' ); ?></option>
+                </select>
+            </div>
             <input type="text" class="rm-filter-search" placeholder="<?php esc_attr_e( 'search with product code || product name', 'reseller-management' ); ?>">
         </div>
         <div class="rm-filter-row rm-filter-bottom">
@@ -214,4 +217,6 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <div class="rm-products-pagination rm-pagination" aria-label="<?php esc_attr_e( 'Product list pages', 'reseller-management' ); ?>"></div>
 </div>

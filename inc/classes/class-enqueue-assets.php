@@ -83,7 +83,11 @@ class Enqueue_Assets {
                 'nonce'       => wp_create_nonce( 'rm_public_nonce' ),
                 'profit_data' => Reseller_Helper::get_monthly_profit_summary( get_current_user_id() ),
                 'order_stats' => $this->get_order_stats_for_chart( get_current_user_id() ),
-                'locations'   => $this->get_locations_data()
+                'locations'   => $this->get_locations_data(),
+                'productsPagination' => [
+                    'prev' => __( '&laquo; Previous', 'reseller-management' ),
+                    'next' => __( 'Next &raquo;', 'reseller-management' ),
+                ],
             ]
         );
     }
