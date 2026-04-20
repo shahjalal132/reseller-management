@@ -1288,6 +1288,7 @@ body.rm-dashboard-body {
   border: 1px solid var(--rm-border);
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 350px;
 }
 
 .rm-enriched-table {
