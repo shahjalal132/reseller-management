@@ -357,10 +357,35 @@ $back_url = remove_query_arg( 'product_id' );
                 <?php foreach ( $related_ids as $rel_id ) : 
                     $rel_product = wc_get_product( $rel_id );
                     if ( ! $rel_product ) continue;
-                    $rel_image_url = get_the_post_thumbnail_url( $rel_id, 'large' );
-                    $rel_regular   = $rel_product->get_regular_price();
+                    $rel_image_url   = get_the_post_thumbnail_url( $rel_id, 'large' );
+                    $rel_regular     = $rel_product->get_regular_price();
                     $rel_recommended = get_post_meta( $rel_id, '_reseller_recommended_price', true );
-                    $rel_url       = add_query_arg( 'product_id', $rel_id );
+
+                    if ( $rel_product->is_type( 'variable' ) ) {
+                        foreach ( $rel_product->get_available_variations() as $rel_variation_row ) {
+                            $rel_variation_id = (int) ( $rel_variation_row['variation_id'] ?? 0 );
+                            if ( ! $rel_variation_id ) {
+                                continue;
+                            }
+                            $rel_variation = wc_get_product( $rel_variation_id );
+                            if ( ! $rel_variation ) {
+                                continue;
+                            }
+                            $rel_regular     = $rel_variation->get_regular_price();
+                            $rel_recommended = $rel_variation->get_meta( '_reseller_recommended_price' );
+                            if ( '' === $rel_recommended || null === $rel_recommended ) {
+                                $rel_recommended = $rel_variation->get_price();
+                            }
+                            break;
+                        }
+                    } else {
+                        $rel_parent_for_meta = (int) $rel_product->get_parent_id();
+                        if ( ( '' === $rel_recommended || null === $rel_recommended ) && $rel_parent_for_meta ) {
+                            $rel_recommended = get_post_meta( $rel_parent_for_meta, '_reseller_recommended_price', true );
+                        }
+                    }
+
+                    $rel_url = add_query_arg( 'product_id', $rel_id );
 
                     // Gather all images for related product
                     $rel_all_images = [];
@@ -385,7 +410,7 @@ $back_url = remove_query_arg( 'product_id' );
                         $rel_copy_text .= "Price: {$rel_regular} TK\n";
                     }
                     if ( $rel_recommended ) {
-                        $rel_copy_text .= "Customer / Retail Price : {$rel_recommended}\n";
+                        $rel_copy_text .= "Customer / Retail Price : {$rel_recommended} TK\n";
                     }
                     $rel_desc = wp_strip_all_tags( $rel_product->get_short_description() ?: $rel_product->get_description() );
                     if ( $rel_desc ) {
@@ -410,7 +435,7 @@ $back_url = remove_query_arg( 'product_id' );
                             </h4>
                             <div class="rm-product-price-details">
                                 <span class="rm-price-reg">Price: <?php echo esc_html( $rel_regular ? $rel_regular : '0' ); ?> TK</span>
-                                <span class="rm-price-ret"><b>Customer / Retail Price : <?php echo esc_html( $rel_recommended ? $rel_recommended : '0' ); ?></b></span>
+                                <span class="rm-price-ret"><b>Customer / Retail Price : <?php echo esc_html( $rel_recommended ? $rel_recommended : '0' ); ?> TK</b></span>
                             </div>
                             <div class="rm-product-actions">
                                 <?php if ( ! empty( $rel_all_images ) ) : ?>
