@@ -673,6 +673,89 @@
     var $productGrid = $('.rm-product-grid');
     if ($productGrid.length) {
       var productCategories = window.rmProductCategories || [];
+      var currentProductsPage = 1;
+
+      function buildProductPaginationItems(current, total) {
+        var items = [];
+        var j;
+        if (total <= 9) {
+          for (j = 1; j <= total; j++) {
+            items.push({ type: 'page', num: j });
+          }
+          return items;
+        }
+        items.push({ type: 'page', num: 1 });
+        var left = Math.max(2, current - 1);
+        var right = Math.min(total - 1, current + 1);
+        if (left > 2) {
+          items.push({ type: 'dots' });
+        }
+        for (j = left; j <= right; j++) {
+          items.push({ type: 'page', num: j });
+        }
+        if (right < total - 1) {
+          items.push({ type: 'dots' });
+        }
+        items.push({ type: 'page', num: total });
+        return items;
+      }
+
+      function renderProductsPagination(current, total, matchingCount) {
+        var $wrap = $('.rm-products-pagination');
+        $wrap.empty();
+        if (!matchingCount || total <= 1) {
+          return;
+        }
+        var pag = (typeof rmPublic !== 'undefined' && rmPublic.productsPagination) ? rmPublic.productsPagination : {};
+        var prevText = pag.prev || '\u00ab Previous';
+        var nextText = pag.next || 'Next \u00bb';
+        var pageItems = buildProductPaginationItems(current, total);
+        var html = '<ul class="page-numbers-list">';
+
+        html += '<li>';
+        if (current > 1) {
+          html += '<a href="#" class="prev page-numbers" data-rm-page="' + (current - 1) + '">' + prevText + '</a>';
+        } else {
+          html += '<span class="page-numbers prev" style="opacity:0.45;pointer-events:none;cursor:default;">' + prevText + '</span>';
+        }
+        html += '</li>';
+
+        pageItems.forEach(function (entry) {
+          html += '<li>';
+          if (entry.type === 'dots') {
+            html += '<span class="page-numbers dots" aria-hidden="true">\u2026</span>';
+          } else if (entry.num === current) {
+            html += '<span class="page-numbers current" aria-current="page">' + entry.num + '</span>';
+          } else {
+            html += '<a href="#" class="page-numbers" data-rm-page="' + entry.num + '">' + entry.num + '</a>';
+          }
+          html += '</li>';
+        });
+
+        html += '<li>';
+        if (current < total) {
+          html += '<a href="#" class="next page-numbers" data-rm-page="' + (current + 1) + '">' + nextText + '</a>';
+        } else {
+          html += '<span class="page-numbers next" style="opacity:0.45;pointer-events:none;cursor:default;">' + nextText + '</span>';
+        }
+        html += '</li>';
+
+        html += '</ul>';
+        $wrap.html(html);
+      }
+
+      $(document).on('click', '.rm-products-pagination a.page-numbers[data-rm-page]', function (e) {
+        e.preventDefault();
+        var p = parseInt($(this).attr('data-rm-page'), 10);
+        if (!p || !$productGrid.length) {
+          return;
+        }
+        filterProducts({ resetPage: false, page: p });
+        var el = $productGrid.get(0);
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
 
       // Initialize category dropdowns
       var $catSelect = $('.rm-filter-cat');
@@ -715,7 +798,14 @@
       $subSubCatSelect.on('change', filterProducts);
 
 
-      function filterProducts() {
+      function filterProducts(opts) {
+        opts = opts || {};
+        if (opts.page) {
+          currentProductsPage = parseInt(opts.page, 10) || 1;
+        } else if (opts.resetPage !== false) {
+          currentProductsPage = 1;
+        }
+
         var limit = $('.rm-filter-limit').val() || 'all';
         var searchInputVal = $('.rm-filter-search').val();
         var search = (typeof searchInputVal === 'string' ? searchInputVal : '').toLowerCase().trim();
@@ -723,55 +813,56 @@
         var subCat = $subCatSelect.val();
         var subSubCat = $subSubCatSelect.val();
 
-        var visibleCount = 0;
+        var matching = [];
 
         $('.rm-product-card').each(function () {
           var $card = $(this);
-          var show = true;
+          var match = true;
 
-          // Search
-          if (show && search) {
+          if (match && search) {
             var title = $card.find('.rm-product-title').text().toLowerCase();
-            var sku = $card.attr('data-sku') || '';
-            sku = sku.toLowerCase();
-            var copyText = $card.find('.copy-btn').attr('data-copy') || '';
-            copyText = copyText.toLowerCase();
+            var sku = ($card.attr('data-sku') || '').toLowerCase();
+            var copyText = ($card.find('.copy-btn').attr('data-copy') || '').toLowerCase();
             if (title.indexOf(search) === -1 && sku.indexOf(search) === -1 && copyText.indexOf(search) === -1) {
-              show = false;
+              match = false;
             }
           }
 
-          // Category matching
-          if (show) {
+          if (match) {
             var cardCats = ($card.attr('data-categories') || '').split(',');
             var requiredCat = subSubCat || subCat || cat || '';
-            if (requiredCat && requiredCat !== '') {
-              // using strictly equal via standard indexOf
-              // wait, the id in JSON could be number, split creates array of strings. Both string match works.
-              if (cardCats.indexOf(requiredCat.toString()) === -1) {
-                show = false;
-              }
+            if (requiredCat && requiredCat !== '' && cardCats.indexOf(requiredCat.toString()) === -1) {
+              match = false;
             }
           }
 
-          if (show) {
-            if (limit !== 'all' && limit) {
-              if (visibleCount >= parseInt(limit, 10)) {
-                show = false;
-              }
-            }
-          }
-
-          if (show) {
-            $card.show();
-            visibleCount++;
-          } else {
-            $card.hide();
+          if (match) {
+            matching.push($card);
           }
         });
 
-        // Toggle "No products" message
-        if (visibleCount === 0 && $('.rm-product-card').length > 0) {
+        var totalMatches = matching.length;
+        var perPage = (limit === 'all' || !limit) ? totalMatches : parseInt(limit, 10);
+        if (!perPage || perPage < 1) {
+          perPage = totalMatches || 1;
+        }
+        var totalPages = Math.max(1, Math.ceil(totalMatches / perPage));
+        if (currentProductsPage > totalPages) {
+          currentProductsPage = totalPages;
+        }
+        if (currentProductsPage < 1) {
+          currentProductsPage = 1;
+        }
+
+        var start = (currentProductsPage - 1) * perPage;
+        var end = start + perPage;
+
+        $('.rm-product-card').hide();
+        for (var i = start; i < end && i < matching.length; i++) {
+          matching[i].show();
+        }
+
+        if (totalMatches === 0 && $('.rm-product-card').length > 0) {
           if ($productGrid.find('.rm-no-products').length === 0) {
             $productGrid.append('<p class="rm-no-products" style="grid-column: 1/-1; text-align:center;">No matching products found.</p>');
           } else {
@@ -780,6 +871,8 @@
         } else {
           $productGrid.find('.rm-no-products').hide();
         }
+
+        renderProductsPagination(currentProductsPage, totalPages, totalMatches);
       }
 
       $('.rm-filter-limit, .rm-filter-search').on('input change', filterProducts);

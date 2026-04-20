@@ -167,7 +167,7 @@ $orders = \BOILERPLATE\Inc\Reseller_Orders::get_reseller_orders( $user_id, [
                         <?php if ( $product ) : ?>
                             <div class="rm-product-preview">
                                 <img src="<?php echo esc_url( wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ) ); ?>" alt="">
-                                <span class="rm-product-name"><?php echo esc_html( $product->get_name() ); ?></span>
+                                <span class="rm-product-name"><?php echo esc_html( wp_trim_words( $product->get_name(), 6, '...' ) ); ?></span>
                             </div>
                         <?php endif; ?>
                     </td>

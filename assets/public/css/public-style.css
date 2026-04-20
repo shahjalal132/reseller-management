@@ -900,8 +900,25 @@ body.rm-dashboard-body {
   flex-direction: row;
 }
 
-.rm-filter-limit {
-  flex: 0 0 15%;
+.rm-filter-per-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.rm-filter-per-page label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.rm-filter-per-page .rm-filter-limit {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 7.5rem;
 }
 
 .rm-filter-search {
@@ -926,9 +943,16 @@ body.rm-dashboard-body {
     align-items: stretch;
   }
 
-  .rm-filter-limit {
+  .rm-filter-per-page {
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
     margin-bottom: 12px;
+  }
+
+  .rm-filter-per-page .rm-filter-limit {
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -961,6 +985,10 @@ body.rm-dashboard-body {
   .rm-product-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
+  }
+
+  .rm-dashboard-panel {
+    padding: 0px;
   }
 }
 
@@ -1264,6 +1292,7 @@ body.rm-dashboard-body {
   border: 1px solid var(--rm-border);
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 350px;
 }
 
 .rm-enriched-table {
