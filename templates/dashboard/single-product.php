@@ -37,6 +37,11 @@ if ( '' === $recommended || null === $recommended ) {
     $recommended = get_post_meta( $base_product_id, '_reseller_recommended_price', true );
 }
 
+$video_url = get_post_meta( $product_id, '_reseller_product_video_url', true );
+if ( ! $video_url && $base_product ) {
+    $video_url = get_post_meta( $base_product_id, '_reseller_product_video_url', true );
+}
+
 $variation_choices      = [];
 $selected_variation_id  = (int) $product_id;
 
@@ -97,6 +102,7 @@ if ( $base_product && $base_product->is_type( 'variable' ) ) {
             'label'       => wp_strip_all_tags( $variation_label ),
             'regular'     => $variation_regular ? $variation_regular : '0',
             'recommended' => $variation_recommended ? $variation_recommended : '0',
+            'video_url'   => $variation->get_meta( '_reseller_product_video_url' ) ?: $video_url,
         ];
     }
 
@@ -165,6 +171,12 @@ $back_url = remove_query_arg( 'product_id' );
                 <?php else : ?>
                     <div class="rm-product-img-placeholder"></div>
                 <?php endif; ?>
+
+                <?php if ( $video_url ) : ?>
+                    <div class="rm-video-overlay-btn" id="rm-open-video-btn" onclick="openProductVideo('<?php echo esc_url( $video_url ); ?>')">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                <?php endif; ?>
             </div>
             <?php if ( count( $all_images ) > 1 ) : ?>
                 <div class="rm-image-gallery">
@@ -210,6 +222,7 @@ $back_url = remove_query_arg( 'product_id' );
                                     data-label="<?php echo esc_attr( $variation_choice['label'] ); ?>"
                                     data-regular="<?php echo esc_attr( (string) $variation_choice['regular'] ); ?>"
                                     data-recommended="<?php echo esc_attr( (string) $variation_choice['recommended'] ); ?>"
+                                    data-video="<?php echo esc_attr( (string) $variation_choice['video_url'] ); ?>"
                                     <?php selected( (int) $variation_choice['id'], (int) $selected_variation_id ); ?>
                                 >
                                     <?php echo esc_html( $variation_choice['label'] ); ?>
@@ -284,6 +297,12 @@ $back_url = remove_query_arg( 'product_id' );
                         <?php esc_html_e( 'Download Images', 'reseller-management' ); ?>
                     </button>
                 <?php endif; ?>
+                <?php if ( $video_url ) : ?>
+                    <button class="rm-button video-btn" type="button" onclick="openProductVideo('<?php echo esc_url( $video_url ); ?>')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <?php esc_html_e( 'Watch Video', 'reseller-management' ); ?>
+                    </button>
+                <?php endif; ?>
             </div>
 
             <script>
@@ -316,9 +335,66 @@ $back_url = remove_query_arg( 'product_id' );
                             selectedLabelEl.textContent = (selectedOpt.getAttribute('data-label') || '') + ':';
                             selectedRegularEl.textContent = (selectedOpt.getAttribute('data-regular') || '0') + ' TK';
                             selectedRecommendedEl.textContent = (selectedOpt.getAttribute('data-recommended') || '0') + ' TK';
+
+                            const videoUrl = selectedOpt.getAttribute('data-video');
+                            const videoOverlay = document.getElementById('rm-open-video-btn');
+                            const videoBtn = document.querySelector('.rm-button.video-btn');
+                            
+                            if (videoUrl) {
+                                if (videoOverlay) {
+                                    videoOverlay.style.display = 'flex';
+                                    videoOverlay.setAttribute('onclick', "openProductVideo('" + videoUrl + "')");
+                                }
+                                if (videoBtn) {
+                                    videoBtn.style.display = 'inline-flex';
+                                    videoBtn.setAttribute('onclick', "openProductVideo('" + videoUrl + "')");
+                                }
+                            } else {
+                                if (videoOverlay) videoOverlay.style.display = 'none';
+                                if (videoBtn) videoBtn.style.display = 'none';
+                            }
                         }
                     }
                     link.href = url.toString();
+                }
+
+                function openProductVideo(url) {
+                    if (!url) return;
+                    
+                    // Simple YouTube/Vimeo embed URL generator
+                    let embedUrl = url;
+                    if (url.includes('youtube.com/watch?v=')) {
+                        embedUrl = url.replace('watch?v=', 'embed/');
+                    } else if (url.includes('youtu.be/')) {
+                        embedUrl = url.replace('youtu.be/', 'youtube.com/embed/');
+                    } else if (url.includes('vimeo.com/')) {
+                        embedUrl = url.replace('vimeo.com/', 'player.vimeo.com/video/');
+                    }
+                    
+                    // Create a simple modal overlay
+                    const modal = document.createElement('div');
+                    modal.className = 'rm-video-modal-overlay';
+                    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                    
+                    const container = document.createElement('div');
+                    container.style.cssText = 'position:relative;width:90%;max-width:960px;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.4);';
+                    
+                    const closeBtn = document.createElement('button');
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.style.cssText = 'position:absolute;top:10px;right:15px;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:32px;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;';
+                    closeBtn.onclick = () => modal.remove();
+                    
+                    const iframe = document.createElement('iframe');
+                    iframe.src = embedUrl;
+                    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    iframe.allowFullscreen = true;
+                    
+                    container.appendChild(closeBtn);
+                    container.appendChild(iframe);
+                    modal.appendChild(container);
+                    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+                    document.body.appendChild(modal);
                 }
 
                 document.addEventListener('DOMContentLoaded', function () {
@@ -512,6 +588,30 @@ $back_url = remove_query_arg( 'product_id' );
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-sizing: border-box;
+    border: 1px solid #e2e8f0;
+}
+.rm-video-overlay-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+.rm-video-overlay-btn:hover {
+    background: rgba(15, 23, 42, 0.9);
+    transform: translate(-50%, -50%) scale(1.1);
+    border-color: #fff;
 }
 .rm-product-img-placeholder {
     min-height: clamp(200px, 40vw, 360px);
@@ -645,6 +745,14 @@ $back_url = remove_query_arg( 'product_id' );
     padding: 12px 16px;
     min-height: 44px;
     box-sizing: border-box;
+}
+.rm-single-product-details .rm-product-actions .rm-button.video-btn {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+}
+.rm-single-product-details .rm-product-actions .rm-button.video-btn:hover {
+    background: #1e293b;
 }
 .rm-product-description h3 {
     margin-bottom: 12px;
