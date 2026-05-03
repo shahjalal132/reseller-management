@@ -363,7 +363,9 @@ $back_url = remove_query_arg( 'product_id' );
                     
                     // Simple YouTube/Vimeo embed URL generator
                     let embedUrl = url;
-                    if (url.includes('youtube.com/watch?v=')) {
+                    if (url.includes('youtube.com/shorts/')) {
+                        embedUrl = url.replace('youtube.com/shorts/', 'youtube.com/embed/');
+                    } else if (url.includes('youtube.com/watch?v=')) {
                         embedUrl = url.replace('watch?v=', 'embed/');
                     } else if (url.includes('youtu.be/')) {
                         embedUrl = url.replace('youtu.be/', 'youtube.com/embed/');
