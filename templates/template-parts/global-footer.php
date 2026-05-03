@@ -96,7 +96,7 @@ defined( 'ABSPATH' ) || exit;
             </span>
             <span class="rmhp-footer-dev">
                 <?php esc_html_e( 'Developed by', 'reseller-management' ); ?>
-                <a href="https://www.facebook.com/grocoder" target="_blank" rel="noopener noreferrer">Grocoder Software Solution</a>
+                <a href="https://grocoder.net" target="_blank" rel="noopener noreferrer">Grocoder Software Solution</a>
             </span>
         </div>
     </div>

@@ -5,7 +5,7 @@
  * Plugin Name: Reseller Management
  * Plugin URI:  https://github.com/shahjalal132/reseller-management
  * Author:      Grocoder Software Solution
- * Author URI:  https://facebook.com/grocoder
+ * Author URI:  https://grocoder.net
  * Description: Reseller Management.
  * Version:     2.0.0
  * text-domain: reseller-management
