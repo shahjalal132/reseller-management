@@ -40,6 +40,16 @@ class Reseller_Product_Meta {
                 'description'       => __( 'Suggested selling price for resellers.', 'reseller-management' ),
             ]
         );
+
+        woocommerce_wp_text_input(
+            [
+                'id'          => '_reseller_product_video_url',
+                'label'       => __( 'Product Video URL', 'reseller-management' ),
+                'desc_tip'    => true,
+                'description' => __( 'Add a YouTube or Vimeo URL for the product video.', 'reseller-management' ),
+                'placeholder' => __( 'https://www.youtube.com/watch?v=...', 'reseller-management' ),
+            ]
+        );
     }
 
     /**
@@ -57,6 +67,10 @@ class Reseller_Product_Meta {
 
         $recommended_price = round( (float) wc_format_decimal( wp_unslash( $_POST['_reseller_recommended_price'] ?? '' ) ), 2 );
         update_post_meta( $product_id, '_reseller_recommended_price', $recommended_price );
+
+        if ( isset( $_POST['_reseller_product_video_url'] ) ) {
+            update_post_meta( $product_id, '_reseller_product_video_url', esc_url_raw( wp_unslash( $_POST['_reseller_product_video_url'] ) ) );
+        }
     }
 
     /**
@@ -91,6 +105,20 @@ class Reseller_Product_Meta {
                 'placeholder'   => __( 'Optional', 'reseller-management' ),
             ]
         );
+
+        $video_url = get_post_meta( $variation->ID, '_reseller_product_video_url', true );
+        woocommerce_wp_text_input(
+            [
+                'id'            => "variable_reseller_product_video_url_{$loop}",
+                'name'          => "variable_reseller_product_video_url[{$loop}]",
+                'value'         => $video_url,
+                'label'         => __( 'Product Video URL', 'reseller-management' ),
+                'desc_tip'      => true,
+                'description'   => __( 'Add a YouTube or Vimeo URL for this variation video.', 'reseller-management' ),
+                'wrapper_class' => 'form-row form-row-full',
+                'placeholder'   => __( 'https://www.youtube.com/watch?v=...', 'reseller-management' ),
+            ]
+        );
     }
 
     /**
@@ -102,17 +130,19 @@ class Reseller_Product_Meta {
      * @return void
      */
     public function save_variation_fields( $variation_id, $loop ) {
-        if ( ! isset( $_POST['variable_reseller_recommended_price'][ $loop ] ) ) {
-            return;
+        if ( isset( $_POST['variable_reseller_recommended_price'][ $loop ] ) ) {
+            $raw = wp_unslash( $_POST['variable_reseller_recommended_price'][ $loop ] );
+            if ( '' === $raw || null === $raw ) {
+                delete_post_meta( $variation_id, '_reseller_recommended_price' );
+            } else {
+                $recommended_price = round( (float) wc_format_decimal( $raw ), 2 );
+                update_post_meta( $variation_id, '_reseller_recommended_price', $recommended_price );
+            }
         }
 
-        $raw = wp_unslash( $_POST['variable_reseller_recommended_price'][ $loop ] );
-        if ( '' === $raw || null === $raw ) {
-            delete_post_meta( $variation_id, '_reseller_recommended_price' );
-            return;
+        if ( isset( $_POST['variable_reseller_product_video_url'][ $loop ] ) ) {
+            $video_url = esc_url_raw( wp_unslash( $_POST['variable_reseller_product_video_url'][ $loop ] ) );
+            update_post_meta( $variation_id, '_reseller_product_video_url', $video_url );
         }
-
-        $recommended_price = round( (float) wc_format_decimal( $raw ), 2 );
-        update_post_meta( $variation_id, '_reseller_recommended_price', $recommended_price );
     }
 }
