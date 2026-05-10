@@ -14,6 +14,7 @@ $method_colors = [
     'bkash'  => [ 'bg' => '#fce4ec', 'text' => '#c2185b', 'label' => 'Bkash' ],
     'nagad'  => [ 'bg' => '#fff3e0', 'text' => '#e65100', 'label' => 'Nagad' ],
     'rocket' => [ 'bg' => '#ede7f6', 'text' => '#512da8', 'label' => 'Rocket' ],
+    'bank'   => [ 'bg' => '#e3f2fd', 'text' => '#1565c0', 'label' => __( 'Bank', 'reseller-management' ) ],
 ];
 ?>
 
@@ -224,6 +225,23 @@ $method_colors = [
 }
 .rm-pm-modal-response.is-success { color: #10b981; }
 .rm-pm-modal-response.is-error   { color: #e11d48; }
+.rm-pm-bank-summary {
+    text-align: left;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #334155;
+}
+.rm-pm-bank-line { margin-bottom: 6px; }
+.rm-pm-bank-line:last-child { margin-bottom: 0; }
+.rm-pm-bank-k {
+    display: inline-block;
+    min-width: 118px;
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
 </style>
 
 <div class="rm-pm-header">
@@ -244,22 +262,42 @@ $method_colors = [
         <?php foreach ( $payment_methods as $method ) :
             $key    = strtolower( (string) $method->method_name );
             $colors = $method_colors[ $key ] ?? [ 'bg' => '#f1f5f9', 'text' => '#475569', 'label' => ucfirst( $key ) ];
+            $bank_details = [];
+            if ( 'bank' === $key && ! empty( $method->method_details ) ) {
+                $decoded = json_decode( (string) $method->method_details, true );
+                $bank_details = is_array( $decoded ) ? $decoded : [];
+            }
+            $bank_payload = [
+                'holder'    => isset( $bank_details['holder'] ) ? (string) $bank_details['holder'] : '',
+                'bank_name' => isset( $bank_details['bank_name'] ) ? (string) $bank_details['bank_name'] : '',
+                'branch'    => isset( $bank_details['branch'] ) ? (string) $bank_details['branch'] : '',
+            ];
             ?>
             <div class="rm-pm-card"
                  data-id="<?php echo esc_attr( (string) $method->id ); ?>"
                  data-method="<?php echo esc_attr( $key ); ?>"
                  data-number="<?php echo esc_attr( (string) $method->number ); ?>"
-                 data-type="<?php echo esc_attr( (string) $method->type ); ?>">
+                 data-type="<?php echo esc_attr( (string) $method->type ); ?>"
+                 data-bank-json="<?php echo esc_attr( 'bank' === $key ? wp_json_encode( $bank_payload ) : '' ); ?>">
                 <div class="rm-pm-card-top">
                     <span class="rm-pm-badge" style="background:<?php echo esc_attr( $colors['bg'] ); ?>;color:<?php echo esc_attr( $colors['text'] ); ?>;">
                         <?php echo esc_html( $colors['label'] ); ?>
                     </span>
-                    <span class="rm-pm-type-tag"><?php echo esc_html( ucfirst( (string) $method->type ) ); ?></span>
+                    <span class="rm-pm-type-tag"><?php echo 'bank' === $key ? esc_html__( 'Bank transfer', 'reseller-management' ) : esc_html( ucfirst( (string) $method->type ) ); ?></span>
                 </div>
-                <div class="rm-pm-number">
-                    <small><?php esc_html_e( 'Account Number', 'reseller-management' ); ?></small>
-                    <?php echo esc_html( (string) $method->number ); ?>
-                </div>
+                <?php if ( 'bank' === $key ) : ?>
+                    <div class="rm-pm-bank-summary">
+                        <div class="rm-pm-bank-line"><span class="rm-pm-bank-k"><?php esc_html_e( 'Account holder', 'reseller-management' ); ?></span> <?php echo esc_html( $bank_payload['holder'] ); ?></div>
+                        <div class="rm-pm-bank-line"><span class="rm-pm-bank-k"><?php esc_html_e( 'Bank name', 'reseller-management' ); ?></span> <?php echo esc_html( $bank_payload['bank_name'] ); ?></div>
+                        <div class="rm-pm-bank-line"><span class="rm-pm-bank-k"><?php esc_html_e( 'Account number', 'reseller-management' ); ?></span> <?php echo esc_html( (string) $method->number ); ?></div>
+                        <div class="rm-pm-bank-line"><span class="rm-pm-bank-k"><?php esc_html_e( 'Branch', 'reseller-management' ); ?></span> <?php echo esc_html( $bank_payload['branch'] ); ?></div>
+                    </div>
+                <?php else : ?>
+                    <div class="rm-pm-number">
+                        <small><?php esc_html_e( 'Account Number', 'reseller-management' ); ?></small>
+                        <?php echo esc_html( (string) $method->number ); ?>
+                    </div>
+                <?php endif; ?>
                 <div class="rm-pm-actions">
                     <button class="rm-pm-btn-edit" data-id="<?php echo esc_attr( (string) $method->id ); ?>">✏️ <?php esc_html_e( 'Edit', 'reseller-management' ); ?></button>
                     <button class="rm-pm-btn-delete" data-id="<?php echo esc_attr( (string) $method->id ); ?>">🗑 <?php esc_html_e( 'Delete', 'reseller-management' ); ?></button>
@@ -282,20 +320,42 @@ $method_colors = [
                 <option value="bkash">Bkash</option>
                 <option value="nagad">Nagad</option>
                 <option value="rocket">Rocket</option>
+                <option value="bank"><?php esc_html_e( 'Bank', 'reseller-management' ); ?></option>
             </select>
         </div>
 
-        <div class="rm-pm-modal-field">
-            <label for="rm-pm-number"><?php esc_html_e( 'Account Number', 'reseller-management' ); ?></label>
-            <input type="text" id="rm-pm-number" placeholder="01XXXXXXXXX">
+        <div id="rm-pm-fields-wallet">
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-number"><?php esc_html_e( 'Account Number', 'reseller-management' ); ?></label>
+                <input type="text" id="rm-pm-number" placeholder="01XXXXXXXXX" autocomplete="off">
+            </div>
+
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-type"><?php esc_html_e( 'Account Type', 'reseller-management' ); ?></label>
+                <select id="rm-pm-type">
+                    <option value="personal"><?php esc_html_e( 'Personal', 'reseller-management' ); ?></option>
+                    <option value="agent"><?php esc_html_e( 'Agent', 'reseller-management' ); ?></option>
+                </select>
+            </div>
         </div>
 
-        <div class="rm-pm-modal-field">
-            <label for="rm-pm-type"><?php esc_html_e( 'Account Type', 'reseller-management' ); ?></label>
-            <select id="rm-pm-type">
-                <option value="personal"><?php esc_html_e( 'Personal', 'reseller-management' ); ?></option>
-                <option value="agent"><?php esc_html_e( 'Agent', 'reseller-management' ); ?></option>
-            </select>
+        <div id="rm-pm-fields-bank" style="display:none;">
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-bank-holder"><?php esc_html_e( 'Account holder name', 'reseller-management' ); ?></label>
+                <input type="text" id="rm-pm-bank-holder" autocomplete="name">
+            </div>
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-bank-bankname"><?php esc_html_e( 'Bank name', 'reseller-management' ); ?></label>
+                <input type="text" id="rm-pm-bank-bankname" autocomplete="organization">
+            </div>
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-bank-account"><?php esc_html_e( 'Account number', 'reseller-management' ); ?></label>
+                <input type="text" id="rm-pm-bank-account" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="rm-pm-modal-field">
+                <label for="rm-pm-bank-branch"><?php esc_html_e( 'Branch name', 'reseller-management' ); ?></label>
+                <input type="text" id="rm-pm-bank-branch" autocomplete="off">
+            </div>
         </div>
 
         <div class="rm-pm-modal-response" id="rm-pm-response"></div>
@@ -314,15 +374,45 @@ $method_colors = [
     var $idField = $('#rm-pm-id');
     var $resp    = $('#rm-pm-response');
 
+    function togglePmMethodFields() {
+        var m = $('#rm-pm-method-name').val();
+        if (m === 'bank') {
+            $('#rm-pm-fields-wallet').hide();
+            $('#rm-pm-fields-bank').show();
+        } else {
+            $('#rm-pm-fields-bank').hide();
+            $('#rm-pm-fields-wallet').show();
+        }
+    }
+
+    function clearBankFields() {
+        $('#rm-pm-bank-holder, #rm-pm-bank-bankname, #rm-pm-bank-account, #rm-pm-bank-branch').val('');
+    }
+
     function openModal(isEdit, cardData) {
         $modal.addClass('is-open');
         $resp.text('').removeClass('is-success is-error');
+        clearBankFields();
         if (isEdit && cardData) {
             $title.text('<?php esc_html_e( 'Edit Payment Method', 'reseller-management' ); ?>');
             $idField.val(cardData.id);
             $('#rm-pm-method-name').val(cardData.method);
-            $('#rm-pm-number').val(cardData.number);
-            $('#rm-pm-type').val(cardData.type);
+            if (cardData.method === 'bank') {
+                $('#rm-pm-number').val('');
+                $('#rm-pm-type').val('personal');
+                var raw = cardData.bankJson || '';
+                var o = {};
+                if (raw) {
+                    try { o = JSON.parse(raw); } catch (e) { o = {}; }
+                }
+                $('#rm-pm-bank-holder').val(o.holder || '');
+                $('#rm-pm-bank-bankname').val(o.bank_name || '');
+                $('#rm-pm-bank-branch').val(o.branch || '');
+                $('#rm-pm-bank-account').val(cardData.number || '');
+            } else {
+                $('#rm-pm-number').val(cardData.number);
+                $('#rm-pm-type').val(cardData.type);
+            }
         } else {
             $title.text('<?php esc_html_e( 'Add Payment Method', 'reseller-management' ); ?>');
             $idField.val('');
@@ -330,9 +420,12 @@ $method_colors = [
             $('#rm-pm-number').val('');
             $('#rm-pm-type').val('personal');
         }
+        togglePmMethodFields();
     }
 
     function closeModal() { $modal.removeClass('is-open'); }
+
+    $('#rm-pm-method-name').on('change', togglePmMethodFields);
 
     $('#rm-pm-open-add').on('click', function () { openModal(false); });
     $('#rm-pm-cancel').on('click', closeModal);
@@ -341,10 +434,11 @@ $method_colors = [
     $(document).on('click', '.rm-pm-btn-edit', function () {
         var $card = $(this).closest('.rm-pm-card');
         openModal(true, {
-            id:     $card.data('id'),
-            method: $card.data('method'),
-            number: $card.data('number'),
-            type:   $card.data('type')
+            id:        $card.data('id'),
+            method:    $card.data('method'),
+            number:    $card.attr('data-number'),
+            type:      $card.data('type'),
+            bankJson:  $card.attr('data-bank-json') || ''
         });
     });
 
@@ -371,25 +465,37 @@ $method_colors = [
 
     $('#rm-pm-save').on('click', function () {
         var method = $('#rm-pm-method-name').val();
-        var number = $.trim($('#rm-pm-number').val());
-        var type   = $('#rm-pm-type').val();
         var id     = $('#rm-pm-id').val();
+        var payload = {
+            action:      'reseller_save_payment_method',
+            nonce:       rmPublic.nonce,
+            id:          id,
+            method_name: method
+        };
 
-        if (!method || !number || !type) {
-            $resp.text('<?php esc_html_e( 'Please fill in all fields.', 'reseller-management' ); ?>').removeClass('is-success').addClass('is-error');
-            return;
+        if (method === 'bank') {
+            payload.bank_holder = $.trim($('#rm-pm-bank-holder').val());
+            payload.bank_bank_name = $.trim($('#rm-pm-bank-bankname').val());
+            payload.bank_account_number = $.trim($('#rm-pm-bank-account').val());
+            payload.bank_branch = $.trim($('#rm-pm-bank-branch').val());
+            payload.type = 'bank';
+            payload.number = payload.bank_account_number;
+            if (!method || !payload.bank_holder || !payload.bank_bank_name || !payload.bank_account_number || !payload.bank_branch) {
+                $resp.text('<?php esc_html_e( 'Please fill in all fields.', 'reseller-management' ); ?>').removeClass('is-success').addClass('is-error');
+                return;
+            }
+        } else {
+            payload.number = $.trim($('#rm-pm-number').val());
+            payload.type   = $('#rm-pm-type').val();
+            if (!method || !payload.number || !payload.type) {
+                $resp.text('<?php esc_html_e( 'Please fill in all fields.', 'reseller-management' ); ?>').removeClass('is-success').addClass('is-error');
+                return;
+            }
         }
 
         var $btn = $(this).prop('disabled', true).text('<?php esc_html_e( 'Saving…', 'reseller-management' ); ?>');
 
-        $.post(rmPublic.ajaxUrl, {
-            action:      'reseller_save_payment_method',
-            nonce:       rmPublic.nonce,
-            id:          id,
-            method_name: method,
-            number:      number,
-            type:        type
-        }, function (response) {
+        $.post(rmPublic.ajaxUrl, payload, function (response) {
             if (response.success) {
                 $resp.text(response.data).removeClass('is-error').addClass('is-success');
                 setTimeout(function () { location.reload(); }, 900);

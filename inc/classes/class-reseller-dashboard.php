@@ -259,8 +259,17 @@ class Reseller_Dashboard {
                                         <option value=""><?php esc_html_e( '-- Select Method --', 'reseller-management' ); ?></option>
                                         <?php if ( ! empty( $payment_methods ) ) : ?>
                                             <?php foreach ( $payment_methods as $method ) : ?>
-                                                <option value="<?php echo esc_attr( $method->method_name ); ?>" data-number="<?php echo esc_attr( $method->number ); ?>">
-                                                    <?php echo esc_html( ucfirst( $method->method_name ) . ' (' . ucfirst( $method->type ) . ')' ); ?>
+                                                <?php
+                                                $pm_label = ucfirst( (string) $method->method_name );
+                                                if ( 'bank' === strtolower( (string) $method->method_name ) ) {
+                                                    $pm_label = __( 'Bank', 'reseller-management' );
+                                                } else {
+                                                    $pm_label .= ' (' . ucfirst( (string) $method->type ) . ')';
+                                                }
+                                                $pm_account = \BOILERPLATE\Inc\Reseller_Helper::format_payment_method_for_withdrawal( $method );
+                                                ?>
+                                                <option value="<?php echo esc_attr( $method->method_name ); ?>" data-number="<?php echo esc_attr( $method->number ); ?>" data-account-details="<?php echo esc_attr( $pm_account ); ?>">
+                                                    <?php echo esc_html( $pm_label ); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         <?php else : ?>
@@ -270,7 +279,7 @@ class Reseller_Dashboard {
                                 </div>
                                 <div class="col-12" style="margin-bottom: 24px;">
                                     <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Account Details', 'reseller-management' ); ?></label>
-                                    <input type="text" name="account_details" id="rm-withdraw-account-details" class="rm-input" readonly required placeholder="<?php esc_attr_e( 'Select a payment method above', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #f8fafc; color: #64748b;">
+                                    <textarea name="account_details" id="rm-withdraw-account-details" class="rm-input" rows="4" readonly required placeholder="<?php esc_attr_e( 'Select a payment method above', 'reseller-management' ); ?>" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 600; background: #f8fafc; color: #64748b; resize: vertical; font-family: inherit;"></textarea>
                                 </div>
                                 <div class="col-12" style="margin-bottom: 24px;">
                                     <label class="rm-label" style="font-weight: 700; color: #475569; display: block; margin-bottom: 6px;"><?php esc_html_e( 'Note (Optional)', 'reseller-management' ); ?></label>

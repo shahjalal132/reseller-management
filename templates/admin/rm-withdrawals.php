@@ -131,7 +131,7 @@ if ( $view_wd ) :
                         <div class="rm-wdv-detail-icon">📱</div>
                         <div class="rm-wdv-detail-text">
                             <div class="key">Account Number / Details</div>
-                            <div class="val" style="font-family:monospace;"><?php echo esc_html( (string) $view_wd->account_details ); ?></div>
+                            <div class="val" style="font-family:monospace;white-space:pre-wrap;"><?php echo nl2br( esc_html( (string) $view_wd->account_details ) ); ?></div>
                         </div>
                     </div>
                     <?php if ( ! empty( $view_wd->note ) ) : ?>
@@ -347,7 +347,14 @@ foreach ( $rm_withdrawals as $i => $wd ) {
 .rm-wd-txn { font-family: monospace; font-size: 12px; color: #374151; font-weight: 600; }
 .rm-wd-amount { font-weight: 700; color: #005f5a; font-size: 14px; }
 .rm-wd-method { font-size: 12.5px; font-weight: 600; color: #111827; display: block; }
-.rm-wd-method-details { font-family: monospace; font-size: 12px; color: #6b7280; }
+.rm-wd-method-details {
+    font-family: monospace;
+    font-size: 12px;
+    color: #6b7280;
+    white-space: pre-wrap;
+    display: block;
+    max-width: 320px;
+}
 
 /* Select Dropdown for Status */
 .rm-wd-status-select { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #e5e7eb; color: #374151; font-weight: 600; outline: none; background: #fff; cursor: pointer; transition: all .18s; min-height: 34px; }
@@ -419,6 +426,15 @@ jQuery(document).ready(function ($) {
         return 'is-' + st;
     }
 
+    function rmEscapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
     /* ── Render Table ──────────────────────────────────────────────── */
     function renderTable() {
         var start    = ( currentPage - 1 ) * PER_PAGE;
@@ -449,7 +465,7 @@ jQuery(document).ready(function ($) {
             html += '<td class="rm-wd-amount">৳ ' + row.amount + '</td>';
             html += '<td>';
             html +=   '<span class="rm-wd-method">' + row.method + '</span>';
-            html +=   '<span class="rm-wd-method-details">' + row.details + '</span>';
+            html +=   '<span class="rm-wd-method-details">' + rmEscapeHtml(row.details) + '</span>';
             html += '</td>';
             html += '<td style="font-size:0.8rem;color:#646970;">' + row.date + '</td>';
             

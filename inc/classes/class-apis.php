@@ -63,20 +63,46 @@ class APIS {
 
         // Seed Payment Methods (IDs 1, 2, 3)
         $payment_methods = [
-            [ 'method_name' => 'bKash', 'number' => '01711111111', 'type' => 'personal' ],
-            [ 'method_name' => 'Nagad', 'number' => '01822222222', 'type' => 'agent' ],
-            [ 'method_name' => 'Bank', 'number' => '123456789', 'type' => 'personal' ],
+            [
+                'method_name'     => 'bkash',
+                'number'          => '01711111111',
+                'type'            => 'personal',
+                'method_details'  => '',
+            ],
+            [
+                'method_name'     => 'nagad',
+                'number'          => '01822222222',
+                'type'            => 'agent',
+                'method_details'  => '',
+            ],
+            [
+                'method_name'     => 'bank',
+                'number'          => '0123456789012',
+                'type'            => 'bank',
+                'method_details'  => wp_json_encode(
+                    [
+                        'holder'    => 'Demo Holder',
+                        'bank_name' => 'Demo Bank Ltd',
+                        'branch'    => 'Gulshan',
+                    ]
+                ),
+            ],
         ];
-        
+
         foreach ( $payment_methods as $index => $pm ) {
-            $wpdb->insert( $payment_methods_table, [
-                'id'          => $index + 1,
-                'reseller_id' => $reseller_id,
-                'method_name' => $pm['method_name'],
-                'number'      => $pm['number'],
-                'type'        => $pm['type'],
-                'created_at'  => current_time( 'mysql' ),
-            ] );
+            $wpdb->insert(
+                $payment_methods_table,
+                [
+                    'id'              => $index + 1,
+                    'reseller_id'     => $reseller_id,
+                    'method_name'     => $pm['method_name'],
+                    'number'          => $pm['number'],
+                    'type'            => $pm['type'],
+                    'method_details'  => $pm['method_details'],
+                    'created_at'      => current_time( 'mysql' ),
+                ],
+                [ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ]
+            );
         }
 
         // Seed 100 Orders in Ledger

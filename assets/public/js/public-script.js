@@ -1035,8 +1035,11 @@
 
     $('#rm-withdraw-method-select').on('change', function () {
       var $selected = $(this).find('option:selected');
+      var details = $selected.attr('data-account-details');
       var number = $selected.data('number');
-      if (number) {
+      if (typeof details === 'string' && details.length) {
+        $('#rm-withdraw-account-details').val(details);
+      } else if (number) {
         $('#rm-withdraw-account-details').val(number);
       } else {
         $('#rm-withdraw-account-details').val('');

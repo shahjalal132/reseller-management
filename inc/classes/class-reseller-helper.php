@@ -66,14 +66,81 @@ class Reseller_Helper {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             reseller_id bigint(20) unsigned NOT NULL,
             method_name varchar(20) NOT NULL,
-            number varchar(50) NOT NULL,
+            number varchar(64) NOT NULL,
             type varchar(20) NOT NULL DEFAULT 'personal',
+            method_details longtext DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY reseller_id (reseller_id)
         ) {$charset_collate};";
 
         dbDelta( $sql );
+
+        // One-time runtime upgrades for installs created before method_details / wider number column.
+        if ( '1' !== get_option( 'rm_pm_extra_columns', '' ) ) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+            $has_details = $wpdb->get_results( "SHOW COLUMNS FROM `{$table}` LIKE 'method_details'" );
+            if ( empty( $has_details ) ) {
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $wpdb->query( "ALTER TABLE `{$table}` ADD COLUMN method_details longtext DEFAULT NULL AFTER type" );
+            }
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query( "ALTER TABLE `{$table}` MODIFY number varchar(64) NOT NULL" );
+            update_option( 'rm_pm_extra_columns', '1', true );
+        }
+    }
+
+    /**
+     * Build the account line(s) shown on withdrawal requests for a saved payment method row.
+     *
+     * @param object $method Row from reseller_payment_methods.
+     *
+     * @return string
+     */
+    public static function format_payment_method_for_withdrawal( $method ) {
+        $key = strtolower( (string) ( $method->method_name ?? '' ) );
+        if ( 'bank' === $key ) {
+            $details = json_decode( (string) ( $method->method_details ?? '' ), true );
+            if ( ! is_array( $details ) ) {
+                $details = [];
+            }
+            $lines   = [];
+            $holder  = isset( $details['holder'] ) ? trim( (string) $details['holder'] ) : '';
+            $bank    = isset( $details['bank_name'] ) ? trim( (string) $details['bank_name'] ) : '';
+            $branch  = isset( $details['branch'] ) ? trim( (string) $details['branch'] ) : '';
+            $acct    = trim( (string) ( $method->number ?? '' ) );
+            if ( $holder !== '' ) {
+                $lines[] = sprintf(
+                    /* translators: %s: account holder name */
+                    __( 'Account holder: %s', 'reseller-management' ),
+                    $holder
+                );
+            }
+            if ( $bank !== '' ) {
+                $lines[] = sprintf(
+                    /* translators: %s: bank name */
+                    __( 'Bank name: %s', 'reseller-management' ),
+                    $bank
+                );
+            }
+            if ( $acct !== '' ) {
+                $lines[] = sprintf(
+                    /* translators: %s: bank account number */
+                    __( 'Account number: %s', 'reseller-management' ),
+                    $acct
+                );
+            }
+            if ( $branch !== '' ) {
+                $lines[] = sprintf(
+                    /* translators: %s: branch name */
+                    __( 'Branch: %s', 'reseller-management' ),
+                    $branch
+                );
+            }
+            return implode( "\n", $lines );
+        }
+
+        return trim( (string) ( $method->number ?? '' ) );
     }
 
     /**

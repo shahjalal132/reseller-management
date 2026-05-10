@@ -109,8 +109,9 @@ class Plugin_Activator {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             reseller_id bigint(20) unsigned NOT NULL,
             method_name varchar(20) NOT NULL,
-            number varchar(50) NOT NULL,
+            number varchar(64) NOT NULL,
             type varchar(20) NOT NULL DEFAULT 'personal',
+            method_details longtext DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY reseller_id (reseller_id)

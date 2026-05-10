@@ -344,21 +344,44 @@ class Reseller_Finance {
         $number      = sanitize_text_field( wp_unslash( $_POST['number'] ?? '' ) );
         $type        = sanitize_key( wp_unslash( $_POST['type'] ?? '' ) );
 
-        $allowed_methods = [ 'bkash', 'nagad', 'rocket' ];
-        $allowed_types   = [ 'agent', 'personal' ];
+        $allowed_methods = [ 'bkash', 'nagad', 'rocket', 'bank' ];
+        $allowed_types   = [ 'agent', 'personal', 'bank' ];
 
-        if ( ! in_array( $method_name, $allowed_methods, true ) || empty( $number ) || ! in_array( $type, $allowed_types, true ) ) {
-            wp_send_json_error( __( 'Please provide valid payment method details.', 'reseller-management' ), 422 );
+        $bank_holder   = sanitize_text_field( wp_unslash( $_POST['bank_holder'] ?? '' ) );
+        $bank_bankname = sanitize_text_field( wp_unslash( $_POST['bank_bank_name'] ?? '' ) );
+        $bank_branch   = sanitize_text_field( wp_unslash( $_POST['bank_branch'] ?? '' ) );
+
+        $method_details_json = null;
+
+        if ( 'bank' === $method_name ) {
+            $number = sanitize_text_field( wp_unslash( $_POST['bank_account_number'] ?? $_POST['number'] ?? '' ) );
+            $type   = 'bank';
+            if ( '' === $bank_holder || '' === $bank_bankname || '' === $number || '' === $bank_branch ) {
+                wp_send_json_error( __( 'Please fill in all bank account fields.', 'reseller-management' ), 422 );
+            }
+            $method_details_json = wp_json_encode(
+                [
+                    'holder'    => $bank_holder,
+                    'bank_name' => $bank_bankname,
+                    'branch'    => $bank_branch,
+                ]
+            );
+        } else {
+            if ( ! in_array( $method_name, $allowed_methods, true ) || empty( $number ) || ! in_array( $type, $allowed_types, true ) ) {
+                wp_send_json_error( __( 'Please provide valid payment method details.', 'reseller-management' ), 422 );
+            }
+            $method_details_json = '';
         }
 
         $table = Reseller_Helper::get_payment_methods_table_name();
         $data  = [
-            'reseller_id' => $reseller_id,
-            'method_name' => $method_name,
-            'number'      => $number,
-            'type'        => $type,
+            'reseller_id'     => $reseller_id,
+            'method_name'     => $method_name,
+            'number'          => $number,
+            'type'            => $type,
+            'method_details'  => $method_details_json,
         ];
-        $formats = [ '%d', '%s', '%s', '%s' ];
+        $formats = [ '%d', '%s', '%s', '%s', '%s' ];
 
         if ( $id > 0 ) {
             // Ensure ownership.

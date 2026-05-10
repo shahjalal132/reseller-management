@@ -283,7 +283,7 @@ if ( $view_wd ) :
                 <div class="rm-wdv-detail-icon">📱</div>
                 <div class="rm-wdv-detail-text">
                     <div class="key"><?php esc_html_e( 'Account Number', 'reseller-management' ); ?></div>
-                    <div class="val" style="font-family:monospace;"><?php echo esc_html( (string) $view_wd->account_details ); ?></div>
+                    <div class="val" style="font-family:monospace;white-space:pre-wrap;"><?php echo nl2br( esc_html( (string) $view_wd->account_details ) ); ?></div>
                 </div>
             </div>
             <div class="rm-wdv-detail-item">
