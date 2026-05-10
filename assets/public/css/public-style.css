@@ -1045,6 +1045,35 @@ body.rm-dashboard-body {
   text-overflow: ellipsis;
 }
 
+.rm-products-wrapper .screen-reader-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rm-product-card-variation-wrap {
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.rm-product-card-variation-select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+}
+
 .rm-product-price-details {
   margin-bottom: 12px;
   margin-top: auto;

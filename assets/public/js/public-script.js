@@ -877,6 +877,42 @@
 
       $('.rm-filter-limit, .rm-filter-search').on('input change', filterProducts);
 
+      function syncRmProductCardVariation($card) {
+        var $select = $card.find('.rm-product-card-variation-select');
+        if (!$select.length) {
+          return;
+        }
+        var $opt = $select.find('option:selected');
+        var reg = $opt.attr('data-regular') || '0';
+        var rec = $opt.attr('data-recommended') || '0';
+        $card.find('.rm-price-reg').text('Price: ' + reg + ' TK');
+        $card.find('.rm-price-ret b').text('Customer / Retail Price : ' + rec);
+        var copy = $opt.attr('data-copy') || '';
+        $card.find('.copy-btn').attr('data-copy', copy);
+        var url = $opt.attr('data-detail-url');
+        if (url) {
+          $card.find('a.rm-product-card-detail-link').attr('href', url);
+        }
+        var imgUrl = $opt.attr('data-image');
+        var defImg = $card.attr('data-default-image');
+        var $img = $card.find('.rm-product-image img');
+        if ($img.length) {
+          if (imgUrl) {
+            $img.attr('src', imgUrl);
+          } else if (defImg) {
+            $img.attr('src', defImg);
+          }
+        }
+      }
+
+      $productGrid.on('change', '.rm-product-card-variation-select', function () {
+        syncRmProductCardVariation($(this).closest('.rm-product-card'));
+      });
+
+      $('.rm-product-card--variable').each(function () {
+        syncRmProductCardVariation($(this));
+      });
+
       // Initial filter run
       filterProducts();
     }

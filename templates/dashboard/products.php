@@ -11,6 +11,7 @@ $products = get_posts(
 	[
 		'post_type'      => 'product',
 		'post_status'    => 'publish',
+		'post_parent'    => 0,
 		'posts_per_page' => -1,
 		'order'          => 'DESC',
 	]
@@ -85,6 +86,7 @@ $build_item = static function ( $current_product, $current_post, $title, $catego
 		'all_images'   => $all_images,
 		'copy_text'    => $copy_text,
 		'category_ids' => $category_ids,
+		'variations'   => [],
 	];
 };
 
@@ -100,9 +102,10 @@ foreach ( $products as $product_post ) {
 	}
 
 	if ( $product->is_type( 'variable' ) ) {
-		$variation_ids = $product->get_children();
-		foreach ( $variation_ids as $variation_id ) {
-			if ( 'publish' !== get_post_status( $variation_id ) ) {
+		$variation_rows = [];
+		foreach ( $product->get_available_variations() as $variation_data ) {
+			$variation_id = (int) ( $variation_data['variation_id'] ?? 0 );
+			if ( ! $variation_id ) {
 				continue;
 			}
 
@@ -112,17 +115,107 @@ foreach ( $products as $product_post ) {
 			}
 
 			$variation_post = get_post( $variation_id );
-			if ( ! $variation_post ) {
+			if ( ! $variation_post || 'publish' !== $variation_post->post_status ) {
 				continue;
 			}
 
-			$formatted_attributes = wc_get_formatted_variation( $variation_product, true, false, true );
-			$variation_title      = $product->get_name();
-			if ( $formatted_attributes ) {
-				$variation_title .= ' - ' . wp_strip_all_tags( $formatted_attributes );
+			$variation_label = wc_get_formatted_variation( $variation_product, true, false, true );
+			if ( ! $variation_label ) {
+				$label_parts = [];
+				$raw_attrs   = $variation_data['attributes'] ?? [];
+
+				foreach ( $raw_attrs as $raw_key => $raw_value ) {
+					if ( '' === (string) $raw_value ) {
+						continue;
+					}
+
+					$taxonomy   = str_replace( 'attribute_', '', (string) $raw_key );
+					$attr_label = wc_attribute_label( $taxonomy );
+					if ( ! $attr_label || $attr_label === $taxonomy ) {
+						$attr_label = ucwords( str_replace( [ 'pa_', '_' ], [ '', ' ' ], $taxonomy ) );
+					}
+
+					$display_value = (string) $raw_value;
+					if ( taxonomy_exists( $taxonomy ) ) {
+						$term = get_term_by( 'slug', (string) $raw_value, $taxonomy );
+						if ( $term && ! is_wp_error( $term ) ) {
+							$display_value = $term->name;
+						}
+					}
+
+					$label_parts[] = sprintf( '%s: %s', $attr_label, $display_value );
+				}
+
+				if ( ! empty( $label_parts ) ) {
+					$variation_label = implode( ', ', $label_parts );
+				} else {
+					$variation_label = sprintf(
+						/* translators: %d: variation ID. */
+						__( 'Variation #%d', 'reseller-management' ),
+						$variation_id
+					);
+				}
 			}
 
-			$product_items[] = $build_item( $variation_product, $variation_post, $variation_title, $product_cat_ids, $product );
+			$variation_label = wp_strip_all_tags( $variation_label );
+
+			$v_regular     = $variation_product->get_regular_price();
+			$v_recommended = $variation_product->get_meta( '_reseller_recommended_price' );
+			if ( '' === $v_recommended || null === $v_recommended ) {
+				$v_recommended = $variation_product->get_price();
+			}
+
+			$v_sku = $variation_product->get_sku();
+
+			$v_image_id = (int) $variation_product->get_image_id();
+			$v_image    = $v_image_id ? wp_get_attachment_image_url( $v_image_id, 'large' ) : '';
+
+			$v_copy = $product->get_name();
+			if ( $v_sku ) {
+				$v_copy .= " ({$v_sku})";
+			}
+			$v_copy .= "\n";
+			if ( $v_regular ) {
+				$v_copy .= "Price: {$v_regular} TK\n";
+			}
+			if ( $v_recommended ) {
+				$v_copy .= "Customer / Retail Price : {$v_recommended}\n";
+			}
+			$v_copy .= $variation_label . "\n";
+			$desc    = wp_strip_all_tags( $variation_post->post_content ?? '' );
+			if ( ! $desc ) {
+				$desc = wp_strip_all_tags( $product->get_description() );
+			}
+			if ( $desc ) {
+				$v_copy .= "\n" . $desc;
+			}
+
+			$variation_rows[] = [
+				'id'            => $variation_id,
+				'label'         => $variation_label,
+				'regular'       => $v_regular,
+				'recommended'   => $v_recommended,
+				'sku'           => $v_sku,
+				'image_url'     => $v_image,
+				'copy_text'     => $v_copy,
+			];
+		}
+
+		if ( ! empty( $variation_rows ) ) {
+			$first = $variation_rows[0];
+			$first_variation = wc_get_product( $first['id'] );
+			if ( $first_variation ) {
+				$card = $build_item( $first_variation, get_post( $first['id'] ), $product_post->post_title, $product_cat_ids, $product );
+				$card['id']          = $product->get_id();
+				$card['title']       = $product_post->post_title;
+				$card['variations']  = $variation_rows;
+				$card['regular']     = $first['regular'];
+				$card['recommended'] = $first['recommended'];
+				$card['copy_text']   = $first['copy_text'];
+				$sku_parts           = array_filter( array_column( $variation_rows, 'sku' ) );
+				$card['sku']         = implode( ' ', $sku_parts );
+				$product_items[]     = $card;
+			}
 		}
 		continue;
 	}
@@ -182,9 +275,14 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
             <p><?php esc_html_e( 'No products available yet.', 'reseller-management' ); ?></p>
         <?php else : ?>
             <?php foreach ( $product_items as $item ) : ?>
-                <article class="rm-product-card" data-categories="<?php echo esc_attr( implode( ',', $item['category_ids'] ) ); ?>" data-sku="<?php echo esc_attr( $item['sku'] ); ?>">
+                <?php
+                $has_variations = ! empty( $item['variations'] );
+                $detail_product_id = $has_variations ? (int) $item['variations'][0]['id'] : (int) $item['id'];
+                $detail_url        = add_query_arg( 'product_id', $detail_product_id );
+                ?>
+                <article class="rm-product-card<?php echo $has_variations ? ' rm-product-card--variable' : ''; ?>" data-categories="<?php echo esc_attr( implode( ',', $item['category_ids'] ) ); ?>" data-sku="<?php echo esc_attr( $item['sku'] ); ?>"<?php echo $has_variations && ! empty( $item['image_url'] ) ? ' data-default-image="' . esc_url( $item['image_url'] ) . '"' : ''; ?>>
                     <div class="rm-product-image">
-                        <a href="<?php echo esc_url( add_query_arg( 'product_id', $item['id'] ) ); ?>">
+                        <a class="rm-product-card-detail-link" href="<?php echo esc_url( $detail_url ); ?>">
                             <?php if ( $item['image_url'] ) : ?>
                                 <img src="<?php echo esc_url( $item['image_url'] ); ?>" alt="<?php echo esc_attr( $item['title'] ); ?>">
                             <?php else : ?>
@@ -194,10 +292,27 @@ if ( ! is_wp_error( $product_categories ) && ! empty( $product_categories ) ) {
                     </div>
                     <div class="rm-product-info">
                         <h4 class="rm-product-title" title="<?php echo esc_attr( $item['title'] ); ?>">
-                            <a href="<?php echo esc_url( add_query_arg( 'product_id', $item['id'] ) ); ?>">
+                            <a class="rm-product-card-detail-link" href="<?php echo esc_url( $detail_url ); ?>">
                                 <?php echo esc_html( $item['title'] ); ?>
                             </a>
                         </h4>
+                        <?php if ( $has_variations ) : ?>
+                            <div class="rm-product-card-variation-wrap">
+                                <label class="screen-reader-text" for="rm-variation-select-<?php echo esc_attr( (string) $item['id'] ); ?>"><?php esc_html_e( 'Variation', 'reseller-management' ); ?></label>
+                                <select id="rm-variation-select-<?php echo esc_attr( (string) $item['id'] ); ?>" class="rm-product-card-variation-select" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: product title */ __( 'Variation for %s', 'reseller-management' ), $item['title'] ) ); ?>">
+                                    <?php foreach ( $item['variations'] as $vrow ) : ?>
+                                        <option
+                                            value="<?php echo esc_attr( (string) $vrow['id'] ); ?>"
+                                            data-regular="<?php echo esc_attr( (string) ( $vrow['regular'] ? $vrow['regular'] : '0' ) ); ?>"
+                                            data-recommended="<?php echo esc_attr( (string) ( $vrow['recommended'] ? $vrow['recommended'] : '0' ) ); ?>"
+                                            data-copy="<?php echo esc_attr( $vrow['copy_text'] ); ?>"
+                                            data-image="<?php echo esc_attr( $vrow['image_url'] ); ?>"
+                                            data-detail-url="<?php echo esc_url( add_query_arg( 'product_id', $vrow['id'] ) ); ?>"
+                                        ><?php echo esc_html( $vrow['label'] ); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <?php endif; ?>
                         <div class="rm-product-price-details">
                             <span class="rm-price-reg">Price: <?php echo esc_html( $item['regular'] ? $item['regular'] : '0' ); ?> TK</span>
                             <span class="rm-price-ret"><b>Customer / Retail Price : <?php echo esc_html( $item['recommended'] ? $item['recommended'] : '0' ); ?></b></span>
