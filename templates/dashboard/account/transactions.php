@@ -22,6 +22,7 @@ $type_styles = [
 	'withdrawal_debit'  => [ 'bg' => '#fff7ed', 'text' => '#c2410c', 'label' => 'Withdrawal' ],
 	'shipping_debit'    => [ 'bg' => '#fef2f2', 'text' => '#b91c1c', 'label' => 'Shipping Cost' ],
 	'cod_deduction'             => [ 'bg' => '#f0f9ff', 'text' => '#0369a1', 'label' => 'COD Fee' ],
+	'packaging_cost_deduction'  => [ 'bg' => '#faf5ff', 'text' => '#7e22ce', 'label' => 'Packaging Cost' ],
 	'balance_adjustment_credit' => [ 'bg' => '#ecfdf5', 'text' => '#047857', 'label' => 'Balance credit' ],
 	'balance_adjustment_debit'  => [ 'bg' => '#fff1f2', 'text' => '#be123c', 'label' => 'Balance debit' ],
 ];

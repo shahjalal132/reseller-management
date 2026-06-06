@@ -24,6 +24,9 @@ class Reseller_Finance {
 
         // COD Deduction.
         add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_cod_deduction' ] );
+
+        // Packaging cost deduction.
+        add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_packaging_cost_deduction' ] );
     }
 
     /**
@@ -512,6 +515,40 @@ class Reseller_Finance {
                 'type'        => 'cod_deduction',
                 'amount'      => -1 * abs( $deduction ),
                 'description' => sprintf( 'COD Deduction (%s%%) for Order #%d', $percentage, $order_id ),
+            ]
+        );
+    }
+
+    /**
+     * Apply packaging cost deduction when an order is delivered.
+     *
+     * @param int $order_id Order ID.
+     *
+     * @return void
+     */
+    public function apply_packaging_cost_deduction( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return;
+        }
+
+        $reseller_id = (int) $order->get_meta( '_assigned_reseller_id', true );
+        if ( ! $reseller_id || self::ledger_entry_exists_for_order( $order_id, 'packaging_cost_deduction' ) ) {
+            return;
+        }
+
+        $deduction = Reseller_Helper::get_packaging_cost_amount();
+        if ( $deduction <= 0 ) {
+            return;
+        }
+
+        Reseller_Helper::insert_ledger_entry(
+            [
+                'reseller_id' => $reseller_id,
+                'order_id'    => $order_id,
+                'type'        => 'packaging_cost_deduction',
+                'amount'      => -1 * abs( $deduction ),
+                'description' => sprintf( 'Packaging Cost for Order #%d', $order_id ),
             ]
         );
     }
