@@ -395,6 +395,34 @@ class Reseller_Helper {
     }
 
     /**
+     * Whether packaging cost deduction is enabled in admin settings.
+     *
+     * @return bool
+     */
+    public static function is_packaging_cost_enabled() {
+        $settings = get_option( 'rm_settings', [] );
+
+        return ( $settings['packaging_cost_enabled'] ?? 'no' ) === 'yes';
+    }
+
+    /**
+     * Fixed packaging cost amount from admin settings (0 when disabled or invalid).
+     *
+     * @return float
+     */
+    public static function get_packaging_cost_amount() {
+        if ( ! self::is_packaging_cost_enabled() ) {
+            return 0.0;
+        }
+
+        $settings = get_option( 'rm_settings', [] );
+        $raw      = $settings['packaging_cost_input1'] ?? 0;
+        $val      = is_numeric( $raw ) ? (float) $raw : 0.0;
+
+        return max( 0.0, round( $val, 2 ) );
+    }
+
+    /**
      * Admin-defined shipping charge presets for the reseller order form.
      *
      * @return array<int, array{title: string, charge: float}>

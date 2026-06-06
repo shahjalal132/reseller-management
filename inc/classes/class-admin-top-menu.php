@@ -645,7 +645,7 @@ class Admin_Top_Menu {
             'cod_enabled'            => isset( $_POST['cod_enabled'] ) ? 'yes' : 'no',
             'cod_input1'             => sanitize_text_field( wp_unslash( $_POST['cod_input1'] ?? '' ) ),
             'packaging_cost_enabled' => isset( $_POST['packaging_cost_enabled'] ) ? 'yes' : 'no',
-            'packaging_cost_input1'  => sanitize_text_field( wp_unslash( $_POST['packaging_cost_input1'] ?? '' ) ),
+            'packaging_cost_input1'  => max( 0, round( (float) wc_format_decimal( wp_unslash( $_POST['packaging_cost_input1'] ?? 0 ) ), 2 ) ),
             'minimum_balance'        => max( 0, round( (float) wp_unslash( $_POST['minimum_balance'] ?? 0 ), 2 ) ),
             'shipping_presets'       => $shipping_presets,
             'steadfast_secret_token' => sanitize_text_field( wp_unslash( $_POST['steadfast_secret_token'] ?? '' ) ),

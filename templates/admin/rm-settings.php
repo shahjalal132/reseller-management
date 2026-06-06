@@ -71,7 +71,7 @@ if ( 'settings-updated' === $notice ) {
             <div class="rm-settings-grid mt-20">
                 <div class="rm-settings-field">
                     <label><?php esc_html_e( 'Packaging Cost', 'reseller-management' ); ?></label>
-                    <input type="text" name="packaging_cost_input1" value="<?php echo esc_attr( $rm_settings['packaging_cost_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter value', 'reseller-management' ); ?>">
+                    <input type="number" step="0.01" min="0" name="packaging_cost_input1" value="<?php echo esc_attr( $rm_settings['packaging_cost_input1'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Enter amount (e.g. 10)', 'reseller-management' ); ?>">
                 </div>
             </div>
         </div>
