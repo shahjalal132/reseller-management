@@ -981,9 +981,14 @@ body.rm-dashboard-body {
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .rm-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 480px) {
   .rm-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
   }
 
