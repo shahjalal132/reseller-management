@@ -40,6 +40,11 @@ $paid = floatval( $order->get_meta('_paid_amount') ?: '0' );
 
 $calculated_total = $items_subtotal + $shipping - $discount;
 $due = $calculated_total - $paid;
+
+$branding       = \BOILERPLATE\Inc\Reseller_Helper::get_branding_settings();
+$primary_color  = $branding['primary_color'];
+$body_font_stack = \BOILERPLATE\Inc\Reseller_Helper::get_font_stack( $branding['body_font'] );
+$fonts_url      = \BOILERPLATE\Inc\Reseller_Helper::get_branding_google_fonts_url( $branding );
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -47,10 +52,12 @@ $due = $calculated_total - $paid;
     <meta charset="<?php bloginfo( 'charset' ); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php printf( esc_html__( 'Invoice - Order #%s', 'reseller-management' ), $order->get_order_number() ); ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <?php if ( $fonts_url ) : ?>
+        <link href="<?php echo esc_url( $fonts_url ); ?>" rel="stylesheet">
+    <?php endif; ?>
     <style>
         :root {
-            --primary-color: #0d9488;
+            --primary-color: <?php echo esc_html( $primary_color ); ?>;
             --text-color: #334155;
             --text-muted: #64748b;
             --bg-color: #f8fafc;
@@ -58,7 +65,7 @@ $due = $calculated_total - $paid;
             --border-color: #e2e8f0;
         }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: <?php echo $body_font_stack; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from whitelisted fonts. ?>;
             margin: 0;
             padding: 0;
             background-color: #e5e7eb;

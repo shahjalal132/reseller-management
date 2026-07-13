@@ -56,6 +56,7 @@ class Enqueue_Assets {
 
         wp_enqueue_style( 'toast', PLUGIN_ADMIN_ASSETS_DIR_URL . '/css/toast.css', [], false, 'all' );
         wp_enqueue_style( 'wpb-admin-css', PLUGIN_ADMIN_ASSETS_DIR_URL . '/css/admin-style.css', [], time(), 'all' );
+        Reseller_Helper::enqueue_branding_assets( 'wpb-admin-css', 'admin' );
         wp_enqueue_script( 'wpb-admin-js', PLUGIN_ADMIN_ASSETS_DIR_URL . '/js/admin-script.js', [ 'jquery' ], time(), true );
         wp_localize_script(
             'wpb-admin-js',
@@ -73,6 +74,7 @@ class Enqueue_Assets {
     public function enqueue_public_assets() {
         wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true );
         wp_enqueue_style( 'wpb-public-css', PLUGIN_PUBLIC_ASSETS_URL . '/css/public-style.css', [], time(), 'all' );
+        Reseller_Helper::enqueue_branding_assets( 'wpb-public-css', 'public' );
         wp_enqueue_script( 'wpb-public-js', PLUGIN_PUBLIC_ASSETS_URL . '/js/public-script.js', [ 'jquery' ], time(), true );
         wp_localize_script(
             'wpb-public-js',
