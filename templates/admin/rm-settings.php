@@ -191,6 +191,87 @@ if ( 'settings-updated' === $notice ) {
 
     <div class="rm-section-card rm-settings-card mt-20">
         <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Contact Information', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <p class="description rm-settings-description-top"><?php esc_html_e( 'Shown in the website footer and used as defaults for live chat.', 'reseller-management' ); ?></p>
+            <?php
+            $contact_settings = \BOILERPLATE\Inc\Reseller_Helper::get_contact_settings( false );
+            $contact_fields   = \BOILERPLATE\Inc\Reseller_Helper::get_contact_field_defs();
+            ?>
+            <div class="rm-settings-grid">
+                <?php foreach ( $contact_fields as $field_key => $field ) :
+                    if ( 'contact' !== $field['section'] ) {
+                        continue;
+                    }
+                    $value = $contact_settings[ $field_key ] ?? '';
+                    ?>
+                    <div class="rm-settings-field<?php echo 'textarea' === $field['type'] ? ' rm-settings-field--full' : ''; ?>">
+                        <label for="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+                        <?php if ( 'textarea' === $field['type'] ) : ?>
+                            <textarea id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>" rows="3" class="rm-settings-textarea" placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>"><?php echo esc_textarea( $value ); ?></textarea>
+                        <?php else : ?>
+                            <input type="<?php echo esc_attr( 'email' === $field['type'] ? 'email' : 'text' ); ?>" id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $value ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>">
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card rm-settings-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Social Media', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <p class="description rm-settings-description-top"><?php esc_html_e( 'Leave blank to hide a network from the footer.', 'reseller-management' ); ?></p>
+            <div class="rm-settings-grid">
+                <?php foreach ( $contact_fields as $field_key => $field ) :
+                    if ( 'social' !== $field['section'] ) {
+                        continue;
+                    }
+                    $value = $contact_settings[ $field_key ] ?? '';
+                    ?>
+                    <div class="rm-settings-field">
+                        <label for="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+                        <input type="url" id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $value ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>">
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card rm-settings-card mt-20">
+        <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Live Chat', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <p class="description rm-settings-description-top"><?php esc_html_e( 'Floating buttons for Messenger, WhatsApp, and Call on public pages. Empty fields are hidden.', 'reseller-management' ); ?></p>
+            <div class="rm-form-group rm-settings-toggle-wrap">
+                <label class="rm-toggle">
+                    <input type="checkbox" name="chat_enabled" value="yes" <?php checked( 'yes', $contact_settings['chat_enabled'] ?? 'yes' ); ?>>
+                    <span class="rm-toggle-slider"></span>
+                    <span class="rm-toggle-label"><?php esc_html_e( 'Enable Live Chat Buttons', 'reseller-management' ); ?></span>
+                </label>
+            </div>
+            <div class="rm-settings-grid mt-20">
+                <?php foreach ( $contact_fields as $field_key => $field ) :
+                    if ( 'chat' !== $field['section'] || 'checkbox' === $field['type'] ) {
+                        continue;
+                    }
+                    $value = $contact_settings[ $field_key ] ?? '';
+                    ?>
+                    <div class="rm-settings-field">
+                        <label for="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+                        <input type="text" id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $value ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>">
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card rm-settings-card mt-20">
+        <div class="rm-card-header">
             <h3 class="rm-card-title"><?php esc_html_e( 'Steadfast Webhook Integration', 'reseller-management' ); ?></h3>
         </div>
         <div class="rm-card-body">
@@ -250,7 +331,10 @@ if ( 'settings-updated' === $notice ) {
     }
     .rm-settings-field input[type="text"],
     .rm-settings-field input[type="number"],
-    .rm-settings-field select.rm-settings-select {
+    .rm-settings-field input[type="email"],
+    .rm-settings-field input[type="url"],
+    .rm-settings-field select.rm-settings-select,
+    .rm-settings-field textarea.rm-settings-textarea {
         width: 100%;
         border: 1.5px solid #e5e7eb;
         border-radius: 8px;
@@ -263,8 +347,16 @@ if ( 'settings-updated' === $notice ) {
         outline: none;
         transition: border-color .18s, box-shadow .18s;
     }
+    .rm-settings-field textarea.rm-settings-textarea {
+        min-height: 84px;
+        resize: vertical;
+    }
+    .rm-settings-field--full {
+        grid-column: 1 / -1;
+    }
     .rm-settings-field input:focus,
-    .rm-settings-field select.rm-settings-select:focus {
+    .rm-settings-field select.rm-settings-select:focus,
+    .rm-settings-field textarea.rm-settings-textarea:focus {
         border-color: #005f5a;
         box-shadow: 0 0 0 3px rgba(0,95,90,.09);
     }

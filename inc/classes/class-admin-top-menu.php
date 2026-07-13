@@ -642,6 +642,7 @@ class Admin_Top_Menu {
         }
 
         $branding_saved = Reseller_Helper::sanitize_branding_from_post( wp_unslash( $_POST ) );
+        $contact_saved  = Reseller_Helper::sanitize_contact_from_post( wp_unslash( $_POST ) );
 
         $settings = array_merge(
             [
@@ -653,7 +654,8 @@ class Admin_Top_Menu {
                 'shipping_presets'       => $shipping_presets,
                 'steadfast_secret_token' => sanitize_text_field( wp_unslash( $_POST['steadfast_secret_token'] ?? '' ) ),
             ],
-            $branding_saved
+            $branding_saved,
+            $contact_saved
         );
 
         update_option( 'rm_settings', $settings );
