@@ -145,6 +145,52 @@ if ( 'settings-updated' === $notice ) {
 
     <div class="rm-section-card rm-settings-card mt-20">
         <div class="rm-card-header">
+            <h3 class="rm-card-title"><?php esc_html_e( 'Branding / Appearance', 'reseller-management' ); ?></h3>
+        </div>
+        <div class="rm-card-body">
+            <p class="description rm-settings-description-top"><?php esc_html_e( 'These colors and fonts apply to the reseller dashboard, homepage, admin hub, and invoices.', 'reseller-management' ); ?></p>
+            <?php
+            $branding      = \BOILERPLATE\Inc\Reseller_Helper::get_branding_settings();
+            $color_fields  = \BOILERPLATE\Inc\Reseller_Helper::get_branding_color_fields();
+            $font_choices  = \BOILERPLATE\Inc\Reseller_Helper::get_font_choices();
+            $color_field_ids = [];
+            ?>
+            <div class="rm-settings-grid">
+                <?php foreach ( $color_fields as $color_key => $color_field ) :
+                    $input_id          = 'branding_' . $color_key;
+                    $color_field_ids[] = $input_id;
+                    $color_value       = $branding[ $color_key ];
+                    ?>
+                    <div class="rm-settings-field">
+                        <label for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( $color_field['label'] ); ?></label>
+                        <div class="rm-settings-color-row">
+                            <input type="color" id="<?php echo esc_attr( $input_id ); ?>" name="<?php echo esc_attr( $input_id ); ?>" value="<?php echo esc_attr( $color_value ); ?>" class="rm-settings-color-input">
+                            <input type="text" id="<?php echo esc_attr( $input_id ); ?>_hex" value="<?php echo esc_attr( $color_value ); ?>" class="rm-settings-color-hex" maxlength="7" pattern="^#([A-Fa-f0-9]{6})$" aria-label="<?php echo esc_attr( $color_field['label'] ); ?>">
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <div class="rm-settings-field">
+                    <label for="branding_body_font"><?php esc_html_e( 'Body Font', 'reseller-management' ); ?></label>
+                    <select id="branding_body_font" name="branding_body_font" class="rm-settings-select">
+                        <?php foreach ( $font_choices as $font_value => $font_label ) : ?>
+                            <option value="<?php echo esc_attr( $font_value ); ?>" <?php selected( $branding['body_font'], $font_value ); ?>><?php echo esc_html( $font_label ); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="rm-settings-field">
+                    <label for="branding_heading_font"><?php esc_html_e( 'Heading Font', 'reseller-management' ); ?></label>
+                    <select id="branding_heading_font" name="branding_heading_font" class="rm-settings-select">
+                        <?php foreach ( $font_choices as $font_value => $font_label ) : ?>
+                            <option value="<?php echo esc_attr( $font_value ); ?>" <?php selected( $branding['heading_font'], $font_value ); ?>><?php echo esc_html( $font_label ); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rm-section-card rm-settings-card mt-20">
+        <div class="rm-card-header">
             <h3 class="rm-card-title"><?php esc_html_e( 'Steadfast Webhook Integration', 'reseller-management' ); ?></h3>
         </div>
         <div class="rm-card-body">
@@ -203,7 +249,8 @@ if ( 'settings-updated' === $notice ) {
         letter-spacing: .04em;
     }
     .rm-settings-field input[type="text"],
-    .rm-settings-field input[type="number"] {
+    .rm-settings-field input[type="number"],
+    .rm-settings-field select.rm-settings-select {
         width: 100%;
         border: 1.5px solid #e5e7eb;
         border-radius: 8px;
@@ -216,9 +263,28 @@ if ( 'settings-updated' === $notice ) {
         outline: none;
         transition: border-color .18s, box-shadow .18s;
     }
-    .rm-settings-field input:focus {
+    .rm-settings-field input:focus,
+    .rm-settings-field select.rm-settings-select:focus {
         border-color: #005f5a;
         box-shadow: 0 0 0 3px rgba(0,95,90,.09);
+    }
+    .rm-settings-color-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .rm-settings-color-input {
+        width: 48px !important;
+        min-height: 40px !important;
+        padding: 4px !important;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+    }
+    .rm-settings-color-hex {
+        flex: 1;
+        min-width: 0;
     }
     .rm-settings-description-top { margin-top: 0; }
 
@@ -321,3 +387,48 @@ if ( 'settings-updated' === $notice ) {
         .rm-settings-actions-row { margin-top: 12px; }
     }
 </style>
+<script>
+(function () {
+    function syncColorPair(colorId, hexId) {
+        var colorEl = document.getElementById(colorId);
+        var hexEl = document.getElementById(hexId);
+        if (!colorEl || !hexEl) return;
+        colorEl.addEventListener('input', function () {
+            hexEl.value = colorEl.value;
+        });
+        hexEl.addEventListener('input', function () {
+            var v = hexEl.value.trim();
+            if (/^#([A-Fa-f0-9]{6})$/.test(v)) {
+                colorEl.value = v;
+            }
+        });
+        hexEl.addEventListener('change', function () {
+            var v = hexEl.value.trim();
+            if (/^#([A-Fa-f0-9]{6})$/.test(v)) {
+                colorEl.value = v.toLowerCase();
+                hexEl.value = v.toLowerCase();
+            } else {
+                hexEl.value = colorEl.value;
+            }
+        });
+    }
+    <?php echo wp_json_encode( $color_field_ids ); ?>.forEach(function (colorId) {
+        syncColorPair(colorId, colorId + '_hex');
+    });
+
+    var form = document.querySelector('form[action*="admin-post.php"]');
+    if (form) {
+        form.addEventListener('submit', function () {
+            <?php echo wp_json_encode( $color_field_ids ); ?>.forEach(function (colorId) {
+                var colorEl = document.getElementById(colorId);
+                var hexEl = document.getElementById(colorId + '_hex');
+                if (!colorEl || !hexEl) return;
+                var v = hexEl.value.trim();
+                if (/^#([A-Fa-f0-9]{6})$/.test(v)) {
+                    colorEl.value = v.toLowerCase();
+                }
+            });
+        });
+    }
+})();
+</script>

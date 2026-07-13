@@ -581,4 +581,456 @@ class Reseller_Helper {
             'nid_back_id'   => '_reseller_nid_back_id',
         ];
     }
+
+    /**
+     * Branding color field definitions (internal key => meta).
+     *
+     * @return array<string, array{label: string, default: string}>
+     */
+    public static function get_branding_color_fields() {
+        return [
+            'primary_color'      => [
+                'label'   => __( 'Primary Color', 'reseller-management' ),
+                'default' => '#005b4e',
+            ],
+            'accent_color'       => [
+                'label'   => __( 'Accent Color', 'reseller-management' ),
+                'default' => '#f59e0b',
+            ],
+            'header_bg'          => [
+                'label'   => __( 'Header Background', 'reseller-management' ),
+                'default' => '#ffffff',
+            ],
+            'header_text'        => [
+                'label'   => __( 'Header Text Color', 'reseller-management' ),
+                'default' => '#0f172a',
+            ],
+            'footer_bg'          => [
+                'label'   => __( 'Footer Background', 'reseller-management' ),
+                'default' => '#0f172a',
+            ],
+            'footer_text'        => [
+                'label'   => __( 'Footer Text Color', 'reseller-management' ),
+                'default' => '#cbd5e1',
+            ],
+            'link_color'         => [
+                'label'   => __( 'Link Color', 'reseller-management' ),
+                'default' => '#005b4e',
+            ],
+            'button_color'       => [
+                'label'   => __( 'Button Color', 'reseller-management' ),
+                'default' => '#005b4e',
+            ],
+            'button_hover_color' => [
+                'label'   => __( 'Button Hover Color', 'reseller-management' ),
+                'default' => '#004d40',
+            ],
+            'text_color'         => [
+                'label'   => __( 'Text Color', 'reseller-management' ),
+                'default' => '#0f172a',
+            ],
+            'heading_color'      => [
+                'label'   => __( 'Heading Color', 'reseller-management' ),
+                'default' => '#0f172a',
+            ],
+        ];
+    }
+
+    /**
+     * Default branding values.
+     *
+     * @return array<string, string>
+     */
+    public static function get_branding_defaults() {
+        $defaults = [
+            'body_font'    => 'Arial',
+            'heading_font' => 'Arial',
+        ];
+
+        foreach ( self::get_branding_color_fields() as $key => $field ) {
+            $defaults[ $key ] = $field['default'];
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * Curated font choices for branding settings.
+     *
+     * @return array<string, string> slug => label
+     */
+    public static function get_font_choices() {
+        return [
+            'Arial'            => 'Arial',
+            'Helvetica'        => 'Helvetica',
+            'system-ui'        => 'System UI',
+            'Georgia'          => 'Georgia',
+            'Verdana'          => 'Verdana',
+            'Inter'            => 'Inter',
+            'Roboto'           => 'Roboto',
+            'Open Sans'        => 'Open Sans',
+            'Lato'             => 'Lato',
+            'Poppins'          => 'Poppins',
+            'Nunito'           => 'Nunito',
+            'Montserrat'       => 'Montserrat',
+            'Source Sans 3'    => 'Source Sans 3',
+            'Playfair Display' => 'Playfair Display',
+            'Merriweather'     => 'Merriweather',
+        ];
+    }
+
+    /**
+     * Fonts that ship with the OS and do not need Google Fonts.
+     *
+     * @return string[]
+     */
+    public static function get_system_fonts() {
+        return [ 'Arial', 'Helvetica', 'system-ui', 'Georgia', 'Verdana', 'Times New Roman', 'Courier New', 'Trebuchet MS' ];
+    }
+
+    /**
+     * Resolved branding settings with defaults.
+     *
+     * @return array<string, string>
+     */
+    public static function get_branding_settings() {
+        $defaults = self::get_branding_defaults();
+        $settings = get_option( 'rm_settings', [] );
+        $fonts    = array_keys( self::get_font_choices() );
+        $out      = [];
+
+        foreach ( self::get_branding_color_fields() as $key => $field ) {
+            $hex = sanitize_hex_color( $settings[ 'branding_' . $key ] ?? '' );
+            $out[ $key ] = $hex ? $hex : $defaults[ $key ];
+        }
+
+        $body    = sanitize_text_field( $settings['branding_body_font'] ?? '' );
+        $heading = sanitize_text_field( $settings['branding_heading_font'] ?? '' );
+
+        $out['body_font']    = in_array( $body, $fonts, true ) ? $body : $defaults['body_font'];
+        $out['heading_font'] = in_array( $heading, $fonts, true ) ? $heading : $defaults['heading_font'];
+
+        return $out;
+    }
+
+    /**
+     * Sanitize branding fields from a settings POST payload.
+     *
+     * @param array $post Raw POST data (already unslashed preferred).
+     *
+     * @return array<string, string> Keys prefixed with branding_ for rm_settings.
+     */
+    public static function sanitize_branding_from_post( array $post ) {
+        $defaults = self::get_branding_defaults();
+        $fonts    = array_keys( self::get_font_choices() );
+        $out      = [];
+
+        foreach ( array_keys( self::get_branding_color_fields() ) as $key ) {
+            $hex = sanitize_hex_color( $post[ 'branding_' . $key ] ?? '' );
+            $out[ 'branding_' . $key ] = $hex ? $hex : $defaults[ $key ];
+        }
+
+        $body    = sanitize_text_field( $post['branding_body_font'] ?? '' );
+        $heading = sanitize_text_field( $post['branding_heading_font'] ?? '' );
+
+        $out['branding_body_font']    = in_array( $body, $fonts, true ) ? $body : $defaults['body_font'];
+        $out['branding_heading_font'] = in_array( $heading, $fonts, true ) ? $heading : $defaults['heading_font'];
+
+        return $out;
+    }
+
+    /**
+     * Build a CSS font-family stack for a chosen font name.
+     *
+     * @param string $font Font name from get_font_choices().
+     *
+     * @return string
+     */
+    public static function get_font_stack( $font ) {
+        $serif    = [ 'Georgia', 'Playfair Display', 'Merriweather', 'Times New Roman' ];
+        $fallback = in_array( $font, $serif, true ) ? 'serif' : 'sans-serif';
+
+        if ( 'system-ui' === $font ) {
+            return 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        }
+
+        $safe = preg_replace( "/[^a-zA-Z0-9 \\-]/", '', (string) $font );
+
+        return "'" . $safe . "', " . $fallback;
+    }
+
+    /**
+     * Darken a hex color by a percentage (0–100).
+     *
+     * @param string $hex Hex color.
+     * @param int    $percent Percent to darken.
+     *
+     * @return string
+     */
+    public static function darken_hex_color( $hex, $percent = 12 ) {
+        $hex = ltrim( (string) $hex, '#' );
+        if ( 3 === strlen( $hex ) ) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+            return '#004d40';
+        }
+
+        $ratio = max( 0, min( 100, (int) $percent ) ) / 100;
+        $out   = '#';
+        for ( $i = 0; $i < 3; $i++ ) {
+            $channel = hexdec( substr( $hex, $i * 2, 2 ) );
+            $channel = (int) max( 0, min( 255, round( $channel * ( 1 - $ratio ) ) ) );
+            $out    .= str_pad( dechex( $channel ), 2, '0', STR_PAD_LEFT );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Lighten a hex color by a percentage (0–100).
+     *
+     * @param string $hex Hex color.
+     * @param int    $percent Percent to lighten.
+     *
+     * @return string
+     */
+    public static function lighten_hex_color( $hex, $percent = 12 ) {
+        $hex = ltrim( (string) $hex, '#' );
+        if ( 3 === strlen( $hex ) ) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+            return '#007a73';
+        }
+
+        $ratio = max( 0, min( 100, (int) $percent ) ) / 100;
+        $out   = '#';
+        for ( $i = 0; $i < 3; $i++ ) {
+            $channel = hexdec( substr( $hex, $i * 2, 2 ) );
+            $channel = (int) max( 0, min( 255, round( $channel + ( ( 255 - $channel ) * $ratio ) ) ) );
+            $out    .= str_pad( dechex( $channel ), 2, '0', STR_PAD_LEFT );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Google Fonts stylesheet URL for non-system fonts in branding, or empty string.
+     *
+     * @param array|null $branding Optional branding array from get_branding_settings().
+     *
+     * @return string
+     */
+    public static function get_branding_google_fonts_url( $branding = null ) {
+        $branding = is_array( $branding ) ? $branding : self::get_branding_settings();
+        $system   = self::get_system_fonts();
+        $needed   = [];
+
+        foreach ( [ $branding['body_font'], $branding['heading_font'] ] as $font ) {
+            if ( ! in_array( $font, $system, true ) && ! in_array( $font, $needed, true ) ) {
+                $needed[] = $font;
+            }
+        }
+
+        if ( empty( $needed ) ) {
+            return '';
+        }
+
+        $families = [];
+        foreach ( $needed as $font ) {
+            $families[] = 'family=' . rawurlencode( $font ) . ':wght@400;500;600;700';
+        }
+
+        return 'https://fonts.googleapis.com/css2?' . implode( '&', $families ) . '&display=swap';
+    }
+
+    /**
+     * Inline CSS that overrides theme CSS variables from branding settings.
+     *
+     * @param string     $context  'public' or 'admin'.
+     * @param array|null $branding Optional branding array.
+     *
+     * @return string
+     */
+    public static function get_branding_inline_css( $context = 'public', $branding = null ) {
+        $branding = is_array( $branding ) ? $branding : self::get_branding_settings();
+
+        $primary       = $branding['primary_color'];
+        $accent        = $branding['accent_color'];
+        $header_bg     = $branding['header_bg'];
+        $header_text   = $branding['header_text'];
+        $footer_bg     = $branding['footer_bg'];
+        $footer_text   = $branding['footer_text'];
+        $link          = $branding['link_color'];
+        $button        = $branding['button_color'];
+        $button_hover  = $branding['button_hover_color'];
+        $text          = $branding['text_color'];
+        $heading_color = $branding['heading_color'];
+        $sidebar_dark  = self::darken_hex_color( $primary, 15 );
+        $light         = self::lighten_hex_color( $primary, 18 );
+        $sidebar_hover = self::lighten_hex_color( $sidebar_dark, 10 );
+        $body          = self::get_font_stack( $branding['body_font'] );
+        $heading       = self::get_font_stack( $branding['heading_font'] );
+
+        if ( 'admin' === $context ) {
+            return ":root {
+  --primary-color: {$primary};
+  --primary-light-color: {$light};
+  --rm-primary: {$primary};
+  --rm-primary-dark: {$button_hover};
+  --rm-accent: {$accent};
+  --rm-text: {$text};
+  --rm-button: {$button};
+  --rm-button-hover: {$button_hover};
+  --rm-link: {$link};
+  --rm-heading: {$heading_color};
+}
+.rm-page-header .rm-page-title,
+.page-heading-title h1,
+.rm-card-title {
+  font-family: {$heading};
+  color: {$heading_color};
+}
+.rm-settings-btn--primary,
+.rm-pay-btn {
+  background: {$button} !important;
+}
+.rm-settings-btn--primary:hover,
+.rm-pay-btn:hover {
+  background: {$button_hover} !important;
+}
+a {
+  color: {$link};
+}";
+        }
+
+        return ":root {
+  --rm-primary: {$primary};
+  --rm-primary-dark: {$button_hover};
+  --rm-sidebar-bg: {$sidebar_dark};
+  --rm-sidebar-hover: {$sidebar_hover};
+  --rm-sidebar-active: {$sidebar_hover};
+  --rm-accent: {$accent};
+  --rm-text: {$text};
+  --rm-header-bg: {$header_bg};
+  --rm-header-text: {$header_text};
+  --rm-footer-bg: {$footer_bg};
+  --rm-footer-text: {$footer_text};
+  --rm-link: {$link};
+  --rm-button: {$button};
+  --rm-button-hover: {$button_hover};
+  --rm-heading: {$heading_color};
+  --primary-color: {$primary};
+}
+body.rm-dashboard-body,
+body.rmhp-body,
+.rm-dashboard-body,
+.rmhp-body {
+  font-family: {$body} !important;
+  color: {$text};
+}
+.rm-dashboard-header h1,
+.rm-auth-header h2,
+.rm-card h3,
+.rmhp-hero-title,
+.rmhp-section-title,
+.rmhp-body h1,
+.rmhp-body h2,
+.rmhp-body h3,
+.rmhp-body h4,
+.rmhp-body h5,
+.rmhp-body h6,
+.rm-dashboard-body h1,
+.rm-dashboard-body h2,
+.rm-dashboard-body h3 {
+  font-family: {$heading};
+  color: {$heading_color};
+}
+.rmhp-header {
+  background: {$header_bg} !important;
+}
+.rmhp-logo-text,
+.rmhp-nav-link {
+  color: {$header_text} !important;
+}
+.rmhp-nav-link:hover,
+.rmhp-nav-link.rmhp-nav-active {
+  color: {$primary} !important;
+}
+.rmhp-footer {
+  background: {$footer_bg} !important;
+  color: {$footer_text} !important;
+}
+.rmhp-footer .rmhp-logo-text,
+.rmhp-footer-col-title,
+.rmhp-footer-bar {
+  color: {$footer_text} !important;
+}
+.rmhp-footer-tagline,
+.rmhp-footer-links a,
+.rmhp-footer-contact,
+.rmhp-footer-dev,
+.rmhp-social-link {
+  color: {$footer_text} !important;
+  opacity: .85;
+}
+.rmhp-footer-links a:hover,
+.rmhp-footer-dev a:hover {
+  color: {$accent} !important;
+  opacity: 1;
+}
+.rm-dashboard-body a:not(.rm-button):not(.rmhp-btn):not(.rm-nav-link),
+.rmhp-body a:not(.rmhp-btn):not(.rmhp-nav-link):not(.rm-button) {
+  color: {$link};
+}
+.rm-button,
+.rm-button-primary,
+.rmhp-btn-primary,
+.rm-button-submit {
+  background: {$button} !important;
+  border-color: {$button} !important;
+  color: #fff !important;
+}
+.rm-button:hover,
+.rm-button-primary:hover,
+.rmhp-btn-primary:hover,
+.rm-button-submit:hover {
+  background: {$button_hover} !important;
+  border-color: {$button_hover} !important;
+  color: #fff !important;
+}
+.rmhp-btn-outline,
+.rm-button-outline {
+  color: {$button} !important;
+  border-color: {$button} !important;
+}
+.rmhp-btn-outline:hover,
+.rm-button-outline:hover {
+  background: {$button} !important;
+  color: #fff !important;
+}";
+    }
+
+    /**
+     * Enqueue Google Fonts (if needed) and attach branding CSS to a stylesheet handle.
+     *
+     * @param string $style_handle Registered style handle to attach inline CSS to.
+     * @param string $context      'public' or 'admin'.
+     *
+     * @return void
+     */
+    public static function enqueue_branding_assets( $style_handle, $context = 'public' ) {
+        $branding  = self::get_branding_settings();
+        $fonts_url = self::get_branding_google_fonts_url( $branding );
+
+        if ( $fonts_url ) {
+            wp_enqueue_style( 'rm-branding-fonts', $fonts_url, [], null );
+        }
+
+        $css = self::get_branding_inline_css( $context, $branding );
+        if ( $css ) {
+            wp_add_inline_style( $style_handle, $css );
+        }
+    }
 }

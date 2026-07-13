@@ -292,6 +292,7 @@ class Reseller_Auth {
      */
     public function enqueue_login_assets() {
         wp_enqueue_style( 'wpb-public-css', PLUGIN_PUBLIC_ASSETS_URL . '/css/public-style.css', [], time(), 'all' );
+        Reseller_Helper::enqueue_branding_assets( 'wpb-public-css', 'public' );
         wp_enqueue_script( 'wpb-public-js', PLUGIN_PUBLIC_ASSETS_URL . '/js/public-script.js', [ 'jquery' ], time(), true );
     }
 
