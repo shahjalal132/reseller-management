@@ -4097,4 +4097,19 @@ body.rm-dashboard-body {
     flex-wrap: wrap;
     gap: 8px;
   }
+}.rm-button-modern { transition: all 0.3s ease; } .rm-button-modern:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); } .rm-button-modern:active { transform: translateY(0); }
+
+.rm-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: rm-spin 0.75s linear infinite;
+  vertical-align: middle;
+}
+@keyframes rm-spin {
+  to { transform: rotate(360deg); }
 }
