@@ -22,6 +22,7 @@ class Reseller_Auth {
         add_filter( 'woocommerce_login_redirect', [ $this, 'custom_login_redirect' ], 10, 2 );
         add_filter( 'login_redirect', [ $this, 'custom_login_redirect' ], 10, 3 );
         add_action( 'template_redirect', [ $this, 'restrict_dashboard_access' ] );
+        add_filter( 'authenticate', [ $this, 'authenticate_by_phone' ], 10, 3 );
     }
 
     /**
@@ -280,6 +281,11 @@ class Reseller_Auth {
                     regP.appendChild(regA);
                     nav.parentNode.insertBefore(regP, nav.nextSibling);
                 }
+                
+                var userLabel = loginDiv.querySelector('label[for="user_login"]');
+                if (userLabel && userLabel.childNodes.length > 0) {
+                    userLabel.childNodes[0].nodeValue = '<?php esc_html_e( 'Username, Email, or Phone', 'reseller-management' ); ?>';
+                }
             });
         </script>
         <?php
@@ -447,5 +453,59 @@ class Reseller_Auth {
                 }
             }
         }
+    }
+
+    /**
+     * Authenticate users using their phone number.
+     *
+     * @param \WP_User|\WP_Error|null $user     The user or error object.
+     * @param string                  $username The username provided.
+     * @param string                  $password The password provided.
+     *
+     * @return \WP_User|\WP_Error|null
+     */
+    public function authenticate_by_phone( $user, $username, $password ) {
+        if ( $user instanceof \WP_User ) {
+            return $user;
+        }
+
+        if ( empty( $username ) || empty( $password ) ) {
+            return $user;
+        }
+
+        $users = get_users( [
+            'meta_query' => [
+                'relation' => 'OR',
+                [
+                    'key'     => '_reseller_phone',
+                    'value'   => $username,
+                    'compare' => '=',
+                ],
+                [
+                    'key'     => 'billing_phone',
+                    'value'   => $username,
+                    'compare' => '=',
+                ],
+            ],
+            'number'     => 1,
+        ] );
+
+        if ( ! empty( $users ) ) {
+            $user_obj = $users[0];
+            if ( wp_check_password( $password, $user_obj->user_pass, $user_obj->ID ) ) {
+                return $user_obj;
+            } else {
+                return new \WP_Error(
+                    'incorrect_password',
+                    sprintf(
+                        /* translators: %s: Username. */
+                        __( '<strong>Error:</strong> The password you entered for the phone number %s is incorrect.', 'reseller-management' ),
+                        '<strong>' . esc_html( $username ) . '</strong>'
+                    )
+                );
+            }
+        }
+
+        return $user;
     }
 }
