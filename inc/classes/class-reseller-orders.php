@@ -202,7 +202,7 @@ class Reseller_Orders {
      */
     public static function get_order_status_counts( $user_id ) {
         $orders = self::get_reseller_orders( $user_id );
-        return self::categorize_orders_for_stats( $orders );
+        return self::categorize_orders_for_status_cards( $orders );
     }
 
     /**
@@ -227,7 +227,70 @@ class Reseller_Orders {
     }
 
     /**
-     * Categorize orders into stats buckets.
+     * Categorize orders into status-card buckets for the orders dashboard.
+     *
+     * @param array<\WC_Order> $orders List of orders.
+     *
+     * @return array<string, int>
+     */
+    private static function categorize_orders_for_status_cards( $orders ) {
+        $stats = [
+            'new'        => 0,
+            'pending'    => 0,
+            'confirmed'  => 0,
+            'packaging'  => 0,
+            'shipping'   => 0,
+            'delivered'  => 0,
+            'wfr'        => 0,
+            'returned'   => 0,
+            'cancel'     => 0,
+            'all'        => count( $orders ),
+            'incomplete' => 0,
+        ];
+
+        foreach ( $orders as $order ) {
+            switch ( $order->get_status() ) {
+                case 'processing':
+                    $stats['new']++;
+                    break;
+                case 'pending':
+                case 'on-hold':
+                    $stats['pending']++;
+                    break;
+                case 'confirmed':
+                    $stats['confirmed']++;
+                    break;
+                case 'packaging':
+                    $stats['packaging']++;
+                    break;
+                case 'shipping':
+                    $stats['shipping']++;
+                    break;
+                case 'delivered':
+                case 'completed':
+                    $stats['delivered']++;
+                    break;
+                case 'wfr':
+                    $stats['wfr']++;
+                    break;
+                case 'returned':
+                case 'refunded':
+                    $stats['returned']++;
+                    break;
+                case 'cancelled':
+                    $stats['cancel']++;
+                    break;
+                case 'failed':
+                    $stats['incomplete']++;
+                    break;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Categorize orders into stats buckets for the dashboard chart.
      *
      * @param array<\WC_Order> $orders List of orders.
      *
