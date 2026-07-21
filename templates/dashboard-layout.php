@@ -30,6 +30,8 @@ if ( ! \BOILERPLATE\Inc\Reseller_Helper::is_reseller_approved( get_current_user_
 
 <?php \BOILERPLATE\Inc\Reseller_Dashboard::get_instance()->render_dashboard_layout(); ?>
 
+<?php include __DIR__ . '/template-parts/live-chat-widget.php'; ?>
+
 <?php wp_footer(); ?>
 </body>
 </html>
