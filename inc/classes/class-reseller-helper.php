@@ -1033,4 +1033,338 @@ body.rmhp-body,
             wp_add_inline_style( $style_handle, $css );
         }
     }
+
+    /**
+     * Contact / social / live-chat field definitions.
+     *
+     * @return array<string, array{label: string, type: string, default: string, placeholder?: string, section: string}>
+     */
+    public static function get_contact_field_defs() {
+        return [
+            'contact_phone'   => [
+                'label'       => __( 'Phone Number', 'reseller-management' ),
+                'type'        => 'text',
+                'default'     => '',
+                'placeholder' => '+8801XXXXXXXXX',
+                'section'     => 'contact',
+            ],
+            'contact_email'   => [
+                'label'       => __( 'Email Address', 'reseller-management' ),
+                'type'        => 'email',
+                'default'     => '',
+                'placeholder' => 'info@example.com',
+                'section'     => 'contact',
+            ],
+            'contact_address' => [
+                'label'       => __( 'Address', 'reseller-management' ),
+                'type'        => 'textarea',
+                'default'     => '',
+                'placeholder' => __( 'Office address', 'reseller-management' ),
+                'section'     => 'contact',
+            ],
+            'contact_website' => [
+                'label'       => __( 'Website URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://example.com',
+                'section'     => 'contact',
+            ],
+            'social_facebook'  => [
+                'label'       => __( 'Facebook URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://facebook.com/yourpage',
+                'section'     => 'social',
+            ],
+            'social_instagram' => [
+                'label'       => __( 'Instagram URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://instagram.com/yourpage',
+                'section'     => 'social',
+            ],
+            'social_twitter'   => [
+                'label'       => __( 'Twitter / X URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://x.com/yourpage',
+                'section'     => 'social',
+            ],
+            'social_youtube'   => [
+                'label'       => __( 'YouTube URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://youtube.com/@yourchannel',
+                'section'     => 'social',
+            ],
+            'social_linkedin'  => [
+                'label'       => __( 'LinkedIn URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://linkedin.com/company/yourpage',
+                'section'     => 'social',
+            ],
+            'social_tiktok'    => [
+                'label'       => __( 'TikTok URL', 'reseller-management' ),
+                'type'        => 'url',
+                'default'     => '',
+                'placeholder' => 'https://tiktok.com/@yourpage',
+                'section'     => 'social',
+            ],
+            'chat_enabled'          => [
+                'label'   => __( 'Enable Live Chat Buttons', 'reseller-management' ),
+                'type'    => 'checkbox',
+                'default' => 'yes',
+                'section' => 'chat',
+            ],
+            'chat_messenger'        => [
+                'label'       => __( 'Messenger Page URL or Username', 'reseller-management' ),
+                'type'        => 'text',
+                'default'     => '',
+                'placeholder' => 'https://m.me/yourpage or yourpage',
+                'section'     => 'chat',
+            ],
+            'chat_whatsapp'         => [
+                'label'       => __( 'WhatsApp Number', 'reseller-management' ),
+                'type'        => 'text',
+                'default'     => '',
+                'placeholder' => '8801XXXXXXXXX',
+                'section'     => 'chat',
+            ],
+            'chat_call'             => [
+                'label'       => __( 'Call Number', 'reseller-management' ),
+                'type'        => 'text',
+                'default'     => '',
+                'placeholder' => '+8801XXXXXXXXX',
+                'section'     => 'chat',
+            ],
+            'chat_whatsapp_message' => [
+                'label'       => __( 'WhatsApp Pre-filled Message', 'reseller-management' ),
+                'type'        => 'text',
+                'default'     => '',
+                'placeholder' => __( 'Hello! I need help.', 'reseller-management' ),
+                'section'     => 'chat',
+            ],
+        ];
+    }
+
+    /**
+     * Resolved contact / social / chat settings.
+     *
+     * @param bool $with_fallbacks Apply email/website/phone fallbacks for frontend display.
+     *
+     * @return array<string, string>
+     */
+    public static function get_contact_settings( $with_fallbacks = true ) {
+        $settings = get_option( 'rm_settings', [] );
+        $out      = [];
+
+        foreach ( self::get_contact_field_defs() as $key => $field ) {
+            $raw = $settings[ $key ] ?? $field['default'];
+
+            if ( 'checkbox' === $field['type'] ) {
+                $out[ $key ] = ( 'yes' === $raw ) ? 'yes' : 'no';
+                continue;
+            }
+
+            if ( 'email' === $field['type'] ) {
+                $out[ $key ] = sanitize_email( (string) $raw );
+                continue;
+            }
+
+            if ( 'url' === $field['type'] ) {
+                $out[ $key ] = esc_url_raw( (string) $raw );
+                continue;
+            }
+
+            if ( 'textarea' === $field['type'] ) {
+                $out[ $key ] = sanitize_textarea_field( (string) $raw );
+                continue;
+            }
+
+            $out[ $key ] = sanitize_text_field( (string) $raw );
+        }
+
+        if ( $with_fallbacks ) {
+            if ( '' === $out['contact_email'] ) {
+                $out['contact_email'] = sanitize_email( (string) get_option( 'admin_email', '' ) );
+            }
+            if ( '' === $out['contact_website'] ) {
+                $out['contact_website'] = home_url( '/' );
+            }
+            if ( '' === $out['chat_call'] && '' !== $out['contact_phone'] ) {
+                $out['chat_call'] = $out['contact_phone'];
+            }
+            if ( '' === $out['chat_whatsapp'] && '' !== $out['contact_phone'] ) {
+                $out['chat_whatsapp'] = $out['contact_phone'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Sanitize contact/social/chat fields from settings POST.
+     *
+     * @param array $post Unslashed POST data.
+     *
+     * @return array<string, string>
+     */
+    public static function sanitize_contact_from_post( array $post ) {
+        $out = [];
+
+        foreach ( self::get_contact_field_defs() as $key => $field ) {
+            if ( 'checkbox' === $field['type'] ) {
+                $out[ $key ] = isset( $post[ $key ] ) ? 'yes' : 'no';
+                continue;
+            }
+
+            $raw = $post[ $key ] ?? '';
+
+            if ( 'email' === $field['type'] ) {
+                $out[ $key ] = sanitize_email( (string) $raw );
+                continue;
+            }
+
+            if ( 'url' === $field['type'] ) {
+                $out[ $key ] = esc_url_raw( (string) $raw );
+                continue;
+            }
+
+            if ( 'textarea' === $field['type'] ) {
+                $out[ $key ] = sanitize_textarea_field( (string) $raw );
+                continue;
+            }
+
+            $out[ $key ] = sanitize_text_field( (string) $raw );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Digits-only phone for tel:/wa.me links.
+     *
+     * @param string $phone Raw phone.
+     *
+     * @return string
+     */
+    public static function normalize_phone_digits( $phone ) {
+        $digits = preg_replace( '/\D+/', '', (string) $phone );
+        // Bangladesh local mobiles: 01XXXXXXXXX → 8801XXXXXXXXX
+        if ( preg_match( '/^0\d{10}$/', $digits ) ) {
+            $digits = '88' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
+     * Build Messenger chat URL from page URL or username.
+     *
+     * @param string $value Raw setting.
+     *
+     * @return string
+     */
+    public static function get_messenger_url( $value ) {
+        $value = trim( (string) $value );
+        if ( '' === $value ) {
+            return '';
+        }
+
+        if ( preg_match( '#^https?://#i', $value ) ) {
+            return esc_url( $value );
+        }
+
+        $slug = preg_replace( '/[^a-zA-Z0-9._-]/', '', $value );
+
+        return $slug ? esc_url( 'https://m.me/' . $slug ) : '';
+    }
+
+    /**
+     * Build WhatsApp click-to-chat URL.
+     *
+     * @param string $phone   Phone number.
+     * @param string $message Optional prefilled message.
+     *
+     * @return string
+     */
+    public static function get_whatsapp_url( $phone, $message = '' ) {
+        $digits = self::normalize_phone_digits( $phone );
+        if ( '' === $digits ) {
+            return '';
+        }
+
+        $url     = 'https://wa.me/' . $digits;
+        $message = trim( (string) $message );
+        if ( '' !== $message ) {
+            $url = add_query_arg( 'text', $message, $url );
+        }
+
+        return esc_url( $url );
+    }
+
+    /**
+     * Build tel: link from phone.
+     *
+     * @param string $phone Phone number.
+     *
+     * @return string
+     */
+    public static function get_tel_url( $phone ) {
+        $clean = preg_replace( '/[^\d+]/', '', (string) $phone );
+        $clean = ltrim( (string) $clean, '+' );
+        if ( '' === $clean ) {
+            return '';
+        }
+
+        return 'tel:+' . self::normalize_phone_digits( $clean );
+    }
+
+    /**
+     * Active live-chat channels for the floating widget.
+     *
+     * @return array<int, array{id: string, label: string, url: string, class: string}>
+     */
+    public static function get_live_chat_channels() {
+        $c = self::get_contact_settings();
+
+        if ( 'yes' !== ( $c['chat_enabled'] ?? 'no' ) ) {
+            return [];
+        }
+
+        $channels = [];
+
+        $messenger = self::get_messenger_url( $c['chat_messenger'] ?? '' );
+        if ( $messenger ) {
+            $channels[] = [
+                'id'    => 'messenger',
+                'label' => __( 'Messenger', 'reseller-management' ),
+                'url'   => $messenger,
+                'class' => 'rm-chat-messenger',
+            ];
+        }
+
+        $whatsapp = self::get_whatsapp_url( $c['chat_whatsapp'] ?? '', $c['chat_whatsapp_message'] ?? '' );
+        if ( $whatsapp ) {
+            $channels[] = [
+                'id'    => 'whatsapp',
+                'label' => __( 'WhatsApp', 'reseller-management' ),
+                'url'   => $whatsapp,
+                'class' => 'rm-chat-whatsapp',
+            ];
+        }
+
+        $call = self::get_tel_url( $c['chat_call'] ?? '' );
+        if ( $call ) {
+            $channels[] = [
+                'id'    => 'call',
+                'label' => __( 'Call', 'reseller-management' ),
+                'url'   => $call,
+                'class' => 'rm-chat-call',
+            ];
+        }
+
+        return $channels;
+    }
 }
