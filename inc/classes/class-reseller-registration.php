@@ -127,13 +127,19 @@ class Reseller_Registration {
                             </div>
 
                             <div class="rm-field-modern">
-                                <label><?php esc_html_e( 'NID Front Image', 'reseller-management' ); ?></label>
-                                <input type="file" name="nid_front" accept="image/*" required class="rm-modern-file">
+                                <label>
+                                    <?php esc_html_e( 'NID Front Image', 'reseller-management' ); ?>
+                                    <span class="rm-optional"><?php esc_html_e( '(Optional)', 'reseller-management' ); ?></span>
+                                </label>
+                                <input type="file" name="nid_front" accept="image/*" class="rm-modern-file">
                             </div>
 
                             <div class="rm-field-modern">
-                                <label><?php esc_html_e( 'NID Back Image', 'reseller-management' ); ?></label>
-                                <input type="file" name="nid_back" accept="image/*" required class="rm-modern-file">
+                                <label>
+                                    <?php esc_html_e( 'NID Back Image', 'reseller-management' ); ?>
+                                    <span class="rm-optional"><?php esc_html_e( '(Optional)', 'reseller-management' ); ?></span>
+                                </label>
+                                <input type="file" name="nid_back" accept="image/*" class="rm-modern-file">
                             </div>
                         </div>
 
@@ -195,23 +201,27 @@ class Reseller_Registration {
             wp_send_json_error( __( 'Password must be at least 8 characters long.', 'reseller-management' ), 422 );
         }
 
-        if ( empty( $_FILES['nid_front']['name'] ) || empty( $_FILES['nid_back']['name'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-            wp_send_json_error( __( 'Both NID images are required.', 'reseller-management' ), 422 );
-        }
-
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        $front_id = media_handle_upload( 'nid_front', 0 );
-        if ( is_wp_error( $front_id ) ) {
-            wp_send_json_error( $front_id->get_error_message(), 422 );
+        $front_id = 0;
+        if ( ! empty( $_FILES['nid_front']['name'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $front_id = media_handle_upload( 'nid_front', 0 );
+            if ( is_wp_error( $front_id ) ) {
+                wp_send_json_error( $front_id->get_error_message(), 422 );
+            }
         }
 
-        $back_id = media_handle_upload( 'nid_back', 0 );
-        if ( is_wp_error( $back_id ) ) {
-            wp_delete_attachment( $front_id, true );
-            wp_send_json_error( $back_id->get_error_message(), 422 );
+        $back_id = 0;
+        if ( ! empty( $_FILES['nid_back']['name'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $back_id = media_handle_upload( 'nid_back', 0 );
+            if ( is_wp_error( $back_id ) ) {
+                if ( $front_id && ! is_wp_error( $front_id ) ) {
+                    wp_delete_attachment( $front_id, true );
+                }
+                wp_send_json_error( $back_id->get_error_message(), 422 );
+            }
         }
 
         $email_parts = explode( '@', $email );
@@ -221,8 +231,12 @@ class Reseller_Registration {
         $user_id = wp_create_user( $username, $password, $email );
 
         if ( is_wp_error( $user_id ) ) {
-            wp_delete_attachment( $front_id, true );
-            wp_delete_attachment( $back_id, true );
+            if ( $front_id && ! is_wp_error( $front_id ) ) {
+                wp_delete_attachment( $front_id, true );
+            }
+            if ( $back_id && ! is_wp_error( $back_id ) ) {
+                wp_delete_attachment( $back_id, true );
+            }
             wp_send_json_error( $user_id->get_error_message(), 500 );
         }
 
@@ -240,8 +254,13 @@ class Reseller_Registration {
         update_user_meta( $user_id, '_reseller_business_name', $business_name );
         update_user_meta( $user_id, '_reseller_fb_url', $facebook_url );
         update_user_meta( $user_id, '_reseller_web_url', $website_url );
-        update_user_meta( $user_id, '_reseller_nid_front_id', $front_id );
-        update_user_meta( $user_id, '_reseller_nid_back_id', $back_id );
+        
+        if ( $front_id && ! is_wp_error( $front_id ) ) {
+            update_user_meta( $user_id, '_reseller_nid_front_id', $front_id );
+        }
+        if ( $back_id && ! is_wp_error( $back_id ) ) {
+            update_user_meta( $user_id, '_reseller_nid_back_id', $back_id );
+        }
 
         wp_send_json_success(
             __( 'Registration submitted successfully. Your account is pending admin approval.', 'reseller-management' )

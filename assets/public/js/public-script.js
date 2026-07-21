@@ -19,6 +19,7 @@
     $form.on("submit", function (event) {
       var formData;
       var $response = $form.find(".rm-form-response");
+      var $submitBtn = $form.find('button[type="submit"]');
 
       event.preventDefault();
 
@@ -27,6 +28,9 @@
           return;
         }
       }
+
+      var originalBtnHtml = $submitBtn.html();
+      $submitBtn.prop('disabled', true).addClass('is-loading').html('<span class="rm-spinner"></span> Loading...');
 
       formData = new FormData(this);
       formData.append("action", config.action);
@@ -39,6 +43,7 @@
         processData: false,
         contentType: false,
         success: function (response) {
+          $submitBtn.prop('disabled', false).removeClass('is-loading').html(originalBtnHtml);
           var payload = response.data;
           var message =
             typeof payload === "string"
@@ -57,6 +62,7 @@
           }
         },
         error: function (xhr) {
+          $submitBtn.prop('disabled', false).removeClass('is-loading').html(originalBtnHtml);
           var response = xhr.responseJSON || {};
           renderResponse(
             $response,

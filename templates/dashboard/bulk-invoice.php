@@ -408,8 +408,8 @@ $fonts_url       = \BOILERPLATE\Inc\Reseller_Helper::get_branding_google_fonts_u
         </div>
 
         <footer class="invoice-footer">
-            <p style="margin: 0;"><?php esc_html_e( 'Thank you for your business!', 'reseller-management' ); ?></p>
-            <p style="margin: 4px 0 0;"><?php printf( esc_html__( 'Generated on %s', 'reseller-management' ), date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></p>
+            <p style="margin: 0;"><?php esc_html_e( 'Thank you for Purchasing', 'reseller-management' ); ?></p>
+            <!-- <p style="margin: 4px 0 0;"><?php //printf( esc_html__( 'Generated on %s', 'reseller-management' ), date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></p> -->
         </footer>
     </div>
     <?php endforeach; ?>

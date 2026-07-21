@@ -185,7 +185,7 @@ if ( $is_edit ) {
                         <input type="hidden" id="rm-preset-shipping-charge" value="<?php echo esc_attr( (string) $selected_shipping_base_charge ); ?>">
                         <div class="rm-form-group">
                             <label><?php esc_html_e( 'Customer Phone', 'reseller-management' ); ?></label>
-                            <input type="text" name="customer_phone" placeholder="Enter Customar Phone" value="<?php echo esc_attr( $customer_phone ); ?>" required>
+                            <input type="text" name="customer_phone" placeholder="01XXXXXXXXX" value="<?php echo esc_attr( $customer_phone ); ?>" required>
                         </div>
                         <div class="rm-form-group">
                             <label><?php esc_html_e( 'Customer Name', 'reseller-management' ); ?></label>
