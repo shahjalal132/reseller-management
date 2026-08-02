@@ -67,6 +67,7 @@ class Plugin_Activator {
         global $wpdb;
 
         \BOILERPLATE\Inc\Reseller_Helper::maybe_create_payment_methods_table();
+        \BOILERPLATE\Inc\Reseller_Helper::maybe_create_shop_tables();
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -120,6 +121,8 @@ class Plugin_Activator {
         dbDelta( $sql_ledger );
         dbDelta( $sql_withdrawals );
         dbDelta( $sql_payment_methods );
+
+        flush_rewrite_rules();
     }
 
 }

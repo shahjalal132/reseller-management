@@ -1089,6 +1089,240 @@
       }
     });
 
+    // Price Edit
+    $('.rm-price-edit-search').on('input', function () {
+      var q = $(this).val().toLowerCase().trim();
+      $('.rm-price-edit-row').each(function () {
+        var hay = String($(this).data('search') || '');
+        $(this).toggle(!q || hay.indexOf(q) !== -1);
+      });
+    });
+
+    $(document).on('input', '.rm-price-selling', function () {
+      var $row = $(this).closest('tr');
+      var base = parseFloat($row.find('.rm-price-base').data('base')) || 0;
+      var selling = parseFloat($(this).val()) || 0;
+      $row.find('.rm-price-profit').text((selling - base).toFixed(2));
+    });
+
+    $(document).on('click', '.rm-save-price', function () {
+      var $btn = $(this);
+      var productId = $btn.data('product-id');
+      var $row = $btn.closest('tr');
+      var selling = parseFloat($row.find('.rm-price-selling').val()) || 0;
+      var $resp = $('.rm-price-edit-response');
+
+      $btn.prop('disabled', true);
+      $.post(rmPublic.ajaxUrl, {
+        action: 'reseller_save_product_price',
+        nonce: rmPublic.nonce,
+        product_id: productId,
+        selling_price: selling
+      })
+        .done(function (res) {
+          if (res && res.success) {
+            $row.find('.rm-price-profit').text(parseFloat(res.data.profit).toFixed(2));
+            $resp.removeClass('is-error').addClass('is-success').text(res.data.message).show();
+          } else {
+            $resp.removeClass('is-success').addClass('is-error').text((res && res.data && res.data.message) || 'Error').show();
+          }
+        })
+        .fail(function (xhr) {
+          var msg = (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) || 'Error';
+          $resp.removeClass('is-success').addClass('is-error').text(msg).show();
+        })
+        .always(function () {
+          $btn.prop('disabled', false);
+        });
+    });
+
+    // Categories toggle
+    $(document).on('click', '.rm-toggle-category', function () {
+      var $btn = $(this);
+      var termId = $btn.data('term-id');
+      var $row = $btn.closest('.rm-cat-toggle-row');
+      var $badge = $row.find('.rm-cat-badge');
+      var $resp = $('.rm-categories-response');
+
+      $btn.prop('disabled', true);
+      $.post(rmPublic.ajaxUrl, {
+        action: 'reseller_toggle_category_status',
+        nonce: rmPublic.nonce,
+        term_id: termId
+      })
+        .done(function (res) {
+          if (res && res.success) {
+            var active = parseInt(res.data.status, 10) === 1;
+            $badge
+              .toggleClass('is-active', active)
+              .toggleClass('is-deactive', !active)
+              .text(res.data.label);
+            $btn
+              .toggleClass('is-active', active)
+              .toggleClass('is-deactive', !active)
+              .text(active ? '✓' : '✕');
+            $resp.removeClass('is-error').addClass('is-success').text(res.data.message).show();
+          } else {
+            $resp.removeClass('is-success').addClass('is-error').text((res && res.data && res.data.message) || 'Error').show();
+          }
+        })
+        .fail(function () {
+          $resp.removeClass('is-success').addClass('is-error').text('Error').show();
+        })
+        .always(function () {
+          $btn.prop('disabled', false);
+        });
+    });
+
+    // My Shop slug + brand color + logo
+    var defaultBrandColor = '#f97316';
+
+    function syncBrandColorUI(color) {
+      var hex = (color || '').trim();
+      if (hex && hex.charAt(0) !== '#') {
+        hex = '#' + hex;
+      }
+      if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        return;
+      }
+      $('#rm-shop-brand-color').val(hex.toLowerCase());
+      $('#rm-shop-brand-color-picker').val(hex.toLowerCase());
+      $('#rm-shop-brand-preview').css('background', hex.toLowerCase());
+    }
+
+    function updateShopLogoPreview(url, options) {
+      options = options || {};
+      var $img = $('#rm-shop-logo-preview');
+      var $ph = $('#rm-shop-logo-placeholder');
+      var $removeLabel = $('.rm-settings-remove');
+      var $box = $('.rm-settings-logo-box');
+      if (url) {
+        $img.attr('src', url).prop('hidden', false).removeClass('is-empty');
+        $ph.hide();
+        $removeLabel.prop('hidden', false);
+        $box.addClass('has-logo');
+        if (!options.keepRemove) {
+          $('#rm-shop-logo-remove').prop('checked', false);
+        }
+      } else {
+        $img.attr('src', '').prop('hidden', true).addClass('is-empty');
+        if (!$ph.length) {
+          $img.after('<span class="rm-shop-logo-placeholder" id="rm-shop-logo-placeholder"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>No logo yet</span>');
+        } else {
+          $ph.show();
+        }
+        $box.removeClass('has-logo');
+        $removeLabel.prop('hidden', true);
+        $('#rm-shop-logo-remove').prop('checked', false);
+      }
+      // Never clear the file input here — that would drop the pending upload before save.
+      if (options.clearFile) {
+        $('#rm-shop-logo-input').val('');
+      }
+    }
+
+    $('#rm-shop-brand-color-picker').on('input change', function () {
+      syncBrandColorUI($(this).val());
+    });
+
+    $('#rm-shop-brand-color').on('input change', function () {
+      syncBrandColorUI($(this).val());
+    });
+
+    $('#rm-shop-brand-reset').on('click', function () {
+      syncBrandColorUI(defaultBrandColor);
+    });
+
+    $('#rm-shop-logo-input').on('change', function () {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      $('#rm-shop-logo-remove').prop('checked', false);
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        updateShopLogoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    $('#rm-shop-logo-remove').on('change', function () {
+      if ($(this).is(':checked')) {
+        // Clear pending upload + preview; keep checkbox checked for save.
+        $('#rm-shop-logo-input').val('');
+        var $img = $('#rm-shop-logo-preview');
+        var $ph = $('#rm-shop-logo-placeholder');
+        $img.attr('src', '').prop('hidden', true).addClass('is-empty');
+        if ($ph.length) {
+          $ph.show();
+        }
+        $('.rm-settings-logo-box').removeClass('has-logo');
+        $('.rm-settings-remove').prop('hidden', false);
+      }
+    });
+
+    $('#rm-shop-slug-form').on('submit', function (e) {
+      e.preventDefault();
+      var $form = $(this);
+      var $resp = $form.find('.rm-form-response');
+      var $btn = $form.find('button[type="submit"]');
+      var formData = new FormData(this);
+
+      formData.append('action', 'reseller_save_shop_slug');
+      formData.append('nonce', rmPublic.nonce);
+
+      // Explicitly ensure remove_logo is only sent when checked.
+      if (!$('#rm-shop-logo-remove').is(':checked')) {
+        formData.delete('remove_logo');
+      }
+
+      $btn.prop('disabled', true);
+      $.ajax({
+        url: rmPublic.ajaxUrl,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false
+      })
+        .done(function (res) {
+          if (res && res.success) {
+            $('#rm-shop-slug-input').val(res.data.slug);
+            $('#rm-shop-url-display').val(res.data.shopUrl);
+            $('#rm-open-shop-url').attr('href', res.data.shopUrl);
+            if (res.data.brandColor) {
+              syncBrandColorUI(res.data.brandColor);
+            }
+            updateShopLogoPreview(res.data.logoUrl || '', { clearFile: true });
+            $resp.removeClass('is-error').addClass('is-success').text(res.data.message).show();
+          } else {
+            $resp.removeClass('is-success').addClass('is-error').text((res && res.data && res.data.message) || 'Error').show();
+          }
+        })
+        .fail(function (xhr) {
+          var msg = 'Error';
+          if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+            msg = xhr.responseJSON.data.message;
+          }
+          $resp.removeClass('is-success').addClass('is-error').text(msg).show();
+        })
+        .always(function () {
+          $btn.prop('disabled', false);
+        });
+    });
+
+    $('#rm-copy-shop-url').on('click', function () {
+      var url = $('#rm-shop-url-display').val();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url);
+      } else {
+        $('#rm-shop-url-display').select();
+        document.execCommand('copy');
+      }
+      $(this).text('Copied!');
+      var $btn = $(this);
+      setTimeout(function () {
+        $btn.text('Copy');
+      }, 1500);
+    });
+
   });
 })(jQuery);
 

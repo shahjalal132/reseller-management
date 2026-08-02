@@ -74,6 +74,7 @@ class Enqueue_Assets {
     public function enqueue_public_assets() {
         wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true );
         wp_enqueue_style( 'wpb-public-css', PLUGIN_PUBLIC_ASSETS_URL . '/css/public-style.css', [], time(), 'all' );
+        wp_enqueue_style( 'rm-shop-dashboard-css', PLUGIN_PUBLIC_ASSETS_URL . '/css/shop-style.css', [ 'wpb-public-css' ], time(), 'all' );
         Reseller_Helper::enqueue_branding_assets( 'wpb-public-css', 'public' );
         wp_enqueue_script( 'wpb-public-js', PLUGIN_PUBLIC_ASSETS_URL . '/js/public-script.js', [ 'jquery' ], time(), true );
         wp_localize_script(

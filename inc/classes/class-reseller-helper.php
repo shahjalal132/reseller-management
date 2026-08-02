@@ -50,6 +50,570 @@ class Reseller_Helper {
     }
 
     /**
+     * Reseller product price overrides table.
+     *
+     * @return string
+     */
+    public static function get_product_prices_table_name() {
+        global $wpdb;
+
+        return $wpdb->prefix . 'reseller_product_prices';
+    }
+
+    /**
+     * Reseller category visibility table.
+     *
+     * @return string
+     */
+    public static function get_category_visibility_table_name() {
+        global $wpdb;
+
+        return $wpdb->prefix . 'reseller_category_visibility';
+    }
+
+    /**
+     * Create My Shop related tables (runtime + activation).
+     *
+     * @return void
+     */
+    public static function maybe_create_shop_tables() {
+        global $wpdb;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $charset_collate = $wpdb->get_charset_collate();
+        $prices_table    = self::get_product_prices_table_name();
+        $cats_table      = self::get_category_visibility_table_name();
+
+        $sql_prices = "CREATE TABLE {$prices_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            reseller_id bigint(20) unsigned NOT NULL,
+            product_id bigint(20) unsigned NOT NULL,
+            selling_price decimal(10,2) NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY reseller_product (reseller_id, product_id),
+            KEY reseller_id (reseller_id),
+            KEY product_id (product_id)
+        ) {$charset_collate};";
+
+        $sql_cats = "CREATE TABLE {$cats_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            reseller_id bigint(20) unsigned NOT NULL,
+            term_id bigint(20) unsigned NOT NULL,
+            status tinyint(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY  (id),
+            UNIQUE KEY reseller_term (reseller_id, term_id),
+            KEY reseller_id (reseller_id),
+            KEY term_id (term_id)
+        ) {$charset_collate};";
+
+        dbDelta( $sql_prices );
+        dbDelta( $sql_cats );
+
+        update_option( 'rm_shop_tables_version', '1.0.0', false );
+    }
+
+    /**
+     * Shop slug user meta key.
+     *
+     * @return string
+     */
+    public static function get_shop_slug_meta_key() {
+        return '_reseller_shop_slug';
+    }
+
+    /**
+     * Get or generate a unique shop slug for a reseller.
+     *
+     * @param int $reseller_id User ID.
+     *
+     * @return string
+     */
+    public static function get_shop_slug( $reseller_id ) {
+        $reseller_id = absint( $reseller_id );
+        if ( ! $reseller_id ) {
+            return '';
+        }
+
+        $key  = self::get_shop_slug_meta_key();
+        $slug = sanitize_title( (string) get_user_meta( $reseller_id, $key, true ) );
+
+        if ( $slug ) {
+            return $slug;
+        }
+
+        $business = (string) get_user_meta( $reseller_id, '_reseller_business_name', true );
+        $base     = $business ? sanitize_title( $business ) : '';
+        if ( ! $base ) {
+            $base = 'reseller' . $reseller_id;
+        }
+
+        $slug = self::ensure_unique_shop_slug( $base, $reseller_id );
+        update_user_meta( $reseller_id, $key, $slug );
+
+        return $slug;
+    }
+
+    /**
+     * Ensure shop slug is unique across resellers.
+     *
+     * @param string $desired     Desired slug.
+     * @param int    $reseller_id Current reseller (excluded from conflict check).
+     *
+     * @return string
+     */
+    public static function ensure_unique_shop_slug( $desired, $reseller_id = 0 ) {
+        $desired     = sanitize_title( $desired );
+        $reseller_id = absint( $reseller_id );
+
+        if ( ! $desired ) {
+            $desired = 'reseller' . ( $reseller_id ?: time() );
+        }
+
+        $slug    = $desired;
+        $suffix  = 0;
+        $meta_key = self::get_shop_slug_meta_key();
+
+        while ( true ) {
+            $users = get_users(
+                [
+                    'role'         => self::get_role_slug(),
+                    'meta_key'     => $meta_key,
+                    'meta_value'   => $slug,
+                    'fields'       => 'ID',
+                    'number'       => 1,
+                    'exclude'      => $reseller_id ? [ $reseller_id ] : [],
+                    'count_total'  => false,
+                ]
+            );
+
+            if ( empty( $users ) ) {
+                return $slug;
+            }
+
+            ++$suffix;
+            $slug = $desired . $suffix;
+        }
+    }
+
+    /**
+     * Resolve reseller user ID from shop slug.
+     *
+     * @param string $slug Shop slug.
+     *
+     * @return int
+     */
+    public static function get_reseller_id_by_shop_slug( $slug ) {
+        $slug = sanitize_title( $slug );
+        if ( ! $slug ) {
+            return 0;
+        }
+
+        $users = get_users(
+            [
+                'role'        => self::get_role_slug(),
+                'meta_key'    => self::get_shop_slug_meta_key(),
+                'meta_value'  => $slug,
+                'fields'      => 'ID',
+                'number'      => 1,
+                'count_total' => false,
+            ]
+        );
+
+        return ! empty( $users[0] ) ? (int) $users[0] : 0;
+    }
+
+    /**
+     * Public My Shop URL for a reseller.
+     *
+     * @param int $reseller_id User ID.
+     *
+     * @return string
+     */
+    public static function get_shop_url( $reseller_id ) {
+        $slug = self::get_shop_slug( $reseller_id );
+        if ( ! $slug ) {
+            return '';
+        }
+
+        return home_url( '/shop/' . $slug . '/' );
+    }
+
+    /**
+     * User meta key for My Shop brand / accent color.
+     *
+     * @return string
+     */
+    public static function get_shop_brand_color_meta_key() {
+        return '_reseller_shop_brand_color';
+    }
+
+    /**
+     * Default My Shop brand color (Mohasagor orange).
+     *
+     * @return string
+     */
+    public static function get_default_shop_brand_color() {
+        return '#f97316';
+    }
+
+    /**
+     * Sanitize a hex color for shop branding.
+     *
+     * @param string $color Raw color.
+     *
+     * @return string Valid #RRGGBB or empty string if invalid.
+     */
+    public static function sanitize_shop_brand_color( $color ) {
+        $color = trim( (string) $color );
+        if ( '' === $color ) {
+            return '';
+        }
+
+        if ( '#' !== substr( $color, 0, 1 ) ) {
+            $color = '#' . $color;
+        }
+
+        $sanitized = sanitize_hex_color( $color );
+        return $sanitized ? strtolower( $sanitized ) : '';
+    }
+
+    /**
+     * Get My Shop brand color for a reseller.
+     *
+     * @param int $reseller_id User ID.
+     *
+     * @return string #RRGGBB
+     */
+    public static function get_shop_brand_color( $reseller_id ) {
+        $reseller_id = absint( $reseller_id );
+        $default     = self::get_default_shop_brand_color();
+        if ( ! $reseller_id ) {
+            return $default;
+        }
+
+        $stored = self::sanitize_shop_brand_color( (string) get_user_meta( $reseller_id, self::get_shop_brand_color_meta_key(), true ) );
+        return $stored ? $stored : $default;
+    }
+
+    /**
+     * User meta key for My Shop logo attachment ID.
+     *
+     * @return string
+     */
+    public static function get_shop_logo_meta_key() {
+        return '_reseller_shop_logo_id';
+    }
+
+    /**
+     * Get My Shop logo attachment ID.
+     *
+     * @param int $reseller_id User ID.
+     *
+     * @return int
+     */
+    public static function get_shop_logo_id( $reseller_id ) {
+        $reseller_id = absint( $reseller_id );
+        if ( ! $reseller_id ) {
+            return 0;
+        }
+
+        $logo_id = (int) get_user_meta( $reseller_id, self::get_shop_logo_meta_key(), true );
+        if ( $logo_id && wp_attachment_is_image( $logo_id ) ) {
+            return $logo_id;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get My Shop logo image URL.
+     *
+     * @param int          $reseller_id User ID.
+     * @param string|int[] $size        Image size.
+     *
+     * @return string
+     */
+    public static function get_shop_logo_url( $reseller_id, $size = 'medium' ) {
+        $logo_id = self::get_shop_logo_id( $reseller_id );
+        if ( ! $logo_id ) {
+            return '';
+        }
+
+        $url = wp_get_attachment_image_url( $logo_id, $size );
+        if ( ! $url ) {
+            $url = wp_get_attachment_url( $logo_id );
+        }
+
+        return $url ? (string) $url : '';
+    }
+
+    /**
+     * Recommended / fallback selling price for a product (no reseller override).
+     *
+     * @param \WC_Product|int $product Product or ID.
+     *
+     * @return float
+     */
+    public static function get_product_recommended_price( $product ) {
+        if ( is_numeric( $product ) ) {
+            $product = wc_get_product( (int) $product );
+        }
+
+        if ( ! $product instanceof \WC_Product ) {
+            return 0.0;
+        }
+
+        $recommended = $product->get_meta( '_reseller_recommended_price' );
+        if ( '' !== (string) $recommended && null !== $recommended ) {
+            return round( (float) $recommended, 2 );
+        }
+
+        return round( (float) $product->get_price(), 2 );
+    }
+
+    /**
+     * Selling price for a reseller (override → recommended → WC price).
+     *
+     * @param int             $reseller_id User ID.
+     * @param \WC_Product|int $product     Product or ID.
+     *
+     * @return float
+     */
+    public static function get_reseller_selling_price( $reseller_id, $product ) {
+        $reseller_id = absint( $reseller_id );
+        $product_id  = $product instanceof \WC_Product ? $product->get_id() : absint( $product );
+
+        if ( $reseller_id && $product_id ) {
+            global $wpdb;
+            $table = self::get_product_prices_table_name();
+            $price = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT selling_price FROM {$table} WHERE reseller_id = %d AND product_id = %d LIMIT 1",
+                    $reseller_id,
+                    $product_id
+                )
+            );
+            if ( null !== $price && '' !== $price ) {
+                return round( (float) $price, 2 );
+            }
+        }
+
+        return self::get_product_recommended_price( $product );
+    }
+
+    /**
+     * Save or update a reseller selling price override.
+     *
+     * @param int   $reseller_id   User ID.
+     * @param int   $product_id    Product ID.
+     * @param float $selling_price Selling price.
+     *
+     * @return bool
+     */
+    public static function save_reseller_selling_price( $reseller_id, $product_id, $selling_price ) {
+        global $wpdb;
+
+        $reseller_id   = absint( $reseller_id );
+        $product_id    = absint( $product_id );
+        $selling_price = round( (float) $selling_price, 2 );
+
+        if ( ! $reseller_id || ! $product_id || $selling_price < 0 ) {
+            return false;
+        }
+
+        $table = self::get_product_prices_table_name();
+        $now   = current_time( 'mysql' );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $existing = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM {$table} WHERE reseller_id = %d AND product_id = %d LIMIT 1",
+                $reseller_id,
+                $product_id
+            )
+        );
+
+        if ( $existing ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            return false !== $wpdb->update(
+                $table,
+                [
+                    'selling_price' => $selling_price,
+                    'updated_at'    => $now,
+                ],
+                [ 'id' => (int) $existing ],
+                [ '%f', '%s' ],
+                [ '%d' ]
+            );
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        return false !== $wpdb->insert(
+            $table,
+            [
+                'reseller_id'   => $reseller_id,
+                'product_id'    => $product_id,
+                'selling_price' => $selling_price,
+                'updated_at'    => $now,
+            ],
+            [ '%d', '%d', '%f', '%s' ]
+        );
+    }
+
+    /**
+     * Whether a category is active for a reseller's shop (default active).
+     *
+     * @param int $reseller_id User ID.
+     * @param int $term_id     product_cat term ID.
+     *
+     * @return bool
+     */
+    public static function is_category_active( $reseller_id, $term_id ) {
+        global $wpdb;
+
+        $reseller_id = absint( $reseller_id );
+        $term_id     = absint( $term_id );
+
+        if ( ! $reseller_id || ! $term_id ) {
+            return true;
+        }
+
+        $table  = self::get_category_visibility_table_name();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $status = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT status FROM {$table} WHERE reseller_id = %d AND term_id = %d LIMIT 1",
+                $reseller_id,
+                $term_id
+            )
+        );
+
+        if ( null === $status ) {
+            return true;
+        }
+
+        return (int) $status === 1;
+    }
+
+    /**
+     * Toggle category visibility for a reseller. Returns new status (1/0).
+     *
+     * @param int $reseller_id User ID.
+     * @param int $term_id     Term ID.
+     *
+     * @return int|false
+     */
+    public static function toggle_category_status( $reseller_id, $term_id ) {
+        global $wpdb;
+
+        $reseller_id = absint( $reseller_id );
+        $term_id     = absint( $term_id );
+
+        if ( ! $reseller_id || ! $term_id ) {
+            return false;
+        }
+
+        $table      = self::get_category_visibility_table_name();
+        $is_active  = self::is_category_active( $reseller_id, $term_id );
+        $new_status = $is_active ? 0 : 1;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $existing = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM {$table} WHERE reseller_id = %d AND term_id = %d LIMIT 1",
+                $reseller_id,
+                $term_id
+            )
+        );
+
+        if ( $existing ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update(
+                $table,
+                [ 'status' => $new_status ],
+                [ 'id' => (int) $existing ],
+                [ '%d' ],
+                [ '%d' ]
+            );
+        } else {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            $wpdb->insert(
+                $table,
+                [
+                    'reseller_id' => $reseller_id,
+                    'term_id'     => $term_id,
+                    'status'      => $new_status,
+                ],
+                [ '%d', '%d', '%d' ]
+            );
+        }
+
+        return $new_status;
+    }
+
+    /**
+     * Term IDs that are explicitly deactivated for a reseller.
+     *
+     * @param int $reseller_id User ID.
+     *
+     * @return int[]
+     */
+    public static function get_deactivated_category_ids( $reseller_id ) {
+        global $wpdb;
+
+        $reseller_id = absint( $reseller_id );
+        if ( ! $reseller_id ) {
+            return [];
+        }
+
+        $table = self::get_category_visibility_table_name();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT term_id FROM {$table} WHERE reseller_id = %d AND status = 0",
+                $reseller_id
+            )
+        );
+
+        return array_map( 'absint', $ids ?: [] );
+    }
+
+    /**
+     * Whether a product should appear on a reseller's public shop.
+     *
+     * @param int $reseller_id User ID.
+     * @param int $product_id  Product ID.
+     *
+     * @return bool
+     */
+    public static function is_product_visible_in_shop( $reseller_id, $product_id ) {
+        $product_id = absint( $product_id );
+        if ( ! $product_id ) {
+            return false;
+        }
+
+        $term_ids = wp_get_post_terms( $product_id, 'product_cat', [ 'fields' => 'ids' ] );
+        if ( is_wp_error( $term_ids ) || empty( $term_ids ) ) {
+            return true;
+        }
+
+        $deactivated = self::get_deactivated_category_ids( $reseller_id );
+        if ( empty( $deactivated ) ) {
+            return true;
+        }
+
+        foreach ( $term_ids as $term_id ) {
+            if ( ! in_array( (int) $term_id, $deactivated, true ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Ensure the payment_methods table exists (runtime upgrade for existing installs).
      *
      * @return void
@@ -530,11 +1094,11 @@ class Reseller_Helper {
      */
     public static function get_dashboard_tabs() {
         return [
-            'dashboard' => [
+            'dashboard'  => [
                 'label' => __( 'Dashboard', 'reseller-management' ),
                 'icon'  => 'dashboard',
             ],
-            'orders'    => [
+            'orders'     => [
                 'label'    => __( 'Orders', 'reseller-management' ),
                 'icon'     => 'orders',
                 'children' => [
@@ -542,11 +1106,24 @@ class Reseller_Helper {
                     'add' => __( 'Add New Order', 'reseller-management' ),
                 ],
             ],
-            'products'  => [
+            'products'   => [
                 'label' => __( 'Products', 'reseller-management' ),
                 'icon'  => 'products',
             ],
-            'account'   => [
+            'price-edit' => [
+                'label' => __( 'Price Edit', 'reseller-management' ),
+                'icon'  => 'price-edit',
+            ],
+            'categories' => [
+                'label' => __( 'Categories', 'reseller-management' ),
+                'icon'  => 'categories',
+            ],
+            'my-shop'    => [
+                'label' => __( 'My Shop', 'reseller-management' ),
+                'icon'  => 'my-shop',
+                'type'  => 'shop_link',
+            ],
+            'account'    => [
                 'label'    => __( 'Account', 'reseller-management' ),
                 'icon'     => 'account',
                 'children' => [
@@ -555,11 +1132,11 @@ class Reseller_Helper {
                     'transactions'    => __( 'Transaction Statement', 'reseller-management' ),
                 ],
             ],
-            'settings'  => [
+            'settings'   => [
                 'label' => __( 'Settings', 'reseller-management' ),
                 'icon'  => 'settings',
             ],
-            'customers' => [
+            'customers'  => [
                 'label' => __( 'Customers', 'reseller-management' ),
                 'icon'  => 'customers',
             ],

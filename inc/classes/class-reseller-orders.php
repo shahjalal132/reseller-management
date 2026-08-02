@@ -752,12 +752,10 @@ class Reseller_Orders {
             $products = wc_get_products( $args );
         }
 
-        $results = [];
+        $reseller_id = get_current_user_id();
+        $results     = [];
         foreach ( $products as $product ) {
-            $recommended_price = $product->get_meta( '_reseller_recommended_price' );
-            if ( empty( $recommended_price ) ) {
-                $recommended_price = $product->get_price();
-            }
+            $recommended_price = Reseller_Helper::get_reseller_selling_price( $reseller_id, $product );
 
             $results[] = [
                 'id'                => $product->get_id(),
@@ -766,7 +764,7 @@ class Reseller_Orders {
                 'recommended_price' => $recommended_price,
                 'image'             => wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ),
                 'sku'               => $product->get_sku(),
-                'variants'          => $this->get_product_variants( $product ),
+                'variants'          => $this->get_product_variants( $product, $reseller_id ),
             ];
         }
 
@@ -775,21 +773,24 @@ class Reseller_Orders {
 
     /**
      * Get variants for a product.
+     *
+     * @param \WC_Product $product     Product.
+     * @param int         $reseller_id Reseller user ID.
+     *
+     * @return array
      */
-    private function get_product_variants( $product ) {
+    private function get_product_variants( $product, $reseller_id = 0 ) {
         if ( ! $product->is_type( 'variable' ) ) {
             return [];
         }
 
-        $variants = [];
+        $reseller_id = $reseller_id ? absint( $reseller_id ) : get_current_user_id();
+        $variants    = [];
         foreach ( $product->get_available_variations() as $variation_data ) {
             $variation_id = $variation_data['variation_id'];
             $variation    = wc_get_product( $variation_id );
-            
-            $recommended_price = $variation->get_meta( '_reseller_recommended_price' );
-            if ( empty( $recommended_price ) ) {
-                $recommended_price = $variation->get_price();
-            }
+
+            $recommended_price = Reseller_Helper::get_reseller_selling_price( $reseller_id, $variation );
 
             $variants[] = [
                 'id'                => $variation_id,
