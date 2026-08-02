@@ -43,6 +43,8 @@ $phone       = (string) get_user_meta( $reseller_id, '_reseller_phone', true );
 $shop_url    = Reseller_Helper::get_shop_url( $reseller_id );
 $brand_color = Reseller_Helper::get_shop_brand_color( $reseller_id );
 $logo_url    = Reseller_Helper::get_shop_logo_url( $reseller_id, 'full' );
+$reseller_user = get_userdata( $reseller_id );
+$shop_email  = $reseller_user && ! empty( $reseller_user->user_email ) ? (string) $reseller_user->user_email : '';
 $cart        = $shop->get_cart( $reseller_id );
 $cart_count = $shop->get_cart_count( $cart );
 $cart_total = $shop->get_cart_total( $cart );
@@ -73,19 +75,31 @@ $login_url  = wp_login_url( $shop_url );
 
 <div class="rm-moha-utility">
 	<div class="rm-moha-utility-inner">
-		<a href="<?php echo esc_url( trailingslashit( $shop_url ) . 'cart/' ); ?>"><?php esc_html_e( 'Order Tracking', 'reseller-management' ); ?></a>
-		<span class="rm-moha-utility-sep" aria-hidden="true">|</span>
-		<a href="<?php echo esc_url( $login_url ); ?>"><?php esc_html_e( 'Login', 'reseller-management' ); ?></a>
-		<?php if ( $phone ) : ?>
+		<div class="rm-moha-utility-left">
+			<?php if ( $shop_email ) : ?>
+				<a class="rm-moha-utility-email" href="<?php echo esc_url( 'mailto:' . $shop_email ); ?>">
+					<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+					<span><?php echo esc_html( $shop_email ); ?></span>
+				</a>
+			<?php else : ?>
+				<span class="rm-moha-utility-welcome"><?php printf( /* translators: %s: shop name */ esc_html__( 'Welcome to %s', 'reseller-management' ), esc_html( $business_name ) ); ?></span>
+			<?php endif; ?>
+		</div>
+		<div class="rm-moha-utility-right">
+			<a href="<?php echo esc_url( trailingslashit( $shop_url ) . 'cart/' ); ?>"><?php esc_html_e( 'Order Tracking', 'reseller-management' ); ?></a>
 			<span class="rm-moha-utility-sep" aria-hidden="true">|</span>
-			<a class="rm-moha-utility-call" href="<?php echo esc_url( 'tel:' . preg_replace( '/\s+/', '', $phone ) ); ?>">
-				<?php esc_html_e( 'Call Us Now', 'reseller-management' ); ?>
-				<strong><?php echo esc_html( $phone ); ?></strong>
-			</a>
-		<?php else : ?>
-			<span class="rm-moha-utility-sep" aria-hidden="true">|</span>
-			<span class="rm-moha-utility-call"><?php esc_html_e( 'Call Us Now', 'reseller-management' ); ?></span>
-		<?php endif; ?>
+			<a href="<?php echo esc_url( $login_url ); ?>"><?php esc_html_e( 'Login', 'reseller-management' ); ?></a>
+			<?php if ( $phone ) : ?>
+				<span class="rm-moha-utility-sep" aria-hidden="true">|</span>
+				<a class="rm-moha-utility-call" href="<?php echo esc_url( 'tel:' . preg_replace( '/\s+/', '', $phone ) ); ?>">
+					<?php esc_html_e( 'Call Us Now', 'reseller-management' ); ?>
+					<strong><?php echo esc_html( $phone ); ?></strong>
+				</a>
+			<?php else : ?>
+				<span class="rm-moha-utility-sep" aria-hidden="true">|</span>
+				<span class="rm-moha-utility-call"><?php esc_html_e( 'Call Us Now', 'reseller-management' ); ?></span>
+			<?php endif; ?>
+		</div>
 	</div>
 </div>
 
@@ -163,8 +177,8 @@ $login_url  = wp_login_url( $shop_url );
 					<span class="rm-moha-logo-icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2h2V8h4v2h2V8h2v12z"/></svg>
 					</span>
+					<span class="rm-moha-footer-logo-text"><?php echo esc_html( $business_name ); ?></span>
 				<?php endif; ?>
-				<strong><?php echo esc_html( $business_name ); ?></strong>
 			</div>
 			<?php if ( $phone ) : ?>
 				<p><?php echo esc_html( $phone ); ?></p>
@@ -195,8 +209,10 @@ $login_url  = wp_login_url( $shop_url );
 		</div>
 	</div>
 	<div class="rm-moha-footer-bar">
-		<span><?php echo esc_html( $business_name ); ?></span>
-		<span><?php esc_html_e( 'Online Shopping In Bangladesh', 'reseller-management' ); ?></span>
+		<span>
+		&copy; 2026 <?php echo esc_html( $business_name ); ?>. All rights reserved. | <?php esc_html_e( 'Developed by', 'reseller-management' ); ?>
+			<a href="https://grocoder.net/" target="_blank" rel="noopener noreferrer">Grocoder Software Solutions</a>
+		</span>
 	</div>
 </footer>
 

@@ -35,9 +35,53 @@ body.rm-shop-moha a {
   padding: 8px 16px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 14px;
+}
+
+.rm-moha-utility-left,
+.rm-moha-utility-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.rm-moha-utility-left {
+  min-width: 0;
+}
+
+.rm-moha-utility-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  max-width: 100%;
+}
+
+.rm-moha-utility-email span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rm-moha-utility-email svg {
+  flex-shrink: 0;
+  color: var(--rm-moha-orange);
+}
+
+.rm-moha-utility-email:hover {
+  color: var(--rm-moha-orange);
+}
+
+.rm-moha-utility-welcome {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
 }
 
 .rm-moha-utility-inner a {
@@ -1476,14 +1520,26 @@ body.rm-shop-moha a {
 .rm-moha-footer-bar {
   background: var(--rm-moha-orange);
   color: #fff;
-  display: flex;
+  /* display: flex;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: wrap; */
+  /* gap: 8px; */
+  text-align: center;
   padding: 10px 16px;
   font-size: 0.85rem;
   font-weight: 600;
   max-width: none;
+}
+
+.rm-moha-footer-bar a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rm-moha-footer-bar a:hover {
+  opacity: 0.9;
+  color: #000;
 }
 
 .rm-moha-whatsapp {
@@ -1747,7 +1803,7 @@ body.rm-shop-moha a {
   }
 
   .rm-moha-footer-bar {
-    padding: 10px 12px 78px;
+    /* padding: 10px 12px 78px; */
     font-size: 0.75rem;
   }
 
