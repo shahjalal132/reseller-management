@@ -531,7 +531,17 @@ body.rm-shop-moha a {
   font-family: inherit;
 }
 
-.rm-moha-order-btn:hover {
+/* Variable products render this as a link, so beat the `body.rm-shop-moha a` inherit rule. */
+body.rm-shop-moha a.rm-moha-order-btn,
+body.rm-shop-moha a.rm-moha-order-btn:visited,
+body.rm-shop-moha a.rm-moha-order-btn:hover,
+body.rm-shop-moha a.rm-moha-order-btn:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
+.rm-moha-order-btn:hover,
+body.rm-shop-moha a.rm-moha-order-btn:hover {
   background: var(--rm-moha-orange-dark);
 }
 
