@@ -252,6 +252,13 @@ class Reseller_Shop {
 					'image'      => wp_get_attachment_image_url( (int) $variation->get_image_id(), 'medium' ),
 				];
 			}
+
+			// Reseller overrides are stored per variation, so the parent price would ignore them.
+			$variation_prices = wp_list_pluck( $variations, 'price' );
+			if ( ! empty( $variation_prices ) ) {
+				$price = round( (float) min( $variation_prices ), 2 );
+				$base  = (float) min( wp_list_pluck( $variations, 'base_price' ) );
+			}
 		}
 
 		return [
