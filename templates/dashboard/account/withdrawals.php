@@ -24,9 +24,10 @@ unset( $wd );
 
 /* ── Label maps ─────────────────────────────────────────── */
 $status_styles = [
-    'pending'  => [ 'bg' => '#fff7ed', 'text' => '#c2410c', 'label' => 'Pending' ],
-    'approved' => [ 'bg' => '#f0fdf4', 'text' => '#15803d', 'label' => 'Approved' ],
-    'rejected' => [ 'bg' => '#fff1f2', 'text' => '#be123c', 'label' => 'Rejected' ],
+    'pending'   => [ 'bg' => '#fff7ed', 'text' => '#c2410c', 'label' => 'Pending' ],
+    'approved'  => [ 'bg' => '#f0fdf4', 'text' => '#15803d', 'label' => 'Approved' ],
+    'completed' => [ 'bg' => '#eff6ff', 'text' => '#1d4ed8', 'label' => 'Completed' ],
+    'rejected'  => [ 'bg' => '#fff1f2', 'text' => '#be123c', 'label' => 'Rejected' ],
 ];
 $method_labels = [
     'bkash'  => [ 'bg' => '#fce4ec', 'text' => '#c2185b', 'label' => 'Bkash',  'icon' => 'B' ],
@@ -597,6 +598,7 @@ foreach ( $all_withdrawals as $i => $wd ) {
             <option value=""><?php esc_html_e( 'All Statuses', 'reseller-management' ); ?></option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
+            <option value="Completed">Completed</option>
             <option value="Rejected">Rejected</option>
         </select>
     </div>

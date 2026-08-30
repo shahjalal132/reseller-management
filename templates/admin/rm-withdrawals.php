@@ -247,6 +247,7 @@ foreach ( $rm_withdrawals as $i => $wd ) {
         'user_phone'    => $user_phone,
         'view_url'      => esc_url( add_query_arg( [ 'action' => 'view', 'wd_id' => $wd->id ], $base_url ) ),
         'edit_url'      => esc_url( add_query_arg( [ 'action' => 'edit', 'wd_id' => $wd->id ], $base_url ) ),
+        'profile_url'   => esc_url( admin_url( 'admin.php?page=reseller-hub-user-view&reseller_id=' . (int) $wd->reseller_id ) ),
         'delete_url'    => wp_nonce_url( admin_url( 'admin-post.php?action=rm_delete_withdrawal&wd_id=' . $wd->id ), 'rm_delete_withdrawal_' . $wd->id ),
     ];
 }
@@ -300,7 +301,7 @@ foreach ( $rm_withdrawals as $i => $wd ) {
                     <th style="width:15%;">Method & Details</th>
                     <th style="width:12%;">Requested At</th>
                     <th style="width:13%;">Status</th>
-                    <th style="width:15%;">Actions</th>
+                    <th style="width:18%;">Actions</th>
                 </tr>
             </thead>
             <tbody id="rm-wd-tbody"></tbody>
@@ -368,6 +369,7 @@ foreach ( $rm_withdrawals as $i => $wd ) {
 .rm-wd-acts { display: flex; gap: 6px; align-items: center; }
 .rm-wd-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; font-size: 0; text-decoration: none; border: 1.5px solid #e5e7eb; cursor: pointer; transition: all .18s; color: #9ca3af; background: #fff; }
 .rm-wd-btn-view:hover { border-color: #005f5a; color: #005f5a; background: #f0faf9; }
+.rm-wd-btn-profile:hover { border-color: #7c3aed; color: #7c3aed; background: #f5f3ff; }
 .rm-wd-btn-edit.is-edit:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
 .rm-wd-btn-del:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 .spinner { margin: 0; float: none; display: none; vertical-align: middle; }
@@ -486,6 +488,7 @@ jQuery(document).ready(function ($) {
 
             html += '<td><div class="rm-wd-acts">';
             html +=   '<a href="' + row.view_url + '" class="rm-wd-btn rm-wd-btn-view" title="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>';
+            html +=   '<a href="' + row.profile_url + '" class="rm-wd-btn rm-wd-btn-profile" title="Reseller Profile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></a>';
             html +=   '<a href="' + row.edit_url + '" class="rm-wd-btn rm-wd-btn-edit is-edit" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></a>';
             html +=   '<a href="' + row.delete_url + '" class="rm-wd-btn rm-wd-btn-del" onclick="return confirm(\'Delete this withdrawal?\');" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></a>';
             html += '</div></td>';
