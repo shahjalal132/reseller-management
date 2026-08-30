@@ -559,19 +559,27 @@ class Admin_Top_Menu {
         }
 
         if ( $withdrawal_id > 0 ) {
-            $wpdb->update(
-                Reseller_Helper::get_withdrawals_table_name(),
-                [
-                    'amount'          => $amount,
-                    'payment_method'  => $payment_method,
-                    'account_details' => $account_details,
-                    'note'            => $note,
-                    'status'          => $status,
-                ],
-                [ 'id' => $withdrawal_id ],
-                [ '%f', '%s', '%s', '%s', '%s' ],
-                [ '%d' ]
-            );
+            $existing = Reseller_Finance::get_withdrawal( $withdrawal_id );
+            if ( $existing ) {
+                $wpdb->update(
+                    Reseller_Helper::get_withdrawals_table_name(),
+                    [
+                        'amount'          => $amount,
+                        'payment_method'  => $payment_method,
+                        'account_details' => $account_details,
+                        'note'            => $note,
+                        'status'          => $status,
+                    ],
+                    [ 'id' => $withdrawal_id ],
+                    [ '%f', '%s', '%s', '%s', '%s' ],
+                    [ '%d' ]
+                );
+
+                $updated = Reseller_Finance::get_withdrawal( $withdrawal_id );
+                if ( $updated ) {
+                    Reseller_Finance::sync_withdrawal_ledger( $updated );
+                }
+            }
         }
 
         $this->redirect_with_notice(
@@ -596,11 +604,15 @@ class Admin_Top_Menu {
         }
 
         if ( $withdrawal_id > 0 ) {
+            $existing = Reseller_Finance::get_withdrawal( $withdrawal_id );
             $wpdb->delete(
                 Reseller_Helper::get_withdrawals_table_name(),
                 [ 'id' => $withdrawal_id ],
                 [ '%d' ]
             );
+            if ( $existing ) {
+                Reseller_Finance::delete_withdrawal_ledger( (int) $existing->id, (int) $existing->reseller_id );
+            }
         }
 
         $this->redirect_with_notice(

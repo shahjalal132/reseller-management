@@ -150,6 +150,170 @@ class Reseller_Finance {
     }
 
     /**
+     * Get a single withdrawal row.
+     *
+     * @param int $withdrawal_id Withdrawal ID.
+     *
+     * @return object|null
+     */
+    public static function get_withdrawal( $withdrawal_id ) {
+        global $wpdb;
+
+        $withdrawal_id = (int) $withdrawal_id;
+        if ( $withdrawal_id <= 0 ) {
+            return null;
+        }
+
+        $table = Reseller_Helper::get_withdrawals_table_name();
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$table} WHERE id = %d",
+                $withdrawal_id
+            )
+        );
+    }
+
+    /**
+     * Find the ledger debit created for a withdrawal request.
+     *
+     * @param int $withdrawal_id Withdrawal ID.
+     * @param int $reseller_id   Optional reseller ID to scope the lookup.
+     *
+     * @return object|null
+     */
+    public static function find_withdrawal_ledger_entry( $withdrawal_id, $reseller_id = 0 ) {
+        global $wpdb;
+
+        $withdrawal_id = (int) $withdrawal_id;
+        if ( $withdrawal_id <= 0 ) {
+            return null;
+        }
+
+        $table       = Reseller_Helper::get_ledger_table_name();
+        $reference   = 'WD-' . $withdrawal_id;
+        $description = sprintf( 'Withdrawal request #%d', $withdrawal_id );
+
+        if ( $reseller_id > 0 ) {
+            return $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT * FROM {$table}
+                     WHERE type = %s
+                       AND reseller_id = %d
+                       AND (reference = %s OR description = %s)
+                     ORDER BY id DESC
+                     LIMIT 1",
+                    'withdrawal_debit',
+                    (int) $reseller_id,
+                    $reference,
+                    $description
+                )
+            );
+        }
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$table}
+                 WHERE type = %s
+                   AND (reference = %s OR description = %s)
+                 ORDER BY id DESC
+                 LIMIT 1",
+                'withdrawal_debit',
+                $reference,
+                $description
+            )
+        );
+    }
+
+    /**
+     * Keep the withdrawal_debit ledger row in sync with a withdrawal record.
+     *
+     * Rejected withdrawals restore the reseller balance by removing the debit.
+     * Other statuses keep a debit matching the current withdrawal amount.
+     *
+     * @param object $withdrawal Withdrawal row with id, reseller_id, amount, status.
+     *
+     * @return void
+     */
+    public static function sync_withdrawal_ledger( $withdrawal ) {
+        if ( ! is_object( $withdrawal ) || empty( $withdrawal->id ) ) {
+            return;
+        }
+
+        global $wpdb;
+
+        $wd_id        = (int) $withdrawal->id;
+        $reseller_id  = (int) $withdrawal->reseller_id;
+        $amount       = round( (float) $withdrawal->amount, 2 );
+        $status       = (string) $withdrawal->status;
+        $ledger       = self::find_withdrawal_ledger_entry( $wd_id, $reseller_id );
+        $ledger_table = Reseller_Helper::get_ledger_table_name();
+        $description  = sprintf( 'Withdrawal request #%d', $wd_id );
+        $reference    = 'WD-' . $wd_id;
+
+        if ( 'rejected' === $status ) {
+            if ( $ledger ) {
+                $wpdb->delete( $ledger_table, [ 'id' => (int) $ledger->id ], [ '%d' ] );
+            }
+            return;
+        }
+
+        $debit_amount = -1 * abs( $amount );
+
+        if ( $ledger ) {
+            $wpdb->update(
+                $ledger_table,
+                [
+                    'amount'      => $debit_amount,
+                    'description' => $description,
+                    'reference'   => $reference,
+                ],
+                [ 'id' => (int) $ledger->id ],
+                [ '%f', '%s', '%s' ],
+                [ '%d' ]
+            );
+            return;
+        }
+
+        $entry = [
+            'reseller_id' => $reseller_id,
+            'type'        => 'withdrawal_debit',
+            'amount'      => $debit_amount,
+            'description' => $description,
+            'reference'   => $reference,
+        ];
+
+        if ( ! empty( $withdrawal->created_at ) ) {
+            $entry['created_at'] = (string) $withdrawal->created_at;
+        }
+
+        Reseller_Helper::insert_ledger_entry( $entry );
+    }
+
+    /**
+     * Remove the ledger debit for a withdrawal (used when the request is deleted).
+     *
+     * @param int $withdrawal_id Withdrawal ID.
+     * @param int $reseller_id   Optional reseller ID.
+     *
+     * @return void
+     */
+    public static function delete_withdrawal_ledger( $withdrawal_id, $reseller_id = 0 ) {
+        global $wpdb;
+
+        $ledger = self::find_withdrawal_ledger_entry( $withdrawal_id, $reseller_id );
+        if ( ! $ledger ) {
+            return;
+        }
+
+        $wpdb->delete(
+            Reseller_Helper::get_ledger_table_name(),
+            [ 'id' => (int) $ledger->id ],
+            [ '%d' ]
+        );
+    }
+
+    /**
      * Calculate commission for an order.
      *
      * @param \WC_Order $order Order object.
@@ -315,12 +479,15 @@ class Reseller_Finance {
             wp_send_json_error( __( 'Unable to store your withdrawal request.', 'reseller-management' ), 500 );
         }
 
+        $withdrawal_id = (int) $wpdb->insert_id;
+
         Reseller_Helper::insert_ledger_entry(
             [
                 'reseller_id' => $reseller_id,
                 'type'        => 'withdrawal_debit',
                 'amount'      => -1 * abs( $amount ),
-                'description' => sprintf( 'Withdrawal request #%d', (int) $wpdb->insert_id ),
+                'description' => sprintf( 'Withdrawal request #%d', $withdrawal_id ),
+                'reference'   => 'WD-' . $withdrawal_id,
             ]
         );
 
@@ -468,6 +635,11 @@ class Reseller_Finance {
 
         if ( false === $updated ) {
             wp_send_json_error( __( 'Database update failed.', 'reseller-management' ), 500 );
+        }
+
+        $withdrawal = self::get_withdrawal( $wd_id );
+        if ( $withdrawal ) {
+            self::sync_withdrawal_ledger( $withdrawal );
         }
 
         wp_send_json_success( __( 'Withdrawal status updated successfully.', 'reseller-management' ) );
