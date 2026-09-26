@@ -733,42 +733,173 @@ class Reseller_Orders {
             wp_send_json_success( [] );
         }
 
-        $args = [
-            'limit'   => 10,
-            'status'  => 'publish',
-            's'       => $query,
-        ];
+        $reseller_id = get_current_user_id();
+        $catalog     = [];
 
-        // Check if query is also a SKU or Barcode (metakey might vary, assuming _sku)
-        $products = wc_get_products( $args );
-
-        // If no products found by name, try SKU
-        if ( empty( $products ) ) {
-            $args = [
-                'limit'  => 10,
-                'status' => 'publish',
-                'sku'    => $query,
-            ];
-            $products = wc_get_products( $args );
+        // SKU hits first so a variation SKU is not dropped when name search fills the limit.
+        foreach ( $this->find_product_ids_by_sku( $query ) as $product_id ) {
+            $this->add_product_search_hit( $catalog, $product_id, true );
         }
 
-        $reseller_id = get_current_user_id();
-        $results     = [];
+        $products = wc_get_products(
+            [
+                'limit'  => 10,
+                'status' => 'publish',
+                's'      => $query,
+            ]
+        );
         foreach ( $products as $product ) {
-            $recommended_price = Reseller_Helper::get_reseller_selling_price( $reseller_id, $product );
+            $this->add_product_search_hit( $catalog, $product->get_id(), false );
+        }
+
+        $results = [];
+        foreach ( array_slice( $catalog, 0, 10, true ) as $hit ) {
+            $product            = $hit['product'];
+            $matched_variation  = $hit['matched_variation_id'];
+            $variants           = $this->get_product_variants( $product, $reseller_id );
+            $variants           = $this->ensure_matched_variation( $variants, $matched_variation, $reseller_id );
+            $recommended_price  = Reseller_Helper::get_reseller_selling_price( $reseller_id, $product );
 
             $results[] = [
-                'id'                => $product->get_id(),
-                'text'              => $product->get_name(),
-                'price'             => $product->get_price(),
-                'recommended_price' => $recommended_price,
-                'image'             => wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ),
-                'sku'               => $product->get_sku(),
-                'variants'          => $this->get_product_variants( $product, $reseller_id ),
+                'id'                   => $product->get_id(),
+                'text'                 => $product->get_name(),
+                'price'                => $product->get_price(),
+                'recommended_price'    => $recommended_price,
+                'image'                => wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' ),
+                'sku'                  => $hit['sku'] ? $hit['sku'] : $product->get_sku(),
+                'matched_variation_id' => $matched_variation,
+                'variants'             => $variants,
             ];
         }
 
         wp_send_json_success( $results );
+    }
+
+    /**
+     * Product and variation IDs whose SKU matches the query.
+     *
+     * Exact match is returned first. wc_get_products() sku search skips variations.
+     *
+     * @param string $query Search text.
+     *
+     * @return int[]
+     */
+    private function find_product_ids_by_sku( $query ) {
+        global $wpdb;
+
+        $ids   = [];
+        $exact = wc_get_product_id_by_sku( $query );
+        if ( $exact ) {
+            $ids[] = (int) $exact;
+        }
+
+        $table = isset( $wpdb->wc_product_meta_lookup ) ? $wpdb->wc_product_meta_lookup : $wpdb->prefix . 'wc_product_meta_lookup';
+        $like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $found = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT posts.ID
+				FROM {$wpdb->posts} AS posts
+				INNER JOIN {$table} AS lookup ON posts.ID = lookup.product_id
+				WHERE posts.post_type IN ( 'product', 'product_variation' )
+				AND posts.post_status NOT IN ( 'trash', 'auto-draft' )
+				AND lookup.sku LIKE %s
+				LIMIT 20",
+                $like
+            )
+        );
+
+        foreach ( $found as $product_id ) {
+            $product_id = (int) $product_id;
+            if ( $product_id && ! in_array( $product_id, $ids, true ) ) {
+                $ids[] = $product_id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Add a product or variation to the search catalog, keyed by the parent product.
+     *
+     * @param array $catalog    Catalog keyed by parent product ID.
+     * @param int   $product_id Product or variation ID.
+     * @param bool  $sku_match  Whether this hit came from an SKU lookup.
+     *
+     * @return void
+     */
+    private function add_product_search_hit( array &$catalog, $product_id, $sku_match ) {
+        $found = wc_get_product( $product_id );
+        if ( ! $found ) {
+            return;
+        }
+
+        $variation_id = 0;
+        $sku          = $found->get_sku();
+        $product      = $found;
+
+        if ( $found->is_type( 'variation' ) ) {
+            $variation_id = $found->get_id();
+            $product      = wc_get_product( $found->get_parent_id() );
+            if ( ! $product || 'publish' !== $product->get_status() ) {
+                return;
+            }
+        } elseif ( 'publish' !== $found->get_status() ) {
+            return;
+        }
+
+        $parent_id = $product->get_id();
+        if ( isset( $catalog[ $parent_id ] ) ) {
+            if ( $sku_match && $variation_id && empty( $catalog[ $parent_id ]['matched_variation_id'] ) ) {
+                $catalog[ $parent_id ]['matched_variation_id'] = $variation_id;
+                $catalog[ $parent_id ]['sku']                  = $sku;
+            }
+            return;
+        }
+
+        $catalog[ $parent_id ] = [
+            'product'               => $product,
+            'matched_variation_id'  => $sku_match ? $variation_id : 0,
+            'sku'                   => $sku_match ? $sku : $product->get_sku(),
+        ];
+    }
+
+    /**
+     * Keep a SKU-matched variation selectable when WooCommerce omits it from available variations.
+     *
+     * @param array $variants      Variation rows.
+     * @param int   $variation_id  Matched variation ID.
+     * @param int   $reseller_id   Reseller user ID.
+     *
+     * @return array
+     */
+    private function ensure_matched_variation( array $variants, $variation_id, $reseller_id ) {
+        $variation_id = absint( $variation_id );
+        if ( ! $variation_id ) {
+            return $variants;
+        }
+
+        foreach ( $variants as $variant ) {
+            if ( (int) $variant['id'] === $variation_id ) {
+                return $variants;
+            }
+        }
+
+        $variation = wc_get_product( $variation_id );
+        if ( ! $variation || ! $variation->is_type( 'variation' ) ) {
+            return $variants;
+        }
+
+        $variants[] = [
+            'id'                => $variation_id,
+            'attributes'        => $variation->get_variation_attributes(),
+            'price'             => $variation->get_price(),
+            'recommended_price' => Reseller_Helper::get_reseller_selling_price( $reseller_id, $variation ),
+            'sku'               => $variation->get_sku(),
+        ];
+
+        return $variants;
     }
 
     /**
@@ -797,6 +928,7 @@ class Reseller_Orders {
                 'attributes'        => $variation_data['attributes'],
                 'price'             => $variation_data['display_price'],
                 'recommended_price' => $recommended_price,
+                'sku'               => $variation ? $variation->get_sku() : '',
             ];
         }
 

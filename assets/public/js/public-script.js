@@ -311,7 +311,8 @@
             resale_price: parseFloat(product.recommended_price || product.price),
             recommended_price: parseFloat(product.recommended_price || product.price),
             quantity: 1,
-            variants: product.variants || []
+            variants: product.variants || [],
+            selected_variant: parseInt(product.matched_variation_id, 10) || 0
           });
         }
         renderOrderItems();
@@ -324,11 +325,14 @@
         } else {
           var html = '';
           orderItems.forEach((item, index) => {
-            if (item.variants.length > 0 && (!item.selected_variant || item.selected_variant == 0)) {
-              item.selected_variant = item.variants[0].id;
-              item.id = item.variants[0].id;
-              item.price = parseFloat(item.variants[0].price || item.price || 0);
-              item.resale_price = parseFloat(item.variants[0].recommended_price || item.resale_price || item.price || 0);
+            if (item.variants.length > 0) {
+              var variant = item.variants.find(function (v) { return item.selected_variant && v.id == item.selected_variant; }) || item.variants[0];
+              if (item.id != variant.id) {
+                item.selected_variant = variant.id;
+                item.id = variant.id;
+                item.price = parseFloat(variant.price || item.price || 0);
+                item.resale_price = parseFloat(variant.recommended_price || item.resale_price || item.price || 0);
+              }
             }
 
             html += '<tr data-index="' + index + '">';
@@ -341,6 +345,9 @@
               html += '<select class="rm-item-variant">';
               item.variants.forEach(v => {
                 var label = Object.values(v.attributes).join(', ');
+                if (v.sku) {
+                  label += (label ? ' (' + v.sku + ')' : v.sku);
+                }
                 var selected = (item.selected_variant == v.id) ? 'selected' : '';
                 html += '<option value="' + v.id + '" data-price="' + v.price + '" data-recommended="' + v.recommended_price + '" ' + selected + '>' + label + '</option>';
               });

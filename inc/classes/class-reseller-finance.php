@@ -17,6 +17,7 @@ class Reseller_Finance {
         add_action( 'woocommerce_order_status_completed', [ $this, 'credit_order_commission' ] );
         add_action( 'woocommerce_order_status_delivered', [ $this, 'credit_order_commission' ] );
         add_action( 'woocommerce_order_status_refunded', [ $this, 'debit_order_shipping' ] );
+        add_action( 'woocommerce_order_status_returned', [ $this, 'debit_order_shipping' ] );
         add_action( 'wp_ajax_reseller_request_withdrawal', [ $this, 'handle_withdrawal_request' ] );
         add_action( 'wp_ajax_reseller_save_payment_method', [ $this, 'handle_save_payment_method' ] );
         add_action( 'wp_ajax_reseller_delete_payment_method', [ $this, 'handle_delete_payment_method' ] );
@@ -25,8 +26,8 @@ class Reseller_Finance {
         // COD Deduction.
         add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_cod_deduction' ] );
 
-        // Packaging cost deduction.
-        add_action( 'woocommerce_order_status_delivered', [ $this, 'apply_packaging_cost_deduction' ] );
+        // Packaging cost deduction as soon as the order enters packaging.
+        add_action( 'woocommerce_order_status_packaging', [ $this, 'apply_packaging_cost_deduction' ] );
     }
 
     /**
@@ -381,7 +382,7 @@ class Reseller_Finance {
     }
 
     /**
-     * Debit shipping on refunded orders.
+     * Debit the order shipping charge when an order is returned or refunded.
      *
      * @param int $order_id Order ID.
      *
@@ -403,13 +404,15 @@ class Reseller_Finance {
             return;
         }
 
+        $status_label = 'returned' === $order->get_status() ? 'returned' : 'refunded';
+
         Reseller_Helper::insert_ledger_entry(
             [
                 'reseller_id' => $reseller_id,
                 'order_id'    => $order_id,
                 'type'        => 'shipping_debit',
                 'amount'      => -1 * abs( $shipping_total ),
-                'description' => sprintf( 'Shipping debit for refunded Order #%d', $order_id ),
+                'description' => sprintf( 'Shipping charge for %s Order #%d', $status_label, $order_id ),
             ]
         );
     }
@@ -692,7 +695,7 @@ class Reseller_Finance {
     }
 
     /**
-     * Apply packaging cost deduction when an order is delivered.
+     * Apply packaging cost deduction when an order enters packaging.
      *
      * @param int $order_id Order ID.
      *
