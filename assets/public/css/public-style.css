@@ -4108,6 +4108,12 @@ body.rm-dashboard-body {
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
+  /* The hidden menu still occupies space above the toggle; let clicks pass through to the page. */
+  pointer-events: none;
+}
+
+.rm-live-chat-toggle {
+  pointer-events: auto;
 }
 
 .rm-live-chat-menu {
